@@ -10,7 +10,8 @@ or authorization to change a repository.
 ## Explicit owner preferences
 
 The owner specified these preferences on 2026-10-24. The repository API matched
-all three when inspected that day.
+all three when inspected that day; authenticated browser inspection confirmed
+them as well.
 
 | GitHub feature | Preferred state | Observed API value |
 | --- | --- | --- |
@@ -66,6 +67,67 @@ to disable protections or a complete audit of organization policy. The
 [working agreement](../AGENTS.md) still requires PRs and verification before
 merge; an observed setting does not replace that agreement.
 
+## Authenticated browser observations
+
+A read-only browser inspection of this exact repository on **2026-10-24,
+03:55–03:56 UTC** confirmed public visibility and the Wiki, Issues,
+Discussions, merge-method, auto-merge, branch-update, and branch-deletion
+values above. These additional observations are a dated snapshot, not newly
+prescribed settings.
+
+### General settings
+
+Source: [General settings](https://github.com/Living-Proof-Labs/collaboration-guidelines/settings).
+
+| Setting | Observed value |
+| --- | --- |
+| Release immutability | Off |
+| Preserve this repository (Archive Program) | On |
+| Pull requests | On |
+| Sponsorships | Off |
+| Issue creation | All users |
+| Commit comments | On |
+| Auto-close linked issues | On |
+| Git LFS objects in archives | Off |
+| Limit branches/tags per push | Off |
+
+Both merge and squash default commit-message menus displayed "Default message";
+the corresponding API enum values are recorded above.
+
+The [version-tag convention](../AGENTS.md) prohibits retargeting published tags.
+That working agreement is separate from GitHub's release-immutability setting,
+which was off. This review did not enable it or change any setting.
+
+### Actions settings
+
+Source: [Actions General](https://github.com/Living-Proof-Labs/collaboration-guidelines/settings/actions).
+
+| Setting | Observed value |
+| --- | --- |
+| Allowed actions | All actions and reusable workflows |
+| Require full-length commit-SHA action pins | Unchecked |
+| Artifact and log retention | 90 days |
+| Cache retention | 7 days |
+| Cache eviction limit | 10 GB |
+| Fork PR workflow approval | First-time contributors require approval |
+| Default workflow token | Read repository contents and packages |
+| Read-and-write default token option | Unselected and disabled |
+| Actions may create and approve pull requests | Unchecked and disabled |
+
+The selected fork-approval option was "Require approval for first-time
+contributors." The default token selection is distinct from explicit permissions
+in the [release workflow](workflows/semantic-release.yml). The unchecked SHA-pin
+setting does not change the reviewed third-party Action pins in that workflow.
+Disabled controls are recorded without attributing a cause.
+
+### Runners and Actions policies
+
+- [Runners](https://github.com/Living-Proof-Labs/collaboration-guidelines/settings/actions/runners):
+  no self-hosted runners configured. This does not imply GitHub-hosted runners
+  are unavailable.
+- [Actions Policies](https://github.com/Living-Proof-Labs/collaboration-guidelines/settings/actions/rules):
+  no policies created. This is a distinct settings page from repository rulesets.
+
 ## Evidence and inspection limits
 
 Read-only sources used for this observation:
@@ -81,10 +143,12 @@ and [ruleset listing](https://docs.github.com/en/rest/repos/rules#get-all-reposi
 
 The connector rejected `GET /repos/{owner}/{repo}/actions/permissions` as an
 unsupported fetch endpoint (HTTP 400); it did not return a settings value.
-Actions allowlists/access policies, default workflow-token permissions, runner
-settings, and detailed security/organization settings were not established by
-this inspection. A separate authorized browser/API review can fill those gaps.
-No secrets were accessed and no repository settings were changed.
+The authenticated browser observations above supply the bounded Actions,
+runner, and policy findings. Settings pages may require authenticated access
+and, like the API endpoints, display current rather than historical state.
+Broader security and organization settings are outside this bounded review,
+not an unfinished audit commitment. No secrets were accessed and no repository
+settings were changed. Speculative future UI notices are not recorded as policy.
 
 When refreshing this guide, record the date, repository, exact field/value, and
 source. Separate observed state, explicit preferences, and unknown values.
