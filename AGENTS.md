@@ -22,6 +22,21 @@ or higher-priority instructions.
 - Keep the PR current as scope changes. Report the delivered result and any work
   still blocked, with enough evidence for someone else to assess it.
 
+## Use native tools and a consistent developer interface
+
+- Prefer established CLIs such as `git`, `gh`, and `glab` when available and
+  authenticated for the intended account. Use authorized alternatives when
+  needed; CLI-first never requires new credentials or bypassing access controls.
+- Use Task schema v3 for common project commands: `task setup`, `task check`, and
+  `task test`. Delegate to native ecosystem tools rather than reimplementing them.
+- Environments install Task and bootstrap runtimes/package managers. Task installs
+  project tooling and dependencies using pinned versions and committed locks.
+  Keep setup repeatable and free of secrets or system/security-setting changes.
+- CI uses Task for project-specific work; shared Actions and reusable workflows
+  provide standard services such as releases. Start from the relevant template
+  in [the developer interface guide](docs/developer-interface.md), read at the
+  same pinned revision when consuming remotely. Record actual platform support.
+
 ## Keep shared guidance deliberate
 
 - Each consuming repository's `AGENTS.md` must identify an explicit published

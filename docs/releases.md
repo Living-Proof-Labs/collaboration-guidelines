@@ -87,10 +87,12 @@ For this repository, publication runs after verification on merged `main`.
 `RELEASES_ENABLED=false` is an operational off switch. Local checks:
 
 ```sh
-npm ci --prefix .github/actions/semantic-release --ignore-scripts
-npm test --prefix .github/actions/semantic-release
-.github/actions/semantic-release/node_modules/.bin/markdownlint '*.md' 'docs/*.md'
+task setup
+task verify
 ```
+
+Install Task and bootstrap tools as described in the
+[developer interface guide](developer-interface.md).
 
 Tests use the real upstream engine against disposable local Git repositories.
 They do not publish to GitHub. Hosted workflow checks and the first real release

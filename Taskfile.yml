@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+version: '3'
+
+tasks:
+  setup:
+    desc: Install locked project tooling (Node 24 and npm must be installed)
+    cmds:
+      - npm ci --prefix .github/actions/semantic-release --ignore-scripts
+  check:
+    desc: Check documentation
+    cmds:
+      - npm run check --prefix .github/actions/semantic-release
+  test:
+    desc: Test release policy, engine, and contracts
+    cmds:
+      - npm test --prefix .github/actions/semantic-release
+  verify:
+    desc: Run checks and tests
+    cmds:
+      - task: check
+      - task: test
