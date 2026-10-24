@@ -59,6 +59,11 @@ explaining the impact. An upstream merge or release does not update consumers.
 Propose common improvements upstream through an issue or PR; retain local needs
 in the consuming repository.
 
+## Developer interface
+
+Use [CLI-first work and Task](docs/developer-interface.md) for environment bootstrap,
+common project commands, and minimal Python and Node/TypeScript templates.
+
 ## Shared release machinery and licensing
 
 Use the [shared release workflow](docs/releases.md) after the consuming project's

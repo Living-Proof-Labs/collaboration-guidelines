@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+# Requires Node/npm, package-lock.json, and package.json check/test scripts.
+version: '3'
+
+tasks:
+  setup:
+    desc: Install locked dependencies
+    cmds:
+      - npm ci
+  check:
+    desc: Run the project's native static checks
+    cmds:
+      - npm run check
+  test:
+    desc: Run the project's native tests
+    cmds:
+      - npm test
+  verify:
+    desc: Run checks and tests
+    cmds:
+      - task: check
+      - task: test
