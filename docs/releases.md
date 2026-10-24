@@ -3,16 +3,25 @@
 # Shared releases
 
 This repository versions both the working guidance and release machinery.
-A consumer pins one full commit SHA in its workflow; that revision contains the
-workflow, bundled Action, configuration, and dependency lock. A new upstream
-release does not update consumers automatically. Evaluate and update pins by PR.
+A consumer references one explicit version tag in its workflow; that release
+contains the workflow, bundled Action, configuration, and dependency lock.
+A new upstream release does not update consumers automatically. Evaluate and update pins by PR.
+
+Published tags are never retargeted. Record the resolved SHA in adoption PRs as
+verification evidence; use the tag in the cross-repository reference. A branch
+exception must document its need and exit condition. Same-repository bootstrap
+paths remain tied to the running workflow's revision.
+
+Existing third-party Actions retain reviewed full-SHA security pins here. This
+is a deliberate exception for external supply-chain integrity, not the default
+for Living Proof Labs cross-repository dependencies.
 
 ## Call after verification
 
 Use the following job in a caller workflow triggered on pushes to `main`.
-Replace `FULL_40_CHARACTER_COMMIT_SHA` with a released commit, and `verify` with
-the caller's verification job for the same triggering commit. Do not remove the
-consumer's verification just because the release engine is shared.
+Select a published version tag (the example uses `v1.0.0`), and replace `verify`
+with the caller's verification job for the same triggering commit. Do not remove
+the consumer's verification just because the release engine is shared.
 
 ```yaml
 permissions:
@@ -24,7 +33,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
-    uses: Living-Proof-Labs/collaboration-guidelines/.github/workflows/semantic-release.yml@FULL_40_CHARACTER_COMMIT_SHA
+    uses: Living-Proof-Labs/collaboration-guidelines/.github/workflows/semantic-release.yml@v1.0.0
 ```
 
 The called job checks out the caller with full history, installs the bundled

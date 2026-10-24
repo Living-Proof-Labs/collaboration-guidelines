@@ -8,12 +8,12 @@ A small, versioned baseline for ordinary project work. Start with
 
 ## Adopt in a repository
 
-1. Choose a full commit SHA containing the guidance, or a published release tag
-   that will never be moved. Before the first release, use a full commit SHA.
-   The initial README-only commit is not a usable guidance pin.
-2. Read `AGENTS.md` at that revision and check it against the project's needs.
+1. Choose an explicit published version tag, such as `v1.0.0`. Do not adopt an
+   unreleased revision by default; wait for a release. Record the tag's resolved
+   commit SHA as verification evidence.
+2. Read `AGENTS.md` at that version and check it against the project's needs.
 3. Add the following section to the project's root `AGENTS.md`, replacing
-   `FULL_40_CHARACTER_COMMIT_SHA` with the selected SHA. Fill in local commands,
+   `VERSION_TAG` with the selected published tag. Fill in local commands,
    additions, and any explicit overrides through a PR.
 4. Confirm the agent can retrieve the repository with its existing
    authorized access. A Markdown link is a reference, not automatic loading.
@@ -22,7 +22,7 @@ A small, versioned baseline for ordinary project work. Start with
 ## Shared working guidelines
 
 Read and apply the Living Proof Labs baseline at this exact revision:
-https://github.com/Living-Proof-Labs/collaboration-guidelines/blob/FULL_40_CHARACTER_COMMIT_SHA/AGENTS.md
+https://github.com/Living-Proof-Labs/collaboration-guidelines/blob/VERSION_TAG/AGENTS.md
 
 Use authorized tools to fetch and read that file before relying on it.
 Read relevant linked procedures from the same revision.
@@ -40,21 +40,16 @@ that need the missing content until it or the necessary access is available.
 - None. If needed, name the shared rule, replacement, and project-specific reason.
 ```
 
-For a release pin, replace the SHA path segment with the exact immutable tag,
-such as `v1.2.3` (illustrative, not a claim that this release exists). Record its
-resolved commit SHA too. Never use a moving branch, `latest`, or a floating major
-tag such as `v1`. Published tags must not be moved.
+Use an explicit version tag such as `v1.2.3` (illustrative until published).
+Never retarget published tags; correct mistakes in a new release. The SHA is
+useful evidence to detect unexpected tag changes, not the reference itself.
+Branch dependencies are rare exceptions: document the justification and the
+condition for returning to a release tag. Do not default to `main`, `latest`, or
+a moving major alias such as `v1`.
 
 A checked-in copy can support offline work: record its source revision and verify
 its bytes against `AGENTS.md` at that revision when adopting or updating it.
 Pinning a URL alone does not make the content available offline.
-
-## Accepted baseline pin
-
-The first accepted baseline is available at commit
-`9e37fa938f60212c0e5e66b114bd96f14f78f25c`:
-
-[Read the pinned AGENTS.md](https://github.com/Living-Proof-Labs/collaboration-guidelines/blob/9e37fa938f60212c0e5e66b114bd96f14f78f25c/AGENTS.md)
 
 ## Update deliberately
 
@@ -67,7 +62,7 @@ in the consuming repository.
 ## Shared release machinery and licensing
 
 Use the [shared release workflow](docs/releases.md) after the consuming project's
-verification. Pin its full commit SHA and update deliberately; versions signal
+verification. Pin an explicit version tag and update deliberately; versions signal
 compatibility intent, while tests and review of updates establish suitability.
 
 The [license index](LICENSE.md) scopes Apache-2.0 tooling/examples and CC BY 4.0

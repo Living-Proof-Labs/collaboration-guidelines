@@ -29,9 +29,9 @@ adopt. Assess changes from their perspective:
 - **Patch:** compatible clarifications, corrections, documentation, or maintenance.
 
 Explain the intended impact in the PR; do not disguise a behavioral requirement
-as a wording fix. Consumers remain on their selected immutable revision until
-they update deliberately. Before releases exist, use full commit SHAs containing
-the baseline.
+as a wording fix. Consumers remain on their selected version tag until they
+update deliberately. Publish a version before normal cross-repository adoption;
+a branch exception needs a documented justification and an exit condition.
 
 ## Release from main
 
@@ -66,7 +66,7 @@ necessary migration details in final merge messages.
 ## Existing example
 
 The capability repository's
-[release implementation at a fixed commit](https://github.com/Living-Proof-Labs/robot-capability-specs/tree/4902238ff9817c5aa130964c87cfa4bab36854e7)
+[v1.0.0 release implementation](https://github.com/Living-Proof-Labs/robot-capability-specs/tree/v1.0.0)
 and [v1.0.0 release notes](https://github.com/Living-Proof-Labs/robot-capability-specs/releases/tag/v1.0.0)
 provide an existing example: official semantic-release plugins, documentation
 and maintenance patch rules, and Conventional Commit merge titles. Use this as

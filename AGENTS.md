@@ -24,9 +24,13 @@ or higher-priority instructions.
 
 ## Keep shared guidance deliberate
 
-- Each consuming repository's `AGENTS.md` must identify an immutable full commit
-  SHA or immutable release tag of this baseline, plus explicit local additions
-  and overrides. Update that pin deliberately through a PR.
+- Each consuming repository's `AGENTS.md` must identify an explicit published
+  version tag of this baseline, plus explicit local additions and overrides.
+  Use version tags for shared cross-repository guidance, templates, and workflows.
+  Update deliberately through a PR; record the resolved SHA as verification
+  evidence, not as the dependency reference. Never retarget a published tag.
+- Branch references are rare, documented exceptions: explain the need and when
+  the exception ends. Do not default to `main`, `latest`, or moving major tags.
 - A Markdown link does not load instructions. Read the pinned `AGENTS.md` through
   available authorized tools before relying on it. Read any relevant referenced
   procedure at the same revision; never silently substitute `main` or latest.

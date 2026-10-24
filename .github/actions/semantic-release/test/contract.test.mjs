@@ -38,8 +38,8 @@ test('relative documentation links and adoption pin examples resolve structurall
     }
   }
   const example = (await read('docs/releases.md')).match(/```yaml\n([\s\S]*?)\n```/)[1];
-  const replaced = YAML.parse(example.replace('FULL_40_CHARACTER_COMMIT_SHA', 'a'.repeat(40)));
-  assert.match(replaced.jobs.release.uses, /semantic-release\.yml@[a-f0-9]{40}$/);
+  const replaced = YAML.parse(example);
+  assert.match(replaced.jobs.release.uses, /semantic-release\.yml@v\d+\.\d+\.\d+$/);
   assert.equal(replaced.jobs.release.needs, 'verify');
 });
 test('adapter refuses unsupported inputs or non-main execution before publishing', async () => {
