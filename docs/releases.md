@@ -2,10 +2,11 @@
 
 # Shared releases
 
-This repository versions both the working guidance and release machinery.
-A consumer references one explicit version tag in its workflow; that release
-contains the workflow, bundled Action, configuration, and dependency lock.
-A new upstream release does not update consumers automatically. Evaluate and update pins by PR.
+This repository versions both the working guidance and release machinery. A
+consumer references one explicit version tag in its workflow; that release
+contains the workflow, bundled Action, configuration, and dependency lock. A
+new upstream release does not update consumers automatically. Evaluate and
+update pins by PR.
 
 Published tags are never retargeted. Record the resolved SHA in adoption PRs as
 verification evidence; use the tag in the cross-repository reference. A branch
@@ -19,9 +20,10 @@ for Living Proof Labs cross-repository dependencies.
 ## Call after verification
 
 Use the following job in a caller workflow triggered on pushes to `main`.
-Select a published version tag (the example uses `v1.0.0`), and replace `verify`
-with the caller's verification job for the same triggering commit. Do not remove
-the consumer's verification just because the release engine is shared.
+Select a published version tag (the example uses `v1.0.0`), and replace
+`verify` with the caller's verification job for the same triggering commit. Do
+not remove the consumer's verification just because the release engine is
+shared.
 
 ```yaml
 permissions:
