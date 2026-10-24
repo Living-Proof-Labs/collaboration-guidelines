@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Living Proof Labs semantic release
+description: Publish GitHub Releases with the pinned shared semantic-release policy.
+inputs:
+  token:
+    description: Caller GitHub token with contents write permission.
+    required: true
+  dry-run:
+    description: Calculate without publishing; still verifies repository access.
+    default: 'false'
+outputs:
+  published:
+    description: Whether this invocation published a release (string true or false).
+    value: ${{ steps.release.outputs.published }}
+  version:
+    description: Published or dry-run version; empty when there is no release.
+    value: ${{ steps.release.outputs.version }}
+  git-tag:
+    description: Published or dry-run tag; empty when there is no release.
+    value: ${{ steps.release.outputs.git-tag }}
+  release-url:
+    description: Published GitHub Release URL; empty for dry-run or no release.
+    value: ${{ steps.release.outputs.release-url }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: '24'
+    - name: Install the pinned release toolchain
+      shell: bash
+      env:
+        RELEASE_ACTION_PATH: ${{ github.action_path }}
+      run: npm ci --prefix "$RELEASE_ACTION_PATH" --omit=dev --ignore-scripts
+    - name: Run semantic-release
+      id: release
+      shell: bash
+      env:
+        RELEASE_ACTION_PATH: ${{ github.action_path }}
+        RELEASE_DRY_RUN: ${{ inputs.dry-run }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+      run: node "$RELEASE_ACTION_PATH/run.mjs"

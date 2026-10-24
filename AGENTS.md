@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+
 # Living Proof Labs working guidelines
 
 These are shared defaults for ordinary project work by people and agents.

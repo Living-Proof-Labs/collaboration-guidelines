@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Shared semantic release
+on:
+  workflow_call:
+    inputs:
+      dry-run:
+        type: boolean
+        default: false
+    outputs:
+      published:
+        description: Whether this invocation published a release.
+        value: ${{ jobs.release.outputs.published }}
+      version:
+        description: Published or dry-run version, or empty for no release.
+        value: ${{ jobs.release.outputs.version }}
+      git-tag:
+        description: Published or dry-run tag, or empty for no release.
+        value: ${{ jobs.release.outputs.git-tag }}
+      release-url:
+        description: Published release URL, or empty for dry-run or no release.
+        value: ${{ jobs.release.outputs.release-url }}
+permissions:
+  contents: read
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: shared-semantic-release
+      cancel-in-progress: false
+    outputs:
+      published: ${{ steps.release.outputs.published }}
+      version: ${{ steps.release.outputs.version }}
+      git-tag: ${{ steps.release.outputs.git-tag }}
+      release-url: ${{ steps.release.outputs.release-url }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # GitHub.com: same repository and exact revision as this called workflow.
+      - uses: $/.github/actions/semantic-release
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: ${{ inputs.dry-run }}

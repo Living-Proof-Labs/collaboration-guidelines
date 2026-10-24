@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+
 # Living Proof Labs collaboration guidelines
 
 A small, versioned baseline for ordinary project work. Start with
@@ -13,7 +15,7 @@ A small, versioned baseline for ordinary project work. Start with
 3. Add the following section to the project's root `AGENTS.md`, replacing
    `FULL_40_CHARACTER_COMMIT_SHA` with the selected SHA. Fill in local commands,
    additions, and any explicit overrides through a PR.
-4. Confirm the agent can retrieve the private repository with its existing
+4. Confirm the agent can retrieve the repository with its existing
    authorized access. A Markdown link is a reference, not automatic loading.
 
 ```markdown
@@ -47,16 +49,12 @@ A checked-in copy can support offline work: record its source revision and verif
 its bytes against `AGENTS.md` at that revision when adopting or updating it.
 Pinning a URL alone does not make the content available offline.
 
-## Baseline preview pin
+## Accepted baseline pin
 
-The initial baseline can be inspected at commit
-`0470506d209f08da6912d9b159ae0b7ea3cf6a51`:
+The first accepted baseline is available at commit
+`9e37fa938f60212c0e5e66b114bd96f14f78f25c`:
 
-[Read the pinned AGENTS.md](https://github.com/Living-Proof-Labs/collaboration-guidelines/blob/0470506d209f08da6912d9b159ae0b7ea3cf6a51/AGENTS.md)
-
-This is a preview while the initial PR is draft, not a published release or
-confirmation to adopt it. After merge, select a verified commit on `main`
-containing the accepted guidance for normal adoption.
+[Read the pinned AGENTS.md](https://github.com/Living-Proof-Labs/collaboration-guidelines/blob/9e37fa938f60212c0e5e66b114bd96f14f78f25c/AGENTS.md)
 
 ## Update deliberately
 
@@ -66,6 +64,12 @@ explaining the impact. An upstream merge or release does not update consumers.
 Propose common improvements upstream through an issue or PR; retain local needs
 in the consuming repository.
 
-This baseline ships without release automation. Release setup is a separate
-follow-up after scope confirmation. Reusable workflows can be proposed later as
-a small improvement when they reduce demonstrated duplication.
+## Shared release machinery and licensing
+
+Use the [shared release workflow](docs/releases.md) after the consuming project's
+verification. Pin its full commit SHA and update deliberately; versions signal
+compatibility intent, while tests and review of updates establish suitability.
+
+The [license index](LICENSE.md) scopes Apache-2.0 tooling/examples and CC BY 4.0
+prose. The [licensing guide](docs/licensing.md) explains the pattern for future
+repositories without changing their licenses automatically.
