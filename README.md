@@ -73,3 +73,11 @@ compatibility intent, while tests and review of updates establish suitability.
 The [license index](LICENSE.md) scopes Apache-2.0 tooling/examples and CC BY 4.0
 prose. The [licensing guide](docs/licensing.md) explains the pattern for future
 repositories without changing their licenses automatically.
+
+## Repository providers
+
+GitHub is the primary origin today; early support for other providers is a goal.
+Keep provider-specific configuration separate from the shared working agreement.
+The [GitHub settings guide](.github/SETTINGS.md) distinguishes explicit owner
+preferences, observed settings, and inspection gaps. It describes equivalent
+provider concepts without claiming untested integrations.

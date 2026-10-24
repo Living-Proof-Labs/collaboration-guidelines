@@ -11,8 +11,9 @@ or higher-priority instructions.
 
 - Act within the authorized scope without repeated permission requests. Make small,
   useful changes, verify them, and iterate from what happens in practice.
-- Use a pull request for every project change. It is the communication channel and
-  durable record: explain the problem, result, validation, and remaining limits.
+- Use a pull/merge request for every project change. It is the communication
+  channel and durable record: explain the problem, result, validation, and
+  remaining limits.
 - Human review is by exception, not a routine blocking gate. Seek it when a real
   ambiguity, material risk, or explicit requirement needs human judgment. Honor
   repository requirements and any specific hold on merging or release.
@@ -65,9 +66,17 @@ or higher-priority instructions.
   need, explaining the tradeoff in the PR.
 - Release from `main` after merge and verification. Documentation and maintenance
   changes are release-worthy; upstream changes may be batched.
-- Put generated release notes in GitHub Releases. Do not commit generated
-  changelogs or version-bump commits.
+- Put generated release notes in the hosting provider's release records.
+  Do not commit generated changelogs or version-bump commits.
 
 Contribution and release details for this repository are in
 [CONTRIBUTING.md](CONTRIBUTING.md); when consuming them remotely, read that file
 at the same pinned revision.
+
+## Keep provider integration explicit
+
+Keep general collaboration guidance and project commands provider-neutral.
+GitHub is the current primary origin; early support for other providers is a
+shared goal, not a claim of implemented support. Keep provider-specific settings
+and service instructions in the corresponding provider directory. For GitHub,
+read [.github/SETTINGS.md](.github/SETTINGS.md) at the same pinned version.
