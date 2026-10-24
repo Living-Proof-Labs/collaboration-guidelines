@@ -48,5 +48,5 @@ or higher-priority instructions.
   changelogs or version-bump commits.
 
 Contribution and release details for this repository are in
-[CONTRIBUTING.md](CONTRIBUTING.md); when consuming them remotely, read that file at
-the same pinned revision.
+[CONTRIBUTING.md](CONTRIBUTING.md); when consuming them remotely, read that file
+at the same pinned revision.
