@@ -76,7 +76,9 @@ repositories without changing their licenses automatically.
 
 ## Repository providers
 
-GitHub is the primary origin today; early support for other providers is a goal.
+See [Fork em all!](docs/collaboration.md) for origins, mirrors, intentional forks,
+contribution paths, tag identity, and the dated provider verification status.
+GitHub is the canonical product origin; provider CI support is verified separately.
 Keep provider-specific configuration separate from the shared working agreement.
 The [GitHub settings guide](.github/SETTINGS.md) distinguishes explicit owner
 preferences, observed settings, and inspection gaps. It describes equivalent
