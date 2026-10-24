@@ -1,0 +1,23 @@
+{
+  "name": "living-proof-labs-release-tooling",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.10.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "semantic-release": "25.0.9",
+    "conventional-changelog-conventionalcommits": "8.0.0",
+    "@semantic-release/commit-analyzer": "13.0.1",
+    "@semantic-release/release-notes-generator": "14.1.1",
+    "@semantic-release/github": "12.0.10"
+  },
+  "devDependencies": {
+    "markdownlint-cli": "0.45.0",
+    "yaml": "2.8.1"
+  },
+  "license": "Apache-2.0"
+}

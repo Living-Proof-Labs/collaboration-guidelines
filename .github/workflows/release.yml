@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Guidelines release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
+  release:
+    needs: verify
+    # Publication is authorized; false is an operational off switch.
+    if: github.ref == 'refs/heads/main' && vars.RELEASES_ENABLED != 'false'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/semantic-release.yml

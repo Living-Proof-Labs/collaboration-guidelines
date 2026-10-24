@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+
 # Contributing and releases
 
 ## Small changes, visible decisions
@@ -9,8 +11,7 @@ they demonstrate a common need.
 
 Every change goes through a PR. Human review is by exception; it is not an
 automatic gate for routine authorized work. Test before merge, keep the PR's
-description accurate, and honor any explicit scope or merge hold. For this first
-baseline, keep the PR draft until scope is confirmed.
+description accurate, and honor any explicit scope or merge hold.
 
 For documentation changes, check relative links, Markdown structure, and adoption
 examples. Verify that pins resolve to content containing the guidance and that
@@ -28,9 +29,9 @@ adopt. Assess changes from their perspective:
 - **Patch:** compatible clarifications, corrections, documentation, or maintenance.
 
 Explain the intended impact in the PR; do not disguise a behavioral requirement
-as a wording fix. Consumers remain on their selected immutable revision until
-they update deliberately. Before releases exist, use full commit SHAs containing
-the baseline.
+as a wording fix. Consumers remain on their selected version tag until they
+update deliberately. Publish a version before normal cross-repository adoption;
+a branch exception needs a documented justification and an exit condition.
 
 ## Release from main
 
@@ -49,15 +50,23 @@ Do not commit generated changelogs or version bumps. Preserve published release
 tags; correct mistakes with a new release. A deviation from semantic-release
 needs a concrete need and a documented tradeoff.
 
-This PR defines policy only. Release automation and the first release remain
-pending separate scope confirmation. Until then, a verified full commit pin is
-sufficient. Extract reusable workflows later only when demonstrated duplication
-justifies a small shared implementation.
+The [shared release implementation](docs/releases.md) implements this policy.
+Release after verification on merged main; preserve existing consumer tags when
+adopting it. The shared workflow/configuration is part of this repository's
+versioned contract alongside the guidance.
+
+## Keep decision history useful
+
+Use PR discussions and GitHub Releases as the historical record. Maintain a short
+rationale with source links only for constraints or tradeoffs future contributors
+need to act on; update it when those facts change. A separate ADR is not required
+for each change. Release notes summarize commits, so retain PR references and
+necessary migration details in final merge messages.
 
 ## Existing example
 
 The capability repository's
-[release implementation at a fixed commit](https://github.com/Living-Proof-Labs/robot-capability-specs/tree/4902238ff9817c5aa130964c87cfa4bab36854e7)
+[v1.0.0 release implementation](https://github.com/Living-Proof-Labs/robot-capability-specs/tree/v1.0.0)
 and [v1.0.0 release notes](https://github.com/Living-Proof-Labs/robot-capability-specs/releases/tag/v1.0.0)
 provide an existing example: official semantic-release plugins, documentation
 and maintenance patch rules, and Conventional Commit merge titles. Use this as
