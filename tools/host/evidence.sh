@@ -4,6 +4,7 @@ set -euo pipefail
 mkdir -p artifacts
 {
   printf 'guidelines_commit='; git rev-parse HEAD
+  if [[ -z $(git status --porcelain) ]]; then echo 'source_worktree=clean'; else echo 'source_worktree=modified'; fi
   printf 'recorded_at='; date -u +%FT%TZ
   if [[ ${GITHUB_ACTIONS:-false} == true ]]; then
     printf 'execution=GitHub Actions\nrun=%s/%s/actions/runs/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
@@ -13,6 +14,6 @@ mkdir -p artifacts
   docker info --format 'server={{.ServerVersion}} os={{.OSType}} architecture={{.Architecture}}' || echo 'Docker server unavailable'
   for image in living-proof-host:local collaboration-tooling:local living-proof-reporter-validation:local; do
     printf 'image=%s\n' "$image"
-    docker image inspect "$image" --format 'id={{.Id}} platform={{.Os}}/{{.Architecture}} digests={{json .RepoDigests}}' || echo 'Image unavailable'
+    docker image inspect "$image" --format 'id={{.Id}} platform={{.Os}}/{{.Architecture}} digests={{json .RepoDigests}} source={{index .Config.Labels "org.opencontainers.image.revision"}} state={{index .Config.Labels "org.livingproof.source-state"}}' || echo 'Image unavailable'
   done
 } > artifacts/execution.txt 2>&1

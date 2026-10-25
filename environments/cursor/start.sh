@@ -3,6 +3,10 @@
 set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 if ! docker info >/dev/null 2>&1; then
+  if [[ -n ${DOCKER_HOST:-} || $(docker context show) != default ]]; then
+    echo 'Configured Docker endpoint is unavailable; preserve it and report the provider connection failure.' >&2
+    exit 1
+  fi
   if [[ $(id -u) != 0 ]]; then
     echo 'Docker needs provider-authorized startup; no automatic sudo or privilege change.' >&2
     exit 1

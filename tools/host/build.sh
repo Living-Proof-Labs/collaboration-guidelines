@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
-args=()
+revision=$(git rev-parse HEAD)
+state=clean
+[[ -z $(git status --porcelain) ]] || state=modified
+args=(--label "org.opencontainers.image.revision=$revision" --label "org.livingproof.source-state=$state")
 # Optional existing provider trust bundle, never copied into an image layer.
 if [[ -n ${HOST_BUILD_CA_FILE:-} ]]; then args+=(--secret "id=ca,src=$HOST_BUILD_CA_FILE"); fi
 case ${1:-} in

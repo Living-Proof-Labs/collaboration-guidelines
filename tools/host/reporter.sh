@@ -20,7 +20,7 @@ test "$(git -C "$work/report" rev-parse HEAD)" = "$expected"
 printf '%s %s %s\n' "$repo" "$ref" "$expected" > "$output/reporter-source.txt"
 # Same documented development target; copy the isolated checkout so this works
 # with an authorized remote/socket daemon without host-path mount assumptions.
-args=()
+args=(--label "org.opencontainers.image.revision=$expected")
 if [[ -n ${HOST_BUILD_CA_FILE:-} ]]; then
   args+=(--secret "id=ca,src=$HOST_BUILD_CA_FILE")
 fi

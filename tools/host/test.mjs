@@ -29,5 +29,3 @@ test('smoke actually requests container execution without network', () => fixtur
   const log = join(dir, 'calls'); add('docker', `printf '%s\\n' "$*" >> '${log}'`);
   assert.equal(run('smoke').status, 0); assert.match(readFileSync(log,'utf8'), /run --rm --network none ubuntu:24\.04@sha256:/);
 }));
-// Temporary draft-only fixture: remove after the failed case and red gate are verified remotely.
-test('temporary report publication failure fixture', () => assert.fail('Intentional reporting validation failure'));

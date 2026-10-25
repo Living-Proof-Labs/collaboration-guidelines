@@ -29,6 +29,7 @@ jobs:
       - if: ${{ !cancelled() }}
         run: task host:reporter
       - name: Individual test summary
+        id: summary
         if: ${{ !cancelled() }}
         uses: dorny/test-reporter@8861569aa5348397e7a26b6dda744c17c9265478 # v2.1.1
         with:
@@ -65,6 +66,9 @@ jobs:
       - name: Evidence links and completeness
         if: ${{ !cancelled() }}
         env:
+          REPORTED_PASSED: ${{ steps.summary.outputs.passed }}
+          REPORTED_FAILED: ${{ steps.summary.outputs.failed }}
+          REPORTED_SKIPPED: ${{ steps.summary.outputs.skipped }}
           ARTIFACT_URL: ${{ steps.reports.outputs.artifact-url }}
           FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
@@ -74,3 +78,9 @@ jobs:
           test -s artifacts/guidelines.xml
           test -s artifacts/host.xml
           test -s artifacts/reporter.xml
+          for count in "$REPORTED_PASSED" "$REPORTED_FAILED" "$REPORTED_SKIPPED"; do [[ $count =~ ^[0-9]+$ ]]; done
+          raw=$(grep -ho '<testcase[[:space:]>]' artifacts/*.xml | wc -l)
+          reported=$((REPORTED_PASSED + REPORTED_FAILED + REPORTED_SKIPPED))
+          echo "Individual cases: $reported ingested / $raw emitted" >> "$GITHUB_STEP_SUMMARY"
+          test "$raw" -gt 0
+          test "$raw" -eq "$reported"

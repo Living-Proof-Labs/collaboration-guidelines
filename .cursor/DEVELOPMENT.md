@@ -39,7 +39,10 @@ Image build installs tools. Install checks their presence without starting servi
 running processes do not survive the build snapshot. Start checks the daemon,
 tries the existing service or default `dockerd` only as an already-authorized root
 user when necessary, then executes the container smoke test. It does not invoke
-sudo or add daemon flags. A non-root or restricted runtime without a usable daemon
+sudo or add daemon flags. An unavailable explicitly configured Docker endpoint
+is reported without starting a replacement daemon. Default-daemon startup logs
+are at `/tmp/living-proof-docker-start.log`. A non-root or restricted runtime
+without a usable daemon
 is a real blocker requiring provider review, not permission to alter security.
 
 No Cursor saved environment or account settings are modified by these files.
