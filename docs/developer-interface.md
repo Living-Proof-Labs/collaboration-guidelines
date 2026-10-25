@@ -180,3 +180,41 @@ do not establish image builds or hosted workspace support. Validate actual
 images, mounts, dependency persistence, direct tasks, and hosted execution in
 each adopting repository before claiming support. No GitLab workspace adoption
 is included.
+
+## Definition of done
+
+For the development and release paths above, record evidence for each applicable
+item before calling the work complete:
+
+- Docker setup and the development container reuse the intended tooling; direct
+  Task commands work inside the prepared environment without a host-wrapper loop.
+- Continuous integration runs those tasks and appropriate images. An application
+  release image is tested separately; documentation-only work verifies its tools.
+- Tests produce individual machine-readable results, such as JUnit XML. Publish
+  them to the provider's check/test interface where supported, with identifiable
+  passed, failed, and skipped cases and failure details. Uploading a report file
+  alone is storage, not ingestion into that interface; verify the rendered cases.
+- Link the run and its test/check view from the change's verification summary.
+  Include counts and report/artifact links in the run summary. Retain the raw
+  machine-readable reports with a documented retention period sufficient for
+  review and diagnosis, within existing provider limits. Never include secrets.
+- Generate reports and attempt summary publication, ingestion, and artifact upload
+  even when tests fail. Keep the original failing test exit status and release
+  gate: publisher success must never turn failed tests into passing verification.
+  Missing, malformed, or incomplete reports and publishing failures are explicit
+  completeness failures, not zero-test successes. Abrupt runner termination may
+  prevent uploads; report that limit and retain available logs.
+- Verify reporting with a passing run and a deliberately failing test in a safe
+  test fixture. Confirm individual failures remain visible and the overall check
+  still fails. Record unsupported provider features or restricted-fork publishing
+  as explicit gaps, with the available summary and artifact evidence.
+
+See [GitHub reporting](../.github/DEVELOPMENT.md#test-result-publication) and
+[GitLab reporting](../.gitlab/DEVELOPMENT.md#test-result-publication) for ingestion
+and permissions. Historical trend aggregation is a separate capability requiring
+stable test identities and retained history; do not infer it from a successful
+single-run upload or claim it without verifying the chosen service.
+
+This checklist defines adoption requirements; this documentation change does not
+install report publishers or demonstrate ingestion in this repository or its
+consumers. Existing console test output alone does not satisfy the new requirement.

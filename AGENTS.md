@@ -19,7 +19,9 @@ or higher-priority instructions.
   repository requirements and any specific hold on merging or release.
 - Test and verify before merge using checks appropriate to the change. Report
   failures, skipped checks, and uncertainty truthfully; never call unrun checks
-  passing. Resolve relevant failures or document the unresolved blocker.
+  passing. Resolve relevant failures or document the unresolved blocker. Include
+  [published test-result evidence](docs/developer-interface.md#definition-of-done)
+  in verification completeness.
 - Keep the pull request current as scope changes. Report the delivered result
   and any work still blocked, with enough evidence for someone else to assess it.
 
