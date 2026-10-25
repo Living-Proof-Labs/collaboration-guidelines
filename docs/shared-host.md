@@ -32,6 +32,7 @@ task host:test
 task container:build
 task container:test
 task host:reporter
+task host:evidence
 ```
 
 `host:check` checks tools, contacts the daemon, and executes a container.
@@ -53,6 +54,8 @@ checkout is disposable; this validation does not adopt changes in the reporter.
 Its own issue tracks adoption separately.
 
 Reports and package inventories are written under ignored `artifacts/`.
+`host:evidence` records the source commit, image identifiers, Docker server
+version, and GitHub run when applicable, without dumping configuration or secrets.
 [GitHub verification](../.github/workflows/host.yml) publishes individual cases,
 summary, and raw reports for 14 days, including after test failure. Restricted
 forks retain summaries and artifacts but cannot publish write-permission Checks.
@@ -92,5 +95,10 @@ been verified. Cursor's start hook can try its normal Docker service or default
 daemon, but a provider may restrict the required runtime capabilities. Stop on
 that concrete failure and retain the diagnostic; do not add privileged mode,
 change socket permissions, firewall rules, storage drivers, or account settings
-to force success. Cursor environment access and fresh-agent proof remain separate
+to force success. A working host or daemon does not prove containers can reach
+package registries: build or dependency-download failure is a connectivity blocker
+to diagnose and report. Any needed host firewall or network changes require
+separate explicit approval; a test passing after those changes does not prove the
+unchanged saved environment works. Cursor environment access and fresh-agent proof
+remain separate
 work, not prerequisites for reviewing the portable recipe.

@@ -50,6 +50,9 @@ jobs:
           list-tests: all
           fail-on-error: 'true'
           fail-on-empty: 'true'
+      - name: Record execution identities
+        if: ${{ !cancelled() }}
+        run: task host:evidence
       - name: Retain reports and diagnostics
         id: reports
         if: ${{ !cancelled() }}

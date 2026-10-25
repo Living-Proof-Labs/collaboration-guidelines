@@ -43,3 +43,7 @@ tasks:
     desc: Validate the pinned reporter's documented development container
     cmds:
       - bash tools/host/reporter.sh
+  host:evidence:
+    desc: Retain source, execution, and image identities without configuration or secrets
+    cmds:
+      - bash tools/host/evidence.sh

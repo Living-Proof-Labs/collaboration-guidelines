@@ -6,6 +6,7 @@ repo=https://github.com/Living-Proof-Labs/livingproof-capability-report.git
 ref=v1.4.0
 expected=bbdc54544b900bfed9ef7e799e94f45dbe6d8df3
 mkdir -p artifacts
+rm -f artifacts/reporter.xml
 output=$(cd artifacts && pwd)
 work=$(mktemp -d)
 cid=

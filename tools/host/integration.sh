@@ -7,6 +7,7 @@ socket=${DOCKER_HOST:-unix:///var/run/docker.sock}
 socket=${socket#unix://}
 [[ -S $socket ]] || { echo 'Existing Docker socket unavailable.' >&2; exit 2; }
 failed=0
+started=$SECONDS
 report=artifacts/host.xml
 printf '<testsuites><testsuite name="shared-host">\n' > "$report"
 run_case() {
@@ -18,7 +19,7 @@ run_case() {
   else
     echo "FAIL $name (see retained log)"
     printf '<failure message="Command failed; see retained host log"/>' >> "$report"
-    failed=1
+    failed=$((failed + 1))
   fi
   printf '</testcase>\n' >> "$report"
 }
@@ -51,4 +52,5 @@ run_case compose-and-buildx docker run --rm --mount "type=bind,src=$socket,dst=/
   docker compose -p "host-probe-$$" run --rm probe
 '
 printf '</testsuite></testsuites>\n' >> "$report"
+sed -i "s/name=\"shared-host\"/name=\"shared-host\" time=\"$((SECONDS - started))\"/" "$report"
 exit "$failed"
