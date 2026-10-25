@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Requires Node/npm, package-lock.json, and package.json check/test scripts.
+# Run directly in the prepared development/tooling environment, without Docker.
+# For a Compose host wrapper, copy this file as Taskfile.runtime.yml.
 version: '3'
 
 tasks:
