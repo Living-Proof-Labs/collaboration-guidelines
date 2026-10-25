@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Host-only example. Requires Docker, Compose, and a project tooling service.
+# The service supplies Task, mounts the project as its working directory, and
+# preserves dependencies between runs. Inner tasks must not call this wrapper.
+version: '3'
+
+tasks:
+  setup:
+    desc: Install locked dependencies in the tooling environment
+    cmds:
+      - docker compose run --build --rm tooling task -t Taskfile.runtime.yml setup
+  check:
+    desc: Run static checks in the tooling environment
+    cmds:
+      - docker compose run --build --rm tooling task -t Taskfile.runtime.yml check
+  test:
+    desc: Run tests in the tooling environment
+    cmds:
+      - docker compose run --build --rm tooling task -t Taskfile.runtime.yml test
+  verify:
+    desc: Run verification in the tooling environment
+    cmds:
+      - docker compose run --build --rm tooling task -t Taskfile.runtime.yml verify

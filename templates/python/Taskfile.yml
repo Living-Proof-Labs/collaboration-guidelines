@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Requires uv, project Python, pyproject.toml, and uv.lock with Ruff/pytest in dev.
+# Run directly in the prepared development/tooling environment, without Docker.
+# For a Compose host wrapper, copy this file as Taskfile.runtime.yml.
 version: '3'
 
 tasks:

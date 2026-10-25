@@ -42,6 +42,10 @@ or higher-priority instructions.
   bypassing access controls.
 - Use Task schema v3 for common project commands: `task setup`, `task check`, and
   `task test`. Delegate to native ecosystem tools rather than reimplementing them.
+- Maintain repository Docker setup for reproducible development and applicable
+  runtime environments. Development containers reuse that setup; Task exposes
+  contributor commands, and continuous integration reuses the tasks and images
+  where appropriate. Follow the [developer interface guide](docs/developer-interface.md).
 - Environments install Task and bootstrap runtimes/package managers. Task installs
   project tooling and dependencies using pinned versions and committed locks.
   Keep setup repeatable and free of secrets or system/security-setting changes.
