@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { analyzeCommits } from '@semantic-release/commit-analyzer';
 import { generateNotes } from '@semantic-release/release-notes-generator';
 import config from '../release.config.mjs';
-import { outputs } from '../run.mjs';
+import { outputs, configuration } from '../run.mjs';
 const analyzer = config.plugins[0][1];
 const notes = config.plugins[1][1];
 const logger = { log() {}, error() {}, success() {} };
@@ -49,9 +49,20 @@ test('outputs distinguish published, dry-run and no-release outcomes', () => {
   const result = { nextRelease: { version: '1.2.3', gitTag: 'v1.2.3' },
     releases: [{ url: 'https://github.com/example/consumer/releases/tag/v1.2.3' }] };
   assert.deepEqual(outputs(false, false),
-    { published: 'false', version: '', 'git-tag': '', 'release-url': '' });
+    { published: 'false', 'draft-created': 'false', version: '', 'git-tag': '', 'release-url': '' });
   assert.equal(outputs(result, false).published, 'true');
   assert.equal(outputs(result, false)['release-url'], result.releases[0].url);
   assert.deepEqual(outputs(result, true),
-    { published: 'false', version: '1.2.3', 'git-tag': 'v1.2.3', 'release-url': '' });
+    { published: 'false', 'draft-created': 'false', version: '1.2.3', 'git-tag': 'v1.2.3', 'release-url': '' });
+});
+
+test('draft release delegates to the official plugin without claiming public publication', () => {
+  const result = { nextRelease: { version: '2.2.0', gitTag: 'v2.2.0' }, releases: [] };
+  assert.equal(configuration(true).plugins[2][1].draftRelease, true);
+  assert.equal(configuration(false).plugins[2][1].draftRelease, false);
+  assert.equal(config.plugins[2][1].draftRelease, undefined);
+  assert.equal(outputs(result, false, true).published, 'false');
+  assert.equal(outputs(result, false, true)['draft-created'], 'true');
+  assert.equal(outputs(result, true, true)['draft-created'], 'false');
+  assert.equal(outputs(false, false, true)['draft-created'], 'false');
 });
