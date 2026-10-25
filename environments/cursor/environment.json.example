@@ -1,0 +1,8 @@
+{
+  "build": {
+    "dockerfile": "../environments/host/Dockerfile",
+    "context": ".."
+  },
+  "install": "bash environments/cursor/install.sh",
+  "start": "bash environments/cursor/start.sh"
+}

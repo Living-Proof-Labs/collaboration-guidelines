@@ -48,7 +48,8 @@ or higher-priority instructions.
   runtime environments. Development containers reuse that setup; Task exposes
   contributor commands, and continuous integration reuses the tasks and images
   where appropriate. Follow the [developer interface guide](docs/developer-interface.md).
-- Environments install Task and bootstrap runtimes/package managers. Task installs
+- Shared hosts install Docker and Task; repository containers supply language
+  runtimes and package managers. Task installs
   project tooling and dependencies using pinned versions and committed locks.
   Keep setup repeatable and free of secrets or system/security-setting changes.
 - Continuous integration uses Task for project-specific work; shared Actions and

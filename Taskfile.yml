@@ -19,3 +19,27 @@ tasks:
     cmds:
       - task: check
       - task: test
+  host:build:
+    desc: Build the common host in a fresh Ubuntu image
+    cmds:
+      - bash tools/host/build.sh host
+  host:check:
+    desc: Verify host tools, daemon, and actual container execution
+    cmds:
+      - bash environments/host/check.sh smoke
+  host:test:
+    desc: Test an isolated common host against the existing authorized Docker daemon
+    cmds:
+      - bash tools/host/integration.sh
+  container:build:
+    desc: Build this repository's tooling container
+    cmds:
+      - bash tools/host/build.sh tooling
+  container:test:
+    desc: Run checks and individual tests inside the tooling container
+    cmds:
+      - bash tools/host/container-test.sh
+  host:reporter:
+    desc: Validate the pinned reporter's documented development container
+    cmds:
+      - bash tools/host/reporter.sh
