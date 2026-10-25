@@ -8,7 +8,13 @@ inputs:
   dry-run:
     description: Calculate without publishing; still verifies repository access.
     default: 'false'
+  draft-release:
+    description: Create a draft for the caller to attach verified assets before publication.
+    default: 'false'
 outputs:
+  draft-created:
+    description: Whether this invocation created a draft release.
+    value: ${{ steps.release.outputs.draft-created }}
   published:
     description: Whether this invocation published a release (string true or false).
     value: ${{ steps.release.outputs.published }}
@@ -38,5 +44,6 @@ runs:
       env:
         RELEASE_ACTION_PATH: ${{ github.action_path }}
         RELEASE_DRY_RUN: ${{ inputs.dry-run }}
+        RELEASE_DRAFT: ${{ inputs.draft-release }}
         GITHUB_TOKEN: ${{ inputs.token }}
       run: node "$RELEASE_ACTION_PATH/run.mjs"

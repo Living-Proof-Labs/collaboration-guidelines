@@ -6,7 +6,13 @@ on:
       dry-run:
         type: boolean
         default: false
+      draft-release:
+        type: boolean
+        default: false
     outputs:
+      draft-created:
+        description: Whether a draft release was created for asset assembly.
+        value: ${{ jobs.release.outputs.draft-created }}
       published:
         description: Whether this invocation published a release.
         value: ${{ jobs.release.outputs.published }}
@@ -31,6 +37,7 @@ jobs:
       group: shared-semantic-release
       cancel-in-progress: false
     outputs:
+      draft-created: ${{ steps.release.outputs.draft-created }}
       published: ${{ steps.release.outputs.published }}
       version: ${{ steps.release.outputs.version }}
       git-tag: ${{ steps.release.outputs.git-tag }}
@@ -46,3 +53,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: ${{ inputs.dry-run }}
+          draft-release: ${{ inputs.draft-release }}

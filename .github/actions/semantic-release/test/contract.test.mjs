@@ -19,7 +19,7 @@ test('workflow and action preserve one source pin and output wiring', async () =
   assert.equal(job.permissions.contents, 'write');
   assert.equal(job.concurrency['cancel-in-progress'], false);
   assert.equal(action.runs.using, 'composite');
-  for (const key of ['published', 'version', 'git-tag', 'release-url']) {
+  for (const key of ['published', 'draft-created', 'version', 'git-tag', 'release-url']) {
     assert.equal(workflow.on.workflow_call.outputs[key].value, `\${{ jobs.release.outputs.${key} }}`);
     assert.equal(job.outputs[key], `\${{ steps.release.outputs.${key} }}`);
     assert.equal(action.outputs[key].value, `\${{ steps.release.outputs.${key} }}`);
@@ -56,4 +56,13 @@ test('adapter refuses unsupported inputs or non-main execution before publishing
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
     }
   }
+});
+
+test('draft release is opt-in and reaches the official action input', async () => {
+  const workflow = YAML.parse(await read('.github/workflows/semantic-release.yml'));
+  const action = YAML.parse(await read('.github/actions/semantic-release/action.yml'));
+  assert.equal(workflow.on.workflow_call.inputs['draft-release'].default, false);
+  assert.equal(workflow.jobs.release.steps[1].with['draft-release'], '${{ inputs.draft-release }}');
+  assert.equal(action.inputs['draft-release'].default, 'false');
+  assert.equal(action.runs.steps[2].env.RELEASE_DRAFT, '${{ inputs.draft-release }}');
 });

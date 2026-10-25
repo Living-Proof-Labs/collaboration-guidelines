@@ -117,3 +117,22 @@ plugins, following the
 [capability repository precedent](https://github.com/Living-Proof-Labs/robot-capability-specs/pull/3).
 The small JavaScript adapter only checks the invocation and exposes engine
 outputs; it does not calculate versions, generate notes, or publish itself.
+
+## Assemble assets before immutable publication
+
+Callers with package assets can opt into `draft-release: true`. The official
+GitHub semantic-release plugin creates a draft with the calculated version,
+tag and notes. `draft-created` is `true`; `published` is `false` until a public
+release actually exists. Existing callers retain immediate publication by default.
+Dry runs never create drafts and return both flags as `false`.
+
+After verification, a caller may use `version` and `git-tag` to build and test
+packages, upload all files and checksums to that draft, then publish it with
+`gh release edit TAG --draft=false`. Use the existing repository token and keep
+the final publication dependent on all package and consumption checks. A failed
+build leaves a draft; do not claim it is publicly released. Recovery must reuse
+and inspect the existing draft, never retarget its tag or create duplicate assets.
+
+GitHub locks assets when an immutable release becomes public. Uploading assets
+after publication fails; do not disable immutability to work around that failure.
+See [GitHub immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases).
