@@ -8,16 +8,16 @@ CLI (`glab`), curl, jq, certificates, and SSH. Python, uv, ROS, Node, and projec
 dependencies belong in repository development containers. The host does not
 need a separate language environment for each repository.
 
-The [installer](../environments/host/install.sh) targets Ubuntu 24.04 on amd64
+The [installer](../environments/host/install.sh) targets Ubuntu 24.04 and Debian 13 on amd64
 in an already-authorized root provisioning phase. It never invokes sudo or
 starts services. The [image](../environments/host/Dockerfile) uses that same
 installer. Existing tools and authentication configuration are preserved;
 incompatible or incomplete existing Docker installations need explicit review.
 Other prepared hosts can run the checks without running the installer.
 
-The base image digest, top-level Ubuntu package versions, and Task archive
-checksum are pinned. Ubuntu supplies Docker packages; this does not add Docker's
-separate package repository. Transitive packages still resolve from Ubuntu's
+The base image digests, top-level distribution package versions, and Task archive
+checksum are pinned. Each distribution supplies Docker packages; this does not add Docker's
+separate package repository. Transitive packages still resolve from distribution
 repositories, so this is not a byte-identical package snapshot. Retain the tested
 package inventory and update pins deliberately when a package is unavailable.
 
@@ -34,6 +34,11 @@ task container:test
 task host:reporter
 task host:evidence
 ```
+
+The default host image remains Ubuntu 24.04. Set `HOST_DISTRO=debian13` for
+`task host:build` to test the same installer on the pinned Debian 13 base.
+The installer detects an existing host's distribution rather than using this
+image-build selection. Continuous integration builds and tests both variants.
 
 `host:check` checks tools, contacts the daemon, and executes a container.
 `host:test` provisions a disposable Ubuntu image, verifies configuration survives
@@ -61,10 +66,12 @@ summary, and raw reports for 14 days, including after test failure. Restricted
 forks retain summaries and artifacts but cannot publish write-permission Checks.
 No historical trend service is implied.
 
-If a provider already supplies a required certificate trust bundle, set
-`HOST_BUILD_CA_FILE` to that file for these build/test commands. Builds receive it
+If a provider already supplies `SSL_CERT_FILE`, build/test commands reuse that
+existing certificate trust bundle. `HOST_BUILD_CA_FILE` takes precedence when an
+explicit existing provider bundle is required. Builds receive it
 as a BuildKit secret; the reporter runtime receives a read-only mount. Do not
-turn off certificate verification or copy credentials into an image. A read-only
+turn off certificate verification, install new trust, or copy credentials into an image.
+Unreadable configured bundles fail explicitly. A read-only
 Buildx configuration directory can be avoided with `BUILDX_CONFIG` pointing to a
 new writable scratch directory, without changing Docker authentication files.
 
@@ -76,10 +83,10 @@ saved-environment service. Follow [Codex setup](../.codex/DEVELOPMENT.md) or
 [Cursor setup](../.cursor/DEVELOPMENT.md), preserving existing configuration.
 No script creates a saved environment, changes access, or embeds credentials.
 
-Use a published guidelines version tag for adoption. During this draft only,
-`feat/shared-docker-host` is an explicit temporary development reference for
-review and provider trials. Replace it with the first approved release containing
-this recipe before normal adoption; `v4.0.0` does not contain it. Record the
+Use a published guidelines version tag for adoption. During the Debian preview,
+`fix/debian-shared-host` is an explicit temporary development reference for
+review and provider trials. Replace it with the approved release containing
+this change before normal adoption; `v4.1.0` supports Ubuntu only. Record the
 resolved commit for each trial and never move a published tag.
 
 ## Verified scope

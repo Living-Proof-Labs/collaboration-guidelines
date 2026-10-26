@@ -2,10 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+# Provisioned commands must be available without relying on login-shell profiles.
+export PATH="$PATH:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"
+source "$root/trust.sh"
+if [[ -n $HOST_BUILD_CA_FILE ]]; then export CURL_CA_BUNDLE=$HOST_BUILD_CA_FILE; fi
 # Only provisioning/build phases run this installer. It never starts a daemon.
 source /etc/os-release
-if [[ $ID != ubuntu || $VERSION_ID != 24.04 || $(uname -m) != x86_64 ]]; then
-  echo 'Host installation supports Ubuntu 24.04 amd64 only; use check.sh on other prepared hosts.' >&2
+case "$ID:$VERSION_ID" in
+  ubuntu:24.04) package_file=packages.txt ;;
+  debian:13) package_file=packages-debian13.txt ;;
+  *) echo 'Host installation supports Ubuntu 24.04 or Debian 13; use check.sh on other prepared hosts.' >&2; exit 2 ;;
+esac
+if [[ $(uname -m) != x86_64 ]]; then
+  echo 'Host installation supports amd64 only.' >&2
   exit 2
 fi
 if [[ $(id -u) != 0 ]]; then
@@ -17,15 +26,15 @@ while IFS= read -r spec; do
   [[ -z $spec || $spec == \#* ]] && continue
   name=${spec%%=*}
   case $name in
-    docker.io) command -v docker >/dev/null && continue ;;
-    docker-compose-v2) docker compose version >/dev/null 2>&1 && continue ;;
+    docker.io|docker-cli) command -v docker >/dev/null && continue ;;
+    docker-compose-v2|docker-compose) docker compose version >/dev/null 2>&1 && continue ;;
     docker-buildx) docker buildx version >/dev/null 2>&1 && continue ;;
     openssh-client) command -v ssh >/dev/null && continue ;;
     ca-certificates) [[ -s /etc/ssl/certs/ca-certificates.crt ]] && continue ;;
     *) command -v "$name" >/dev/null && continue ;;
   esac
   packages+=("$spec")
-done < "$root/packages.txt"
+done < "$root/$package_file"
 # Do not mix distribution packages with an existing alternative Docker install.
 if command -v docker >/dev/null && { ! docker compose version >/dev/null 2>&1 || ! docker buildx version >/dev/null 2>&1; }; then
   echo 'Existing Docker lacks Compose or Buildx; provision matching plugins separately. Existing installation left unchanged.' >&2

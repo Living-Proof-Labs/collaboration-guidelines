@@ -39,6 +39,13 @@ run_case repeat-install-preserves-config docker run --rm living-proof-host:local
   after=$(sha256sum /root/.config/gh/hosts.yml /root/.config/glab-cli/config.yml /root/.docker/config.json)
   test "$before" = "$after"
 '
+run_case setup-restores-task-path docker run --rm living-proof-host:local bash -ec '
+  # Reproduce a saved setup with /usr/local/bin absent from PATH.
+  PATH=/usr/bin:/bin bash /opt/living-proof-host/install.sh
+  test -x /usr/local/bin/task
+  /usr/local/bin/task --version
+  command -v glab
+'
 # Explicitly reuses the existing authorized daemon. It is NOT a new nested daemon.
 run_case daemon-and-container docker run --rm --mount "type=bind,src=$socket,dst=/var/run/docker.sock" living-proof-host:local bash /opt/living-proof-host/check.sh smoke
 run_case compose-and-buildx docker run --rm --mount "type=bind,src=$socket,dst=/var/run/docker.sock" living-proof-host:local bash -ec '
