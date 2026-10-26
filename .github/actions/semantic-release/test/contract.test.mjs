@@ -31,6 +31,7 @@ test('workflow and action preserve one source pin and output wiring', async () =
 });
 test('relative documentation links and adoption pin examples resolve structurally', async () => {
   for (const path of ['README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'LICENSE.md',
+    'docs/shared-host.md', '.codex/DEVELOPMENT.md', '.cursor/DEVELOPMENT.md',
     'docs/releases.md', 'docs/licensing.md', 'docs/developer-interface.md',
     '.github/SETTINGS.md', '.github/DEVELOPMENT.md', '.gitlab/DEVELOPMENT.md']) {
     const body = await read(path);

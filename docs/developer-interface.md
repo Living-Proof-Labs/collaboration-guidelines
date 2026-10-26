@@ -77,10 +77,11 @@ tooling-image checks does not establish that the shipped image runs correctly.
 
 ## Bootstrap once, delegate project setup
 
-Environments provide Task plus the project's bootstrap prerequisites: its
-language runtime and package manager, and any required native build tools.
-Record supported versions and install through official or verified package
-channels. Environments own PATH setup; do not assume shell profiles load in
+The [shared Docker-first host](shared-host.md) provides Docker, Compose, Buildx,
+Task, Git, and provider command-line clients. Repository containers supply the
+language runtime, package manager, and native build tools. A directly prepared
+environment still needs those project tools, but they are not common host
+requirements. Environments own PATH setup; do not assume shell profiles load in
 continuous integration.
 
 Use the [official Task installation
@@ -172,14 +173,9 @@ Codespaces](../.github/DEVELOPMENT.md) and [GitLab
 Workspaces](../.gitlab/DEVELOPMENT.md) for their different configuration
 models. Sharing Docker definitions does not make the services interchangeable.
 
-This update documents the repository convention and provides an adaptable host
-wrapper; it does not add Docker setup to this guidelines repository or migrate
-consumers. Its existing prepared-Linux checks remain the current verification
-path pending a separate adoption change. Template parsing and command routing
-do not establish image builds or hosted workspace support. Validate actual
-images, mounts, dependency persistence, direct tasks, and hosted execution in
-each adopting repository before claiming support. No GitLab workspace adoption
-is included.
+This repository now provides a tooling image and an optional shared host recipe.
+See its [verification limits](shared-host.md#verified-scope) before claiming hosted
+provider support. No GitLab workspace adoption is included.
 
 ## Definition of done
 
@@ -215,6 +211,6 @@ and permissions. Historical trend aggregation is a separate capability requiring
 stable test identities and retained history; do not infer it from a successful
 single-run upload or claim it without verifying the chosen service.
 
-This checklist defines adoption requirements; this documentation change does not
-install report publishers or demonstrate ingestion in this repository or its
-consumers. Existing console test output alone does not satisfy the new requirement.
+The shared-host verification workflow adopts report publication for its own
+checks. Other consumers must verify their publishers separately; console output
+alone does not satisfy this requirement.

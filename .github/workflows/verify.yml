@@ -19,3 +19,8 @@ jobs:
           version: '3.54.0'
       - run: task setup
       - run: task verify
+  shared-host:
+    uses: ./.github/workflows/host.yml
+    permissions:
+      contents: read
+      checks: write

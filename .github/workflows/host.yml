@@ -1,0 +1,86 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Shared Docker host
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2
+        with:
+          version: '3.54.0'
+      - id: host_build
+        run: task host:build
+      - if: ${{ !cancelled() && steps.host_build.outcome == 'success' }}
+        run: task host:test
+      - id: tooling_build
+        if: ${{ !cancelled() }}
+        run: task container:build
+      - if: ${{ !cancelled() && steps.tooling_build.outcome == 'success' }}
+        run: task container:test
+      - if: ${{ !cancelled() }}
+        run: task host:reporter
+      - name: Individual test summary
+        id: summary
+        if: ${{ !cancelled() }}
+        uses: dorny/test-reporter@8861569aa5348397e7a26b6dda744c17c9265478 # v2.1.1
+        with:
+          name: Shared host tests
+          path: artifacts/*.xml
+          reporter: java-junit
+          use-actions-summary: 'true'
+          list-tests: all
+          fail-on-error: 'true'
+          fail-on-empty: 'true'
+      - name: Individual test checks
+        if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        uses: dorny/test-reporter@8861569aa5348397e7a26b6dda744c17c9265478 # v2.1.1
+        with:
+          name: Shared host test results
+          path: artifacts/*.xml
+          reporter: java-junit
+          use-actions-summary: 'false'
+          list-tests: all
+          fail-on-error: 'true'
+          fail-on-empty: 'true'
+      - name: Record execution identities
+        if: ${{ !cancelled() }}
+        run: task host:evidence
+      - name: Retain reports and diagnostics
+        id: reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: shared-host-results
+          path: artifacts/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Evidence links and completeness
+        if: ${{ !cancelled() }}
+        env:
+          REPORTED_PASSED: ${{ steps.summary.outputs.passed }}
+          REPORTED_FAILED: ${{ steps.summary.outputs.failed }}
+          REPORTED_SKIPPED: ${{ steps.summary.outputs.skipped }}
+          ARTIFACT_URL: ${{ steps.reports.outputs.artifact-url }}
+          FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          echo "Run and test checks: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "Raw reports (14 days): $ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$FORK" = true ]; then echo 'Restricted fork: Checks publication skipped; see individual summary and artifacts.' >> "$GITHUB_STEP_SUMMARY"; fi
+          test -s artifacts/guidelines.xml
+          test -s artifacts/host.xml
+          test -s artifacts/reporter.xml
+          for count in "$REPORTED_PASSED" "$REPORTED_FAILED" "$REPORTED_SKIPPED"; do [[ $count =~ ^[0-9]+$ ]]; done
+          raw=$(grep -ho '<testcase[[:space:]>]' artifacts/*.xml | wc -l)
+          reported=$((REPORTED_PASSED + REPORTED_FAILED + REPORTED_SKIPPED))
+          echo "Individual cases: $reported ingested / $raw emitted" >> "$GITHUB_STEP_SUMMARY"
+          test "$raw" -gt 0
+          test "$raw" -eq "$reported"
