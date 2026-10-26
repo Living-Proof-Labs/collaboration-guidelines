@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, mkdirSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test } from 'node:test';
+import { test, describe } from 'node:test';
 import { extractPackageFile as regexExtract } from '/usr/local/renovate/dist/modules/manager/custom/regex/index.js';
 import { extractPackageFile as actionsExtract } from '/usr/local/renovate/dist/modules/manager/github-actions/extract.js';
 import { extractPackageFile as dockerExtract } from '/usr/local/renovate/dist/modules/manager/dockerfile/extract.js';
@@ -30,6 +30,7 @@ async function update(content, file, config) {
   return content;
 }
 
+describe('Renovate extraction contracts', () => {
 test('official regex manager extracts repeated full tags and preserves fragment', () => {
   const result = regexExtract(fixture, 'AGENTS.md', markdown);
   assert.equal(result.deps.length, 2);
@@ -137,4 +138,6 @@ test('native workflow replacement uses the same proposed release as documentatio
   const result = await actionsExtract(input, file, {});
   const output = await doAutoReplace({...result.deps[0], manager: 'github-actions', packageFile:file, depIndex:0, newValue:'v4.2.2', autoReplaceGlobalMatch:true}, input, false);
   assert.equal(output, input.replace('v4.1.0', 'v4.2.2'));
+});
+
 });
