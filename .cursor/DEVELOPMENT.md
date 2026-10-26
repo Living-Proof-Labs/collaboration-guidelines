@@ -30,10 +30,13 @@ using its actual absolute path. Repository `.cursor/environment.json` fallback
 applies to single-repository runs; do not assume it configures a saved group.
 
 The owner must create/save the environment in Cursor's dashboard, build it, then
-start a fresh agent and inspect the startup container check. Select the explicit
-`feat/shared-docker-host` preview reference and record its commit for this draft;
-replace it with a published version tag after review and release. Do not use
-`v4.0.0`, which predates this recipe.
+start a fresh agent and inspect the startup container check. Select published
+tag `v4.2.1`, which resolves to commit
+`12861dc824d934fbd53814f05ded85761b63c6ec`. Update to future published versions
+deliberately; do not use the former preview branches for normal adoption.
+For a read-only Buildx home, use the persistent environment and ownership
+guidance in the [common host recipe](../docs/shared-host.md). Match that setting
+to the actual provider interface; no saved-environment field names are assumed.
 
 Image build installs tools. Install checks their presence without starting services;
 running processes do not survive the build snapshot. Start checks the daemon,
