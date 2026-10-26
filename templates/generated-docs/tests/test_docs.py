@@ -60,3 +60,7 @@ def test_missing_coverage_is_explicit_and_tasks_are_not_executed(tmp_path):
     subprocess.run([sys.executable, "generate.py", "artifacts/html"], cwd=checkout, check=True)
     assert not (checkout / "execution-marker").exists()
     assert "No test coverage data" in (checkout / "artifacts/html/coverage/index.html").read_text()
+
+
+def test_temporary_failure_publication_fixture():
+    assert False, 'Intentional draft-only publication validation failure'
