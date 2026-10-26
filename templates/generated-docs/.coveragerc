@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+[run]
+branch = True
+source = fixture
+relative_files = True
+[html]
+title = Example software test coverage (not robot quality)

@@ -24,3 +24,7 @@ jobs:
     permissions:
       contents: read
       checks: write
+  generated-documentation:
+    uses: ./.github/workflows/generated-docs.yml
+    permissions:
+      contents: read

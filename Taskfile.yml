@@ -47,3 +47,11 @@ tasks:
     desc: Retain source, execution, and image identities without configuration or secrets
     cmds:
       - bash tools/host/evidence.sh
+  docs:build:
+    desc: Build the generated documentation template's locked tooling image
+    cmds:
+      - bash tools/docs/container.sh build
+  docs:verify:
+    desc: Test and generate the HTML template artifact inside its container
+    cmds:
+      - bash tools/docs/container.sh verify
