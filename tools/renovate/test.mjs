@@ -132,6 +132,13 @@ test('replacement reconciles stale display tag while preserving version-like pat
   assert.ok(output.includes('/blob/v4.2.2/AGENTS.md#v4.1.0)'));
 });
 
+test('replacement preserves blob-like segments in paths and fragments', async () => {
+  for (const suffix of ['/docs/blob/v1.2.3/guide.md', '/AGENTS.md#example/blob/v1.2.3']) {
+    const input = `<!-- renovate: guidelines -->\n[Guide v4.1.0](https://github.com/Living-Proof-Labs/collaboration-guidelines/blob/v4.1.0${suffix})\n`;
+    assert.equal(await update(input, 'AGENTS.md', markdown), input.replaceAll('v4.1.0', 'v4.2.2'));
+  }
+});
+
 test('native workflow replacement uses the same proposed release as documentation and Task', async () => {
   const input = 'jobs:\n  release:\n    uses: Living-Proof-Labs/collaboration-guidelines/.github/workflows/semantic-release.yml@v4.1.0\n';
   const file = '.github/workflows/release.yml';
