@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+version: '3'
+vars:
+  # renovate: guidelines
+  GUIDELINES_VERSION: 'v4.1.0'
+  HISTORICAL_VERSION: 'v2.0.0'
+tasks:
+  show:
+    cmds:
+      - echo '{{.GUIDELINES_VERSION}}'
