@@ -76,8 +76,29 @@ as a BuildKit secret; the reporter runtime receives a read-only mount. Do not
 turn off certificate verification, install new trust, or copy credentials into an
 image.
 Unreadable configured bundles fail explicitly. A read-only
-Buildx configuration directory can be avoided with `BUILDX_CONFIG` pointing to a
-new writable scratch directory, without changing Docker authentication files.
+Buildx configuration directory can be avoided with a persistent environment value:
+
+```text
+BUILDX_CONFIG=/tmp/living-proof-buildx
+```
+
+Keep an existing writable value if already configured. The provider must pass
+this value to each task process; exporting it only in a completed setup script
+does not persist it. Let the task user create the directory on first use, rather
+than creating a root-owned directory during image setup. In a fresh task, check
+the configured value and ownership without changing Docker authentication files:
+
+```sh
+test -n "${BUILDX_CONFIG:-}"
+mkdir -p -- "$BUILDX_CONFIG"
+test -w "$BUILDX_CONFIG"
+docker buildx inspect
+```
+
+An existing directory owned by another user is a provisioning failure to report,
+not a reason to change permissions. Keep provider certificate inputs intact;
+neither writable Buildx state nor the existing CA bundle requires network or
+security-setting changes.
 
 ## Save once per provider
 
@@ -87,11 +108,11 @@ saved-environment service. Follow [Codex setup](../.codex/DEVELOPMENT.md) or
 [Cursor setup](../.cursor/DEVELOPMENT.md), preserving existing configuration.
 No script creates a saved environment, changes access, or embeds credentials.
 
-Use a published guidelines version tag for adoption. During the Debian preview,
-`fix/debian-shared-host` is an explicit temporary development reference for
-review and provider trials. Replace it with the approved release containing
-this change before normal adoption; `v4.1.0` supports Ubuntu only. Record the
-resolved commit for each trial and never move a published tag.
+Use published tag `v4.2.1` for this recipe on Ubuntu 24.04 or Debian 13. It resolves
+to commit `12861dc824d934fbd53814f05ded85761b63c6ec`; `v4.1.0` supports Ubuntu only.
+The former `feat/shared-docker-host` and `fix/debian-shared-host` preview branches
+are no longer adoption references. Update to future published tags deliberately,
+record the resolved commit for each validation, and never move a published tag.
 
 ## Verified scope
 
