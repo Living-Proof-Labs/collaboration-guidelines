@@ -30,7 +30,7 @@
       "depNameTemplate": "Living-Proof-Labs/collaboration-guidelines",
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
-      "autoReplaceStringTemplate": "{{{replace \" v[0-9]+[.][0-9]+[.][0-9]+\\][\\s\\S]*$\" \"\" replaceString}}} {{{newValue}}}](https://github.com/Living-Proof-Labs/collaboration-guidelines/blob/{{{newValue}}}{{{replace \"^[\\s\\S]*/blob/v[0-9]+[.][0-9]+[.][0-9]+\" \"\" replaceString}}}"
+      "autoReplaceStringTemplate": "{{{replace \" v[0-9]+[.][0-9]+[.][0-9]+\\][\\s\\S]*$\" \"\" replaceString}}} {{{newValue}}}](https://github.com/Living-Proof-Labs/collaboration-guidelines/blob/{{{newValue}}}{{{replace \"^[\\s\\S]*?\\]\\(https://github[.]com/Living-Proof-Labs/collaboration-guidelines/blob/v[0-9]+[.][0-9]+[.][0-9]+\" \"\" replaceString}}}"
     },
     {
       "customType": "regex",
