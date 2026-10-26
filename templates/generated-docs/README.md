@@ -39,7 +39,8 @@ rendered from the command itself, not repeated in this README.
 
 `task docs` writes a new output directory and refuses to overwrite existing
 output. Start a fresh disposable container for repeated verification, or choose
-a new directory with `python generate.py PATH`. The host `docs:verify` task replaces only its generated artifact directory.
+a new directory with `python generate.py PATH`. The host `docs:verify` task
+replaces only its generated artifact directory.
 `task test` records coverage; without that input, the generated page explicitly
 says coverage is unavailable. Software test coverage does not grade robot quality.
 
