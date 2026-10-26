@@ -24,8 +24,9 @@ or higher-priority instructions.
   in verification completeness.
 - Keep the pull request current as scope changes. Report the delivered result
   and any work still blocked, with enough evidence for someone else to assess it.
-- Use [supportive independent review](docs/independent-review.md) to inspect code
-  and exercise the installed change and adjacent behavior in a fresh environment.
+- For independent review, use the [review guide](docs/independent-review.md) to
+  inspect code and exercise the installed change and adjacent behavior in a fresh
+  environment.
   Keep ordinary regression in continuous integration and findings proportionate.
 
 ## Write plainly

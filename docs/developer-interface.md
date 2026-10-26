@@ -188,8 +188,10 @@ starting points; they do not enable a public documentation site.
 
 ## Observable behavior and feature coverage
 
-Use executable behavior-driven development (BDD) feature scenarios to document
-observable behavior of changed features: setup, user action, and expected outcome.
+Executable behavior-driven development (BDD) feature scenarios document observable
+behavior: setup, user action, and expected outcome. Adopt them incrementally for
+changed features where they help describe and verify the user contract; this does
+not require retrofitting every feature before a small change can proceed.
 Keep scenarios in the consuming project's existing test architecture and run them
 through Task and continuous integration. They should also guide an independent
 reviewer's manual exploration of the installed product. Do not encode private
@@ -219,10 +221,11 @@ item before calling the work complete:
   Include counts and report/artifact links in the run summary. Retain the raw
   machine-readable reports with a documented retention period sufficient for
   review and diagnosis, within existing provider limits. Never include secrets.
-- For behavior changes, link the applicable feature/scenario inventory and visible
+- Where executable scenarios apply, link their inventory and visible
   CI results, including gaps and skipped scenarios, separately from line coverage.
-  Link the [independent review evidence](independent-review.md#definition-of-done)
-  for installed behavior; neither source tests nor coverage percentages replace it.
+  When independently reviewing installed behavior, link the
+  [review evidence](independent-review.md#definition-of-done); neither source tests
+  nor coverage percentages replace that evidence.
 - Generate reports and attempt summary publication, ingestion, and artifact upload
   even when tests fail. Keep the original failing test exit status and release
   gate: publisher success must never turn failed tests into passing verification.
