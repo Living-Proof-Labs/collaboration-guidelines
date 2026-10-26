@@ -177,6 +177,15 @@ This repository now provides a tooling image and an optional shared host recipe.
 See its [verification limits](shared-host.md#verified-scope) before claiming hosted
 provider support. No GitLab workspace adoption is included.
 
+## Tool help and generated reference
+
+Follow [tool-first usability](tool-usability.md): help and errors should teach the
+next useful action while preserving validation. The [generated documentation
+fixture](../templates/generated-docs/README.md) combines actual Click definitions,
+Task information, conceptual guides, and software test coverage in an HTML
+artifact. Its containerized Task commands and GitHub pipeline are optional
+starting points; they do not enable a public documentation site.
+
 ## Definition of done
 
 For the development and release paths above, record evidence for each applicable

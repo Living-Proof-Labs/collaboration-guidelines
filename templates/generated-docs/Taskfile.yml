@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Run inside the prepared documentation container, not through the host wrapper.
+version: '3'
+tasks:
+  test:
+    desc: Validate the example command and record test coverage
+    cmds:
+      - coverage run -m pytest tests/test_cli.py --junitxml=artifacts/cli.xml
+  docs:
+    desc: Generate HTML from Click, Task and existing test coverage
+    summary: Generate the reference and conceptual pages; run task test first for coverage.
+    cmds:
+      - python generate.py artifacts/html
+  check:
+    desc: Test generated documentation, links, reproducibility and secret exclusion
+    cmds:
+      - pytest tests/test_docs.py --junitxml=artifacts/docs.xml
+  verify:
+    desc: Run tests, generate documentation and validate the result
+    cmds:
+      - task: test
+      - task: docs
+      - task: check

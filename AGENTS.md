@@ -58,6 +58,15 @@ or higher-priority instructions.
   read at the same pinned revision when consuming remotely. Record actual platform
   support.
 
+## Make tools teach their use
+
+- Help and errors should state expected input, explain an evidenced mistake,
+  and show a useful next command and example. Keep internal diagnostics secondary
+  and preserve strict validation and failure exits.
+- Keep README, tool help, and generated reference pages consistent. Generate
+  command reference from executable definitions; keep concepts hand-authored.
+  Follow [tool usability and generated documentation](docs/tool-usability.md).
+
 ## Keep shared guidance deliberate
 
 - Each consuming repository's `AGENTS.md` must identify an explicit published

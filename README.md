@@ -63,6 +63,8 @@ in the consuming repository.
 
 Use [CLI-first work and Task](docs/developer-interface.md) for environment bootstrap,
 common project commands, and minimal Python and Node/TypeScript templates.
+Use [tool-first help and generated documentation](docs/tool-usability.md) to keep
+terminal use and the HTML reference consistent.
 
 ## Shared release machinery and licensing
 

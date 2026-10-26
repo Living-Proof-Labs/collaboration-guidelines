@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Generated documentation
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  documentation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2
+        with:
+          version: '3.54.0'
+      - run: task docs:build
+      - run: task docs:verify
+      - name: Publish individual test summary
+        id: tests
+        if: ${{ !cancelled() }}
+        uses: dorny/test-reporter@8861569aa5348397e7a26b6dda744c17c9265478 # v2.1.1
+        with:
+          name: Documentation template tests
+          path: artifacts/generated-docs/*.xml
+          reporter: java-junit
+          use-actions-summary: 'true'
+          list-tests: all
+          fail-on-error: 'true'
+          fail-on-empty: 'true'
+      - name: Retain HTML and test reports
+        id: artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: generated-documentation
+          path: artifacts/generated-docs/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Verify complete test publication
+        if: ${{ !cancelled() }}
+        env:
+          PASSED: ${{ steps.tests.outputs.passed }}
+          FAILED: ${{ steps.tests.outputs.failed }}
+          SKIPPED: ${{ steps.tests.outputs.skipped }}
+          ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
+        run: |
+          echo "HTML and reports (14 days): $ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          for count in "$PASSED" "$FAILED" "$SKIPPED"; do [[ $count =~ ^[0-9]+$ ]]; done
+          test -s artifacts/generated-docs/cli.xml
+          test -s artifacts/generated-docs/docs.xml
+          emitted=$(grep -ho '<testcase[[:space:]>]' artifacts/generated-docs/*.xml | wc -l)
+          ingested=$((PASSED + FAILED + SKIPPED))
+          echo "Individual cases: $ingested ingested / $emitted emitted" >> "$GITHUB_STEP_SUMMARY"
+          test "$emitted" -gt 0
+          test "$ingested" -eq "$emitted"

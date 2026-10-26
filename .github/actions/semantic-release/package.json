@@ -7,7 +7,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "markdownlint \"../../../*.md\" \"../../../docs/*.md\" \"../../../.github/*.md\" \"../../../.gitlab/*.md\" \"../../../.codex/*.md\" \"../../../.cursor/*.md\""
+    "check": "markdownlint \"../../../*.md\" \"../../../docs/*.md\" \"../../../templates/generated-docs/*.md\" \"../../../.github/*.md\" \"../../../.gitlab/*.md\" \"../../../.codex/*.md\" \"../../../.cursor/*.md\""
   },
   "dependencies": {
     "semantic-release": "25.0.9",

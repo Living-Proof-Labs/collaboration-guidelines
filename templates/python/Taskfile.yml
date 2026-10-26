@@ -2,6 +2,8 @@
 # Requires uv, project Python, pyproject.toml, and uv.lock with Ruff/pytest in dev.
 # Run directly in the prepared development/tooling environment, without Docker.
 # For a Compose host wrapper, copy this file as Taskfile.runtime.yml.
+# Pair tool help with generated reference; see docs/tool-usability.md at the
+# same adopted guidelines version. The generated-docs fixture demonstrates Click.
 version: '3'
 
 tasks:

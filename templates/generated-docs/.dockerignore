@@ -1,0 +1,16 @@
+*
+!Dockerfile
+!requirements.lock
+!install-task.py
+!fixture/
+!fixture/*.py
+!guide/
+!guide/*.rst
+!guide/conf.py
+!tests/
+!tests/*.py
+!Taskfile.yml
+!.coveragerc
+!example.json
+!generate.py
+!links.py
