@@ -59,6 +59,10 @@ explaining the impact. An upstream merge or release does not update consumers.
 Propose common improvements upstream through an issue or PR; retain local needs
 in the consuming repository.
 
+The [dependency update pilot](docs/dependency-updates.md) provides an inactive
+Renovate preset and containerized extraction tests. Hosting and bot access remain
+separate owner decisions; automerge is disabled.
+
 ## Developer interface
 
 Use [CLI-first work and Task](docs/developer-interface.md) for environment bootstrap,
