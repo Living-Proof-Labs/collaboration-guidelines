@@ -7,6 +7,12 @@ permissions:
 jobs:
   host:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [ubuntu24.04, debian13]
+    env:
+      HOST_DISTRO: ${{ matrix.distro }}
     permissions:
       contents: read
       checks: write
@@ -33,7 +39,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: dorny/test-reporter@8861569aa5348397e7a26b6dda744c17c9265478 # v2.1.1
         with:
-          name: Shared host tests
+          name: Shared host tests (${{ matrix.distro }})
           path: artifacts/*.xml
           reporter: java-junit
           use-actions-summary: 'true'
@@ -44,7 +50,7 @@ jobs:
         if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         uses: dorny/test-reporter@8861569aa5348397e7a26b6dda744c17c9265478 # v2.1.1
         with:
-          name: Shared host test results
+          name: Shared host test results (${{ matrix.distro }})
           path: artifacts/*.xml
           reporter: java-junit
           use-actions-summary: 'false'
@@ -59,7 +65,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: shared-host-results
+          name: shared-host-results-${{ matrix.distro }}
           path: artifacts/
           retention-days: 14
           if-no-files-found: error

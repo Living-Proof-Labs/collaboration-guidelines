@@ -6,6 +6,25 @@ import { mkdtempSync, writeFileSync, chmodSync, rmSync, readFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 const script = new URL('../../environments/host/check.sh', import.meta.url).pathname;
+const trust = new URL('../../environments/host/trust.sh', import.meta.url).pathname;
+function trustResult(env) {
+  return spawnSync('/bin/bash', ['-ec', 'source "$1"; printf "%s" "$HOST_BUILD_CA_FILE"', 'trust-test', trust], {encoding:'utf8', env});
+}
+test('provider trust is optional and never inferred from certificate locations', () => {
+  const result = trustResult({}); assert.equal(result.status, 0); assert.equal(result.stdout, '');
+});
+test('explicit trust takes precedence over the provider SSL_CERT_FILE', () => {
+  const result = trustResult({HOST_BUILD_CA_FILE:trust, SSL_CERT_FILE:'/missing-provider-bundle'});
+  assert.equal(result.status, 0); assert.equal(result.stdout, trust);
+});
+test('provider SSL_CERT_FILE is reused without altering trust', () => {
+  const result = trustResult({SSL_CERT_FILE:trust});
+  assert.equal(result.status, 0); assert.equal(result.stdout, trust);
+});
+test('unreadable configured provider trust fails closed', () => {
+  const result = trustResult({SSL_CERT_FILE:'/missing-provider-bundle'});
+  assert.equal(result.status, 2); assert.match(result.stderr, /not readable/);
+});
 function fixture(callback) {
   const dir = mkdtempSync(join(tmpdir(), 'host-check-'));
   const add = (name, body = 'exit 0') => {

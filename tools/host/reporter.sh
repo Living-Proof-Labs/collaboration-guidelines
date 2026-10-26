@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
+source environments/host/trust.sh
 # Cross-repository consumer proof only; never edit or publish reporter sources.
 repo=https://github.com/Living-Proof-Labs/livingproof-capability-report.git
 ref=v1.4.0
