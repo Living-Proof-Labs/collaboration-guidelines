@@ -186,6 +186,22 @@ Task information, conceptual guides, and software test coverage in an HTML
 artifact. Its containerized Task commands and GitHub pipeline are optional
 starting points; they do not enable a public documentation site.
 
+## Observable behavior and feature coverage
+
+Use executable behavior-driven development (BDD) feature scenarios to document
+observable behavior of changed features: setup, user action, and expected outcome.
+Keep scenarios in the consuming project's existing test architecture and run them
+through Task and continuous integration. They should also guide an independent
+reviewer's manual exploration of the installed product. Do not encode private
+implementation details or create a second test framework solely for reporting.
+
+Give features and scenarios stable names or identifiers. Link changed behavior to
+its scenarios and report each scenario's passed, failed, skipped, or untested
+status with the revision and CI run. Feature/scenario coverage is a traceable
+inventory of specified behavior and its execution, distinct from line coverage.
+State the inventory's scope and gaps; if reporting a percentage, name the
+denominator. Passing every listed scenario does not prove all behavior is covered.
+
 ## Definition of done
 
 For the development and release paths above, record evidence for each applicable
@@ -203,6 +219,10 @@ item before calling the work complete:
   Include counts and report/artifact links in the run summary. Retain the raw
   machine-readable reports with a documented retention period sufficient for
   review and diagnosis, within existing provider limits. Never include secrets.
+- For behavior changes, link the applicable feature/scenario inventory and visible
+  CI results, including gaps and skipped scenarios, separately from line coverage.
+  Link the [independent review evidence](independent-review.md#definition-of-done)
+  for installed behavior; neither source tests nor coverage percentages replace it.
 - Generate reports and attempt summary publication, ingestion, and artifact upload
   even when tests fail. Keep the original failing test exit status and release
   gate: publisher success must never turn failed tests into passing verification.

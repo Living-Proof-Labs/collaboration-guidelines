@@ -36,6 +36,17 @@ HTML and name its scope clearly: **software test coverage is not robot quality,
 capability, safety, or sufficiency of evidence**. If coverage is absent, say so;
 never invent a percentage or imply a report was measured.
 
+For projects with executable feature scenarios, generate browsable behavior pages
+from those same scenarios and link them to their results at the tested revision.
+Keep [feature/scenario coverage](developer-interface.md#observable-behavior-and-feature-coverage)
+distinct from generated line-coverage HTML, with skipped, untested, and unspecified
+behavior visible as limits. Combine applicable Click help, scenario documentation,
+Task reference, and measured coverage in the repository's existing documentation
+build, reachable from its README. Do not hand-maintain duplicate reference text.
+The current template supplies Click, Task, and line coverage; scenario rendering
+and result mapping must be added and verified in a consuming project that uses
+them. This guidance does not claim that integration already exists.
+
 Use Task to build and check the documentation inside the repository's tooling
 container. Continuous integration calls those same tasks and uses standard
 Actions for test summaries and retained artifacts. Start by uploading a reviewable
