@@ -70,6 +70,11 @@ or higher-priority instructions.
 - Keep README, tool help, and generated reference pages consistent. Generate
   command reference from executable definitions; keep concepts hand-authored.
   Follow [tool usability and generated documentation](docs/tool-usability.md).
+- Each repository owns a generated, publicly browsable manual with a prominent
+  start-here link near the top of its README and links to related repositories'
+  manuals. Use [GitHub Pages](.github/GENERATED-DOCS.md#repository-pages-manual)
+  for the current GitHub origin; verify deployment and live usability before
+  claiming adoption. Keep generators relevant to the repository's content.
 
 ## Keep shared guidance deliberate
 
