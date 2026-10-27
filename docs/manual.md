@@ -22,9 +22,8 @@ python3 -m http.server --directory artifacts/manual/html 8000
 The pinned tooling container generates HTML and runs document and Chromium browser
 checks without network access. `artifacts/manual/html/index.html` is the preview;
 `artifacts/manual/tests.xml` records individual checks. Review downloads retain
-14 days. They are distinct from the intended durable manual at
-`https://docs.livingprooflabs.com/collaboration-guidelines/`; publication is pending
-until deployment and live acceptance are recorded.
+14 days. The durable [published manual](https://docs.livingprooflabs.com/collaboration-guidelines/)
+is separate from these temporary review downloads.
 
 Verification rebuilds the source snapshot using cached dependency layers and
 embeds its identity in the image. Prior local manual output is retained in a
@@ -67,9 +66,17 @@ The main-only manual workflow uses a separate Pages deployment job after verifie
 generation. Build and PR jobs remain read-only; deployment has no checkout or
 project execution. Publication requires repository Pages configured for GitHub
 Actions and the `github-pages` environment restricted to main. No project CNAME,
-DNS, mail, or organization change is needed. Settings are coordinated separately.
+DNS, mail, or organization change is needed. The repository is configured for
+this publication path.
 
-Before adding a live README/root-directory link, verify the actual deployed URL,
+Initial publication was verified at source commit
+`cd434afa1ce9fdb7bb5aff394222622b18657199` in
+[manual run 40470273136](https://github.com/Living-Proof-Labs/collaboration-guidelines/actions/runs/40470273136).
+Live HTTPS, source identity, nested pages, desktop search/result reload, theme
+persistence, and source/root navigation passed. Mobile navigation was verified
+against the generated artifact; live mobile acceptance is not claimed.
+
+For subsequent delivery checks, verify the actual deployed URL,
 source/run identity, nested pages, browser search and result opening, desktop and
 mobile navigation, theme behavior, and source/root/help/license destinations.
 Record failures honestly; a successful artifact upload alone is not publication.
