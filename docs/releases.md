@@ -136,3 +136,40 @@ and inspect the existing draft, never retarget its tag or create duplicate asset
 GitHub locks assets when an immutable release becomes public. Uploading assets
 after publication fails; do not disable immutability to work around that failure.
 See [GitHub immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases).
+
+## Container distribution
+
+Use a public container registry, such as GitHub Container Registry, for routine
+release images. Before removing an image archive from a consumer's future release
+assets, independently verify that the same image, version, and supported platform
+can be pulled anonymously by immutable registry digest and run successfully.
+Inspect the installed package version, entrypoint, and required dependencies in
+the delivered image. If the registry replacement fails or is unavailable, retain
+the working download route and report the gap. This procedure grants no new
+registry credentials or permissions.
+
+Keep short-lived internal image archives when jobs need to transfer the exact
+built and tested image, including untrusted pull-request previews. Normally retain
+candidate artifacts for 14 days. Preserve build-once/test/publish behavior and fork
+safety. Candidate retention does not authorize deletion of supported registry
+manifests or layers referenced by pinned releases.
+
+Consumer release workflows should select public assets explicitly and test both
+that image archives are excluded and that required non-image assets remain.
+Preserve wheels, Debian packages, source archives, reports, checksums, and useful
+provenance. A filename ending in `.tar.gz` may be a source package; do not exclude
+archives solely by suffix. The shared release Action does not select or upload
+consumer assets, so this selection belongs in each consumer's workflow.
+
+Release notes must name each registry image, its immutable registry digest, and
+supported platforms, with copyable pull/run commands for that product. A local
+Docker image ID is not a registry manifest digest. Verify registry consumption
+before final release publication and retain granular evidence identifying the
+commit, CI-built artifact, digest, platform, commands, and results. Follow the
+[independent review procedure](independent-review.md) and verify the delivered
+release after merge.
+
+Explicit offline or air-gapped exports remain an opt-in use case. Changes to
+future asset selection leave existing release assets and registry images intact.
+Historical cleanup requires a separate inventory, reference/dependency protection,
+and explicit approval; it is not part of this distribution change.
