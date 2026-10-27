@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+site_name: Living Proof Labs collaboration guidelines
+site_url: https://docs.livingprooflabs.com/collaboration-guidelines/
+use_directory_urls: false
+strict: true
+theme:
+  name: zensical
+  font: false
+  palette:
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      toggle: {icon: lucide/moon, name: Switch to dark mode}
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      toggle: {icon: lucide/sun, name: Switch to light mode}
+markdown_extensions:
+  - tables
+  - toc: {permalink: true}
+  - pymdownx.superfences
+nav:
+  - Documentation home: https://docs.livingprooflabs.com/
+  - Start here: index.md
+  - Guides:
+      - Working agreement: AGENTS.md
+      - Documentation recipe: docs/documentation-recipe.md
+      - Developer interface: docs/developer-interface.md
+      - Generated documentation: docs/tool-usability.md
+      - Independent review: docs/independent-review.md
+      - Collaboration and providers: docs/collaboration.md
+      - Shared host: docs/shared-host.md
+      - Dependency updates: docs/dependency-updates.md
+      - Release workflow: docs/releases.md
+  - Reference:
+      - Tasks: tasks.md
+      - Generated-docs example: examples/generated-docs.md
+  - Verification: docs/manual.md
+  - Contribute: CONTRIBUTING.md
+  - Version and source: version.md
+  - License:
+      - License scope: LICENSE.md
+      - Licensing guide: docs/licensing.md
+  - Maintainers:
+      - Ownership decision: docs/documentation-ownership.md
+      - GitHub settings: providers/github/SETTINGS.md
+      - GitHub development: providers/github/DEVELOPMENT.md
+      - GitHub documentation: providers/github/GENERATED-DOCS.md
+      - GitLab development: providers/gitlab/DEVELOPMENT.md
+      - Codex development: providers/codex/DEVELOPMENT.md
+      - Cursor development: providers/cursor/DEVELOPMENT.md
