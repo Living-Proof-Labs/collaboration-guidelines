@@ -2,6 +2,10 @@
 
 # Living Proof Labs collaboration guidelines
 
+**Start here: [manual source and preview instructions](docs/manual.md).**
+The repository manual is being prepared for publication; the generated-docs
+template is a separate example, not the full guidelines manual.
+
 A small, versioned baseline for ordinary project work. Start with
 [AGENTS.md](AGENTS.md); propose improvements using
 [CONTRIBUTING.md](CONTRIBUTING.md).

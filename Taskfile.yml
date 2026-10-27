@@ -63,3 +63,11 @@ tasks:
     desc: Run a credential-free, no-write local extraction dry run
     cmds:
       - bash tools/renovate/run.sh extract
+  manual:build:
+    desc: Build the repository manual tooling image
+    cmds:
+      - bash tools/manual/container.sh build
+  manual:verify:
+    desc: Generate and browser-test the repository manual in its tooling container
+    cmds:
+      - bash tools/manual/container.sh verify
