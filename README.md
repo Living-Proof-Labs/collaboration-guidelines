@@ -69,6 +69,8 @@ Use [CLI-first work and Task](docs/developer-interface.md) for environment boots
 common project commands, and minimal Python and Node/TypeScript templates.
 Use [tool-first help and generated documentation](docs/tool-usability.md) to keep
 terminal use and the HTML reference consistent.
+Use the [documentation recipe](docs/documentation-recipe.md) to assign content
+ownership, organize manuals, and adopt consistent navigation and evidence labels.
 
 ## Shared release machinery and licensing
 
