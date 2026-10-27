@@ -57,6 +57,10 @@ not a bulk settings change or evidence that existing repositories have adopted i
 
 ## A manual owned by each repository
 
+Apply the [documentation recipe](documentation-recipe.md) for content ownership,
+navigation, version labels, and an adoption checklist. This page defines the
+generation and live-verification requirements that the recipe uses.
+
 Put a prominent **Start here: documentation** link near the top of the README,
 immediately after the title or short introduction, pointing to the verified live
 manual. Its landing page should explain the first useful action, provide clear
@@ -115,16 +119,15 @@ are excluded from the published artifact; measured coverage is preserved.
 
 Copy the template from an explicit published guidelines version tag and record
 that tag in the consuming repository. Read its guidance at the same version.
-The current `v4.1.0` release predates this template. For review only,
-`feat/tool-first-generated-docs` is a temporary development reference; replace it
-with the first approved release containing this template before normal adoption.
-Do not invent a future version or move an existing tag.
+The released [v5.0.0 template](https://github.com/Living-Proof-Labs/collaboration-guidelines/tree/v5.0.0/templates/generated-docs)
+is an available starting point. Select a published version containing the guidance
+being adopted; v5.0.0 does not contain later additions merely because the current
+manual describes them. Do not invent a future version or move an existing tag.
 
-Proposed reporter adoption is a separate change after the template is released:
-point sphinx-click at its actual command, use its reviewed Taskfile, link its
-conceptual guides, and generate coverage from its own tests. Coordinate with the
-reporter's ongoing usability work rather than copying this fixture's input
-contract or modifying that work here. No reporter adoption is included.
+Consumer adoption is a separate repository change: use its actual command
+definitions, reviewed Taskfile, conceptual guides, and measured coverage where
+available. Preserve its existing generator when suitable. Do not copy this
+fixture's input contract or present the fixture as the consumer's functionality.
 
 Primary references: [Click help](https://click.palletsprojects.com/en/stable/documentation/),
 [sphinx-click](https://sphinx-click.readthedocs.io/en/stable/usage/),
