@@ -2,6 +2,10 @@
 
 # Living Proof Labs collaboration guidelines
 
+**Start here: [collaboration guidelines manual](https://docs.livingprooflabs.com/collaboration-guidelines/).**
+Read the [preview and verification instructions](docs/manual.md) to build it locally.
+The generated-docs template is a separate example, not the full guidelines manual.
+
 A small, versioned baseline for ordinary project work. Start with
 [AGENTS.md](AGENTS.md); propose improvements using
 [CONTRIBUTING.md](CONTRIBUTING.md).

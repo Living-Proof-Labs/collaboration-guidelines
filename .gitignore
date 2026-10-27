@@ -2,3 +2,4 @@
 node_modules/
 .task/
 artifacts/
+__pycache__/
