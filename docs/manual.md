@@ -66,7 +66,8 @@ The main-only manual workflow uses a separate Pages deployment job after verifie
 generation. Build and PR jobs remain read-only; deployment has no checkout or
 project execution. Publication requires repository Pages configured for GitHub
 Actions and the `github-pages` environment restricted to main. No project CNAME,
-DNS, mail, or organization change is needed. The repository is configured for this publication path.
+DNS, mail, or organization change is needed. The repository is configured for
+this publication path.
 
 Initial publication was verified at source commit
 `cd434afa1ce9fdb7bb5aff394222622b18657199` in
