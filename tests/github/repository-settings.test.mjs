@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import {
-  differences, immutableStateFrom, parseArgs, reportDifferences, rulesetState, run,
+  differences, immutableStateFrom, loadInventory, parseArgs, reportDifferences, rulesetState, run,
   updateRulesetPayload, validateConfig
 } from '../../tools/github/repository-settings.mjs';
 
@@ -49,6 +52,22 @@ test('does not permit accidental apply or an undeclared target', () => {
   assert.deepEqual(parseArgs(['--inventory', 'inventory.json', '--apply', '--repo', 'example']), {
     apply: true, applyMainRuleset: false, help: false, inventoryPath: 'inventory.json', repository: 'example'
   });
+});
+
+test('rejects malformed owner or repository inventory before any API write', () => {
+  const { api, writes } = fakeApi();
+  assert.throws(() => run({ policy, inventory: { ...inventory, owner: '../unsafe' }, flags: parseArgs(['--inventory', 'inventory.json']), api, log: () => {} }), /owner/);
+  assert.throws(() => run({ policy, inventory: { ...inventory, repositories: [3] }, flags: parseArgs(['--inventory', 'inventory.json']), api, log: () => {} }), /repository names/);
+  assert.deepEqual(writes, []);
+});
+
+test('rejects inventory paths outside the consumer or through a symlink', () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'inventory-root-'));
+  const outside = mkdtempSync(path.join(tmpdir(), 'inventory-outside-'));
+  writeFileSync(path.join(outside, 'inventory.json'), JSON.stringify(inventory));
+  symlinkSync(path.join(outside, 'inventory.json'), path.join(root, 'linked.json'));
+  assert.throws(() => loadInventory(path.relative(root, path.join(outside, 'inventory.json')), root), /inside/);
+  assert.throws(() => loadInventory('linked.json', root), /inside/);
 });
 
 test('normalizes server defaults and rule order before comparing', () => {

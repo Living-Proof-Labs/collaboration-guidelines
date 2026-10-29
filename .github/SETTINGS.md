@@ -29,12 +29,12 @@ task github:settings:test
 # After an authorized settings change has been approved, apply one named repo:
 node tools/github/repository-settings.mjs \
   --inventory config/github/repositories.json \
-  --apply --repo website
+  --apply --repo example-repository
 
 # A separate, explicit approval is required before changing main protection.
 node tools/github/repository-settings.mjs \
   --inventory config/github/repositories.json \
-  --apply --apply-main-ruleset --repo website
+  --apply --apply-main-ruleset --repo example-repository
 ```
 
 The first apply updates only one named repository in the consumer-controlled
@@ -62,7 +62,7 @@ issues. Verify those in the Settings UI during repository creation and record
 any available API support before adding it to the write path. Do not confuse
 the `has_downloads` REST field with Git LFS objects in source archives.
 
-### Main protection proposal — awaiting owner approval
+### Recommended main protection
 
 The declaration proposes one active branch ruleset targeted at the default
 branch. It requires a pull request, blocks deletion and force-pushes, requires
@@ -75,8 +75,8 @@ incompatible with the owner-selected merge-commit-only policy.
 
 This is intentionally not a user allow-list. GitHub roles supply authorization:
 only people or integrations with the required repository role can merge; the
-ruleset merely ensures their change arrives through a pull request. Use direct
-collaborator roles or organization teams to give Aaron and Rivet only the
+ruleset merely ensures their change arrives through a pull request. Consumers
+should use direct collaborator roles or organization teams to grant only the
 needed role, and review organization base permissions separately. A `write`
 role is enough to push to ordinary branches and, with a mergeable PR, merge it;
 `maintain` manages repository operational settings without sensitive access
@@ -107,8 +107,8 @@ the trusted, post-merge release job. No tag ruleset is proposed, so release tags
 remain creatable.
 
 Merge commits are the only enabled pull-request merge method. The merge commit
-title is the pull request title and its message is blank, matching the owner’s
-observed `website` setting. This preserves each branch commit and remains fully
+title is the pull request title and its message is blank. This preserves each
+branch commit and remains fully
 compatible with semantic-release, which analyzes the commits reachable on
 `main`; it does not require squash merges. Contributors should use meaningful,
 conventional commit messages when a release should be inferred.
