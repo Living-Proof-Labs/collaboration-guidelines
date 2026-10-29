@@ -2,7 +2,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  differences, immutableStateFrom, parseArgs, reportDifferences, rulesetState, run, validateConfig
+  differences, immutableStateFrom, parseArgs, reportDifferences, rulesetState, run,
+  updateRulesetPayload, validateConfig
 } from '../../tools/github/repository-settings.mjs';
 
 const desiredRuleset = {
@@ -57,6 +58,24 @@ test('normalizes server defaults and rule order before comparing', () => {
   assert.equal(rulesetState(serverResponse, desiredRuleset), 'matches');
 });
 
+test('ruleset update preserves unmanaged protections and parameters', () => {
+  const existing = {
+    ...desiredRuleset,
+    rules: [
+      ...desiredRuleset.rules.map((rule) => rule.type === 'pull_request' ? {
+        ...rule, parameters: { ...rule.parameters, dismiss_stale_reviews_on_push: true }
+      } : rule),
+      { type: 'required_status_checks', parameters: { required_status_checks: [{ context: 'test' }] } }
+    ]
+  };
+  const changed = { ...desiredRuleset, enforcement: 'evaluate' };
+  const payload = updateRulesetPayload(existing, changed);
+  const pullRequest = payload.rules.find((rule) => rule.type === 'pull_request');
+  assert.equal(pullRequest.parameters.dismiss_stale_reviews_on_push, true);
+  assert.deepEqual(payload.rules.find((rule) => rule.type === 'required_status_checks'), existing.rules[3]);
+  assert.equal(payload.enforcement, 'evaluate');
+});
+
 test('immutable-release audit distinguishes enabled, disabled, and unknown', () => {
   assert.equal(immutableStateFrom(() => ({ enabled: true }), 'repos/example'), 'enabled');
   assert.equal(immutableStateFrom(() => ({ enabled: false }), 'repos/example'), 'unknown');
@@ -71,6 +90,7 @@ test('read-only audit inspects missing rulesets and writes nothing', () => {
   assert.equal(report.repositories[0].immutableReleases, 'unknown');
   assert.equal(reportDifferences(report), 2);
   assert.deepEqual(writes, []);
+  assert.equal(report.repositories[0].mainRulesetOutcome, 'not-requested');
 });
 
 test('apply is a no-op when normalized state already matches', () => {

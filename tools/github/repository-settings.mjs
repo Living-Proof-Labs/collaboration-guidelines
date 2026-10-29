@@ -68,6 +68,33 @@ export function rulesetState(existing, desired) {
   return JSON.stringify(normalizeRuleset(existing)) === JSON.stringify(normalizeRuleset(desired)) ? 'matches' : 'different';
 }
 
+/** Preserve all non-managed policy when correcting the fields this manifest owns. */
+export function updateRulesetPayload(existing, desired) {
+  const existingByType = Object.fromEntries((existing.rules ?? []).map((rule) => [rule.type, rule]));
+  const desiredByType = Object.fromEntries((desired.rules ?? []).map((rule) => [rule.type, rule]));
+  const managedTypes = new Set(Object.keys(desiredByType));
+  const rules = (existing.rules ?? []).filter((rule) => !managedTypes.has(rule.type));
+  for (const rule of desired.rules) {
+    if (rule.type === 'pull_request') {
+      rules.push({
+        type: 'pull_request',
+        parameters: {
+          ...(existingByType.pull_request?.parameters ?? {}),
+          ...rule.parameters
+        }
+      });
+    } else rules.push(rule);
+  }
+  return {
+    name: desired.name,
+    target: desired.target,
+    enforcement: desired.enforcement,
+    conditions: { ...(existing.conditions ?? {}), ...desired.conditions },
+    bypass_actors: desired.bypass_actors,
+    rules
+  };
+}
+
 export function validateConfig(config, selectedRepository) {
   if (!allowedOwners.has(config.owner)) throw new Error(`Owner is not allowlisted: ${config.owner}`);
   if (config.schema_version !== 1) throw new Error(`Unsupported configuration schema version: ${config.schema_version}`);
@@ -126,7 +153,10 @@ export function run({ config, flags, api = defaultApi, log = console.log }) {
   const report = { repositories: [], failures: [] };
   for (const repository of repositories) {
     const endpoint = `repos/${config.owner}/${repository}`;
-    const result = { repository, settings: [], immutableReleases: 'unknown', mainRuleset: 'unknown' };
+    const result = {
+      repository, settings: [], settingsOutcome: 'unchanged', immutableReleases: 'unknown',
+      immutableOutcome: 'unknown', mainRuleset: 'unknown', mainRulesetOutcome: 'not-requested'
+    };
     report.repositories.push(result);
     try {
       const actual = api.get(endpoint);
@@ -143,17 +173,29 @@ export function run({ config, flags, api = defaultApi, log = console.log }) {
         api.write('PATCH', endpoint, config.repository);
         const verification = differences(api.get(endpoint), config.repository);
         if (verification.length) throw new Error(`repository settings verification failed: ${verification.map((item) => item.field).join(', ')}`);
+        result.settings = [];
+        result.settingsOutcome = 'applied';
       }
       if (result.immutableReleases === 'disabled') {
         api.write('PUT', `${endpoint}/immutable-releases`);
         assertVerified('immutable releases', api.immutableState(endpoint));
+        result.immutableReleases = 'enabled';
+        result.immutableOutcome = 'applied';
+      } else if (result.immutableReleases === 'enabled') {
+        result.immutableOutcome = 'unchanged';
       }
       if (flags.applyMainRuleset) {
         const ruleset = inspectRuleset(api, endpoint, config.main_ruleset);
         if (ruleset.state === 'missing') api.write('POST', `${endpoint}/rulesets`, config.main_ruleset);
-        else if (ruleset.state === 'different') api.write('PUT', `${endpoint}/rulesets/${ruleset.id}`, config.main_ruleset);
+        else if (ruleset.state === 'different') {
+          const existing = api.get(`${endpoint}/rulesets/${ruleset.id}`);
+          api.write('PUT', `${endpoint}/rulesets/${ruleset.id}`, updateRulesetPayload(existing, config.main_ruleset));
+        }
         assertVerified('main ruleset', inspectRuleset(api, endpoint, config.main_ruleset).state);
+        result.mainRuleset = 'matches';
+        result.mainRulesetOutcome = ruleset.state === 'matches' ? 'unchanged' : 'applied';
       }
+      log(`  outcome: settings=${result.settingsOutcome}; immutable-releases=${result.immutableOutcome}; main-ruleset=${result.mainRulesetOutcome}`);
     } catch (error) {
       const failure = { repository, error: error.message };
       report.failures.push(failure);

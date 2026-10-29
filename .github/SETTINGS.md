@@ -35,12 +35,17 @@ The first apply updates only one named, declared repository through GitHub's
 repository update API and then reads it back to verify the result. It enables
 immutable releases only when the dedicated endpoint positively reports that
 they are disabled, and verifies that result too. The second command also creates
-or updates the declared `main` ruleset and verifies the managed fields. Every
+or updates the declared `main` ruleset and verifies the managed fields. When a
+matching named ruleset has additional rules or pull-request parameters, an
+update preserves those unmanaged protections rather than replacing them. Every
 write target is derived from the fixed owner allow-list and repository manifest;
 the tool will not bulk-apply, accept an undeclared repository, or write to an
 arbitrary endpoint. It reports each failed operation with its repository and
-reason. Never run either apply command from an unreviewed workflow, fork pull
-request, or with a token broader than needed.
+reason. Its output separately labels settings, immutable releases, and the main
+ruleset as applied, unchanged, unknown, or failed; an unknown immutable-release
+read is never presented as a successful change. Never run either apply command
+from an unreviewed workflow, fork pull request, or with a token broader than
+needed.
 
 Some owner preferences are retained in `manual_or_unavailable_settings` because
 the authenticated API used by this tool does not expose a safe, documented
