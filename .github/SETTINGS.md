@@ -3,9 +3,142 @@
 # GitHub repository settings
 
 GitHub is currently the primary origin for Living Proof Labs repositories.
-This guide records GitHub-specific preferences and a dated observation of
-`Living-Proof-Labs/collaboration-guidelines`. It is not a settings synchronizer
-or authorization to change a repository.
+This guide records GitHub-specific preferences, audit evidence, and the
+versioned configuration at
+[`config/github/repositories.json`](../config/github/repositories.json). The
+tool at `tools/github/repository-settings.mjs` is a read-only audit by default;
+it is not authorization to change a repository.
+
+## Managed defaults and change control
+
+The JSON declaration lists every current, non-archived repository owned by
+Living Proof Labs. It is deliberately small infrastructure as code: a Node
+script calls the documented GitHub REST API through authenticated `gh`, reports
+drift, and is idempotent when an authorized operator opts into application. It
+does not need a long-lived service, a cloud credential, or Terraform state.
+
+```sh
+# Read-only: reports differences and makes GET requests only.
+task github:settings:check
+
+# Test the argument safety and diff logic.
+task github:settings:test
+
+# After an authorized settings change has been approved:
+node tools/github/repository-settings.mjs --apply
+
+# A separate, explicit approval is required before changing main protection.
+node tools/github/repository-settings.mjs --apply --apply-main-ruleset
+```
+
+The first apply updates only the repository fields GitHub exposes through the
+repository update API and enables immutable releases when that endpoint is
+available. The second command also creates or updates the declared `main`
+ruleset. Never run either apply command from an unreviewed workflow, fork pull
+request, or with a token broader than needed.
+
+Some owner preferences are retained in `manual_or_unavailable_settings` because
+the authenticated API used by this tool does not expose a safe, documented
+repository update for them: sponsorships, Archive Program preservation, Git LFS
+archive inclusion, the ref-update limit, and automatic closing of linked
+issues. Verify those in the Settings UI during repository creation and record
+any available API support before adding it to the write path. Do not confuse
+the `has_downloads` REST field with Git LFS objects in source archives.
+
+### Main protection proposal — awaiting owner approval
+
+The declaration proposes one active branch ruleset targeted at the default
+branch. It requires a pull request, blocks deletion and force-pushes, requires
+the **merge** merge method, specifies zero required approving reviews, and has
+no bypass actors. Consequently, people who have permission to merge can merge
+their own passing pull request without a second reviewer, but nobody (including
+an administrator) can directly push or force-push to `main` while the ruleset
+is active. It does not require linear history, because linear history is
+incompatible with the owner-selected merge-commit-only policy.
+
+This is intentionally not a user allow-list. GitHub roles supply authorization:
+only people or integrations with the required repository role can merge; the
+ruleset merely ensures their change arrives through a pull request. Use direct
+collaborator roles or organization teams to give Aaron and Rivet only the
+needed role, and review organization base permissions separately. A `write`
+role is enough to push to ordinary branches and, with a mergeable PR, merge it;
+`maintain` manages repository operational settings without sensitive access
+controls; `admin` can manage access and rules. Do not describe all writers as
+“maintainers.”
+
+Anyone can open a pull request against a public repository, normally from a
+fork; that grants no push or merge ability. A contributor with write access may
+instead use a branch in the upstream repository. Both contribution paths remain
+welcome. Protecting `main` prevents malicious direct merges only when the
+ruleset is active and no inappropriate bypass is granted. Review collaborator,
+team, organization-base-role, and ruleset-bypass membership before enabling it.
+
+The GitHub ruleset documentation confirms that a pull request can be required
+without requiring approval, that bypasses can be scoped to roles/users/teams/
+apps, and that force-push blocking is on by default. It also documents that a
+linear-history rule would force squash or rebase merging, so it is omitted here:
+[available rules for rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets).
+
+### Releases and workflows
+
+Release immutability is declared separately because GitHub supplies a dedicated
+endpoint rather than a repository metadata field. It prevents edits to a
+published release; it does not prevent the semantic-release workflow from
+creating a tag and release after a merge to `main`. The existing shared release
+workflow is therefore compatible, provided it retains `contents: write` only in
+the trusted, post-merge release job. No tag ruleset is proposed, so release tags
+remain creatable.
+
+Merge commits are the only enabled pull-request merge method. The merge commit
+title is the pull request title and its message is blank, matching the owner’s
+observed `website` setting. This preserves each branch commit and remains fully
+compatible with semantic-release, which analyzes the commits reachable on
+`main`; it does not require squash merges. Contributors should use meaningful,
+conventional commit messages when a release should be inferred.
+
+Fork pull-request workflows must remain untrusted: do not check out or execute
+fork-controlled code in a `pull_request_target` workflow, and do not expose
+write tokens or secrets to untrusted fork code. Keep the default `GITHUB_TOKEN`
+read-only unless a trusted post-merge job explicitly needs a narrower elevated
+permission.
+
+## 2026-10-29 read-only organization audit
+
+The configured account enumerated 12 active, non-fork repositories in
+`Living-Proof-Labs`; none was archived, so none is excluded. Each is public,
+has `main` as its default branch, and has no repository ruleset. Each `main`
+branch reported `protected: false`, so a person with write access can currently
+push to it directly. No repository-level settings were changed by this audit.
+
+| Repository | General defaults match | Main protected / rulesets |
+| --- | --- | --- |
+| `website` | Yes | No / none |
+| `unitree-foxglove-sdk` | No | No / none |
+| `robot-capability-specs` | No | No / none |
+| `collaboration-guidelines` | No | No / none |
+| `capability-verifier` | No | No / none |
+| `livingproof-capability-report` | No | No / none |
+| `livingproof` | No | No / none |
+| `.github` | No | No / none |
+| `livingproof-common` | No | No / none |
+| `livingproof-sim-mujoco` | No | No / none |
+| `living-proof-labs.github.io` | No | No / none |
+| `livingproof-sim-gazebo` | No | No / none |
+
+`website` is the baseline for merge method, merge title/message, branch updates,
+auto-merge, branch deletion, wiki/issues/discussions/projects, and downloads.
+The other 11 retain some older values (notably squash/rebase enabled or branch
+automation disabled) and will be listed precisely by the check command.
+
+The token could list direct collaborators but could not read organization
+membership, organization base permission, Actions permission settings, or
+immutable-release state (403). Direct-collaborator responses named `aroller`
+as an administrator on `website`, and `rivet-agent-lpl` as an administrator on
+`robot-capability-specs`, `collaboration-guidelines`,
+`capability-verifier`, and `livingproof-capability-report`; an empty direct
+collaborator list does **not** prove that no team or organization role grants
+access. Treat the remaining access picture as unknown until an organization
+owner performs that review. The audit did not inspect secrets.
 
 ## Explicit owner preferences
 

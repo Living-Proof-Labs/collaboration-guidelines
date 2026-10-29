@@ -19,6 +19,14 @@ tasks:
     cmds:
       - task: check
       - task: test
+  github:settings:check:
+    desc: Read-only audit of the declared GitHub repository defaults
+    cmds:
+      - node tools/github/repository-settings.mjs
+  github:settings:test:
+    desc: Test the GitHub repository settings synchronizer
+    cmds:
+      - node --test tests/github/repository-settings.test.mjs
   host:build:
     desc: Build the common host in a fresh Ubuntu image
     cmds:
