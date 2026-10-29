@@ -53,9 +53,13 @@ export function normalizeRuleset(ruleset) {
       include: [...(ruleset.conditions?.ref_name?.include ?? [])].sort(),
       exclude: [...(ruleset.conditions?.ref_name?.exclude ?? [])].sort()
     } },
-    bypass_actors: (ruleset.bypass_actors ?? [])
-      .map(({ actor_id: actorId, actor_type: actorType, bypass_mode: bypassMode }) => ({ actor_id: actorId, actor_type: actorType, bypass_mode: bypassMode }))
-      .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
+    // GitHub deliberately omits this field when the caller cannot read it.
+    // Treat absence as unknown, never as an empty bypass list.
+    bypass_actors: Array.isArray(ruleset.bypass_actors)
+      ? ruleset.bypass_actors
+        .map(({ actor_id: actorId, actor_type: actorType, bypass_mode: bypassMode }) => ({ actor_id: actorId, actor_type: actorType, bypass_mode: bypassMode }))
+        .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)))
+      : undefined,
     rules: [
       ...(byType.deletion ? [{ type: 'deletion' }] : []),
       ...(byType.non_fast_forward ? [{ type: 'non_fast_forward' }] : []),
@@ -72,7 +76,9 @@ export function normalizeRuleset(ruleset) {
 
 export function rulesetState(existing, desired) {
   if (!existing) return 'missing';
-  return JSON.stringify(normalizeRuleset(existing)) === JSON.stringify(normalizeRuleset(desired)) ? 'matches' : 'different';
+  const normalizedExisting = normalizeRuleset(existing);
+  if (normalizedExisting.bypass_actors === undefined) return 'unknown';
+  return JSON.stringify(normalizedExisting) === JSON.stringify(normalizeRuleset(desired)) ? 'matches' : 'different';
 }
 
 /** Preserve all non-managed policy when correcting the fields this manifest owns. */
@@ -133,6 +139,12 @@ function gh(method, endpoint, body) {
   return execFileSync('gh', args, { input: body === undefined ? undefined : `${JSON.stringify(body)}\n`, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
 }
 
+function graphql(query, variables) {
+  const args = ['api', 'graphql', '-f', `query=${query}`];
+  for (const [name, value] of Object.entries(variables)) args.push('-F', `${name}=${value}`);
+  return JSON.parse(execFileSync('gh', args, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }));
+}
+
 function statusFrom(error) {
   const detail = `${error.stderr ?? ''}\n${error.message ?? ''}`;
   const found = detail.match(/HTTP (\d{3})/);
@@ -149,7 +161,10 @@ export function immutableStateFrom(get, endpoint) {
 const defaultApi = {
   get(endpoint) { return JSON.parse(gh('GET', endpoint)); },
   write(method, endpoint, body) { gh(method, endpoint, body); },
-  immutableState(endpoint) { return immutableStateFrom(this.get.bind(this), endpoint); }
+  immutableState(endpoint) { return immutableStateFrom(this.get.bind(this), endpoint); },
+  graphqlRepository(owner, repository) {
+    return graphql('query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { hasSponsorshipsEnabled } }', { owner, name: repository }).data.repository;
+  }
 };
 
 function inspectRuleset(api, endpoint, desired) {
@@ -171,17 +186,24 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
     const endpoint = `repos/${inventory.owner}/${repository}`;
     const result = {
       repository, settings: [], settingsOutcome: 'unchanged', immutableReleases: 'unknown',
-      immutableOutcome: 'unknown', mainRuleset: 'unknown', mainRulesetOutcome: 'not-requested'
+      sponsorships: [], immutableOutcome: 'unknown', mainRuleset: 'unknown', mainRulesetOutcome: 'not-requested'
     };
     report.repositories.push(result);
     try {
       const actual = api.get(endpoint);
       result.settings = differences(actual, policy.repository);
+      if (policy.graphql_repository) {
+        const graphqlActual = api.graphqlRepository(inventory.owner, repository);
+        result.sponsorships = differences(graphqlActual, policy.graphql_repository)
+          .map((difference) => ({ ...difference, field: `graphql.${difference.field}` }));
+      }
       result.immutableReleases = api.immutableState(endpoint);
       result.mainRuleset = inspectRuleset(api, endpoint, policy.main_ruleset).state;
       log(`${inventory.owner}/${repository}`);
       log(result.settings.length ? `  repository settings: ${result.settings.length} difference(s)` : '  repository settings: match');
       for (const item of result.settings) log(`  ${item.field}: ${JSON.stringify(item.actual)} -> ${JSON.stringify(item.desired)}`);
+      log(result.sponsorships.length ? `  sponsorship settings: ${result.sponsorships.length} difference(s)` : '  sponsorship settings: match');
+      for (const item of result.sponsorships) log(`  ${item.field}: ${JSON.stringify(item.actual)} -> ${JSON.stringify(item.desired)}`);
       log(`  immutable releases: ${result.immutableReleases}`);
       log(`  main ruleset: ${result.mainRuleset}`);
       if (!flags.apply) continue;
@@ -192,6 +214,7 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
         result.settings = [];
         result.settingsOutcome = 'applied';
       }
+      if (result.sponsorships.length) throw new Error('sponsorship settings differ and require a separately authorized GraphQL update.');
       if (result.immutableReleases === 'disabled') {
         api.write('PUT', `${endpoint}/immutable-releases`);
         assertVerified('immutable releases', api.immutableState(endpoint));
@@ -222,7 +245,7 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
 }
 
 export function reportDifferences(report) {
-  return report.repositories.reduce((total, result) => total + result.settings.length + (result.immutableReleases === 'enabled' ? 0 : 1) + (result.mainRuleset === 'matches' ? 0 : 1), 0);
+  return report.repositories.reduce((total, result) => total + result.settings.length + result.sponsorships.length + (result.immutableReleases === 'enabled' ? 0 : 1) + (result.mainRuleset === 'matches' ? 0 : 1), 0);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

@@ -56,9 +56,11 @@ needed.
 
 Some owner preferences are retained in `manual_or_unavailable_settings` because
 the authenticated API used by this tool does not expose a safe, documented
-repository update for them: sponsorships, Archive Program preservation, Git LFS
-archive inclusion, the ref-update limit, and automatic closing of linked
-issues. Verify those in the Settings UI during repository creation and record
+repository update for them: Archive Program preservation, Git LFS archive
+inclusion, the ref-update limit, and automatic closing of linked issues.
+Sponsorships are audited through GitHub GraphQL's
+`hasSponsorshipsEnabled` field, rather than being reported as manual. Verify
+the remaining controls in the Settings UI during repository creation and record
 any available API support before adding it to the write path. Do not confuse
 the `has_downloads` REST field with Git LFS objects in source archives.
 
