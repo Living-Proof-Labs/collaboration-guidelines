@@ -1,29 +1,81 @@
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { comparable, differences, parseArgs } from '../../tools/github/repository-settings.mjs';
+import {
+  differences, immutableStateFrom, parseArgs, reportDifferences, rulesetState, run, validateConfig
+} from '../../tools/github/repository-settings.mjs';
+
+const desiredRuleset = {
+  name: 'Protect main: pull requests only', target: 'branch', enforcement: 'active',
+  conditions: { ref_name: { include: ['~DEFAULT_BRANCH'], exclude: [] } }, bypass_actors: [],
+  rules: [
+    { type: 'deletion' }, { type: 'non_fast_forward' },
+    { type: 'pull_request', parameters: {
+      required_approving_review_count: 0, require_code_owner_review: false,
+      require_last_push_approval: false, required_review_thread_resolution: false,
+      allowed_merge_methods: ['merge']
+    } }
+  ]
+};
+const config = { schema_version: 1, owner: 'Living-Proof-Labs', repositories: ['example'], repository: { has_wiki: false }, main_ruleset: desiredRuleset };
+
+function fakeApi({ repository = { has_wiki: false }, immutable = 'enabled', ruleset } = {}) {
+  const writes = [];
+  const api = {
+    get(endpoint) {
+      if (endpoint.endsWith('/rulesets')) return ruleset ? [{ id: 7, name: ruleset.name }] : [];
+      if (endpoint.endsWith('/rulesets/7')) return ruleset;
+      return repository;
+    },
+    immutableState() { return immutable; },
+    write(method, endpoint, body) { writes.push({ method, endpoint, body }); }
+  };
+  return { api, writes };
+}
 
 test('reports only fields that differ from the declaration', () => {
-  const desired = { has_wiki: false, allow_merge_commit: true };
-  const actual = { has_wiki: true, allow_merge_commit: true };
-  assert.deepEqual(differences(actual, desired), [
+  assert.deepEqual(differences({ has_wiki: true }, { has_wiki: false }), [
     { field: 'has_wiki', actual: true, desired: false }
   ]);
-  assert.deepEqual(comparable(actual, desired), {
-    has_wiki: false,
-    allow_merge_commit: true
-  });
 });
 
-test('does not permit accidental branch-policy application', () => {
+test('does not permit accidental apply or an undeclared target', () => {
   assert.throws(() => parseArgs(['--apply-main-ruleset']), /requires --apply/);
-  assert.deepEqual(parseArgs(['--apply', '--apply-main-ruleset']), {
-    apply: true,
-    applyMainRuleset: true,
-    help: false
+  assert.throws(() => parseArgs(['--apply']), /requires exactly one --repo/);
+  assert.throws(() => validateConfig(config, 'other'), /not declared/);
+  assert.deepEqual(parseArgs(['--apply', '--repo', 'example']), {
+    apply: true, applyMainRuleset: false, help: false, repository: 'example'
   });
 });
 
-test('rejects unknown options', () => {
-  assert.throws(() => parseArgs(['--yes']), /Unknown option/);
+test('normalizes server defaults and rule order before comparing', () => {
+  const serverResponse = {
+    ...desiredRuleset, id: 7, rules: [...desiredRuleset.rules].reverse(),
+    conditions: { ref_name: { exclude: [], include: ['~DEFAULT_BRANCH'] } },
+    extra_server_field: 'ignored'
+  };
+  assert.equal(rulesetState(serverResponse, desiredRuleset), 'matches');
+});
+
+test('immutable-release audit distinguishes enabled, disabled, and unknown', () => {
+  assert.equal(immutableStateFrom(() => ({ enabled: true }), 'repos/example'), 'enabled');
+  assert.equal(immutableStateFrom(() => ({ enabled: false }), 'repos/example'), 'unknown');
+  assert.equal(immutableStateFrom(() => { throw { stderr: 'HTTP 404 Not Found' }; }, 'repos/example'), 'disabled');
+  assert.equal(immutableStateFrom(() => { throw { stderr: 'HTTP 403 Forbidden' }; }, 'repos/example'), 'unknown');
+});
+
+test('read-only audit inspects missing rulesets and writes nothing', () => {
+  const { api, writes } = fakeApi({ immutable: 'unknown' });
+  const report = run({ config, flags: parseArgs([]), api, log: () => {} });
+  assert.equal(report.repositories[0].mainRuleset, 'missing');
+  assert.equal(report.repositories[0].immutableReleases, 'unknown');
+  assert.equal(reportDifferences(report), 2);
+  assert.deepEqual(writes, []);
+});
+
+test('apply is a no-op when normalized state already matches', () => {
+  const { api, writes } = fakeApi({ ruleset: desiredRuleset });
+  const report = run({ config, flags: parseArgs(['--apply', '--apply-main-ruleset', '--repo', 'example']), api, log: () => {} });
+  assert.deepEqual(report.failures, []);
+  assert.deepEqual(writes, []);
 });

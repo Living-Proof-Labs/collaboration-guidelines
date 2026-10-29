@@ -1,34 +1,32 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: Apache-2.0
-/**
- * Check or deliberately apply Living Proof Labs' repository defaults.
- *
- * This is intentionally opt-in: normal execution is read-only. Applying
- * default-branch rules needs a second flag because it changes who can push.
- */
+/** Audit or deliberately apply Living Proof Labs' repository defaults. */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
 const configPath = new URL('../../config/github/repositories.json', import.meta.url);
+const allowedOwners = new Set(['Living-Proof-Labs']);
 
 export function parseArgs(args) {
-  const flags = new Set(args);
-  const known = new Set(['--apply', '--apply-main-ruleset', '--help']);
-  const unknown = args.filter((arg) => !known.has(arg));
-  if (unknown.length) throw new Error(`Unknown option: ${unknown.join(', ')}`);
-  if (flags.has('--apply-main-ruleset') && !flags.has('--apply')) {
-    throw new Error('--apply-main-ruleset requires --apply.');
+  let repository;
+  let apply = false;
+  let applyMainRuleset = false;
+  let help = false;
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === '--apply') apply = true;
+    else if (argument === '--apply-main-ruleset') applyMainRuleset = true;
+    else if (argument === '--help') help = true;
+    else if (argument === '--repo') {
+      repository = args[index + 1];
+      if (!repository || repository.startsWith('-')) throw new Error('--repo requires a repository name.');
+      index += 1;
+    } else throw new Error(`Unknown option: ${argument}`);
   }
-  return {
-    apply: flags.has('--apply'),
-    applyMainRuleset: flags.has('--apply-main-ruleset'),
-    help: flags.has('--help')
-  };
-}
-
-export function comparable(actual, desired) {
-  return Object.fromEntries(Object.entries(desired).map(([key, value]) => [key, actual[key] === value]));
+  if (applyMainRuleset && !apply) throw new Error('--apply-main-ruleset requires --apply.');
+  if (apply && !repository) throw new Error('--apply requires exactly one --repo from the declaration.');
+  return { apply, applyMainRuleset, help, repository };
 }
 
 export function differences(actual, desired) {
@@ -37,100 +35,145 @@ export function differences(actual, desired) {
     .map(([key, value]) => ({ field: key, actual: actual[key], desired: value }));
 }
 
-function usage() {
-  return `Usage: node tools/github/repository-settings.mjs [--apply [--apply-main-ruleset]]
+export function normalizeRuleset(ruleset) {
+  const byType = Object.fromEntries((ruleset.rules ?? []).map((rule) => [rule.type, rule]));
+  const pullRequest = byType.pull_request?.parameters ?? {};
+  return {
+    name: ruleset.name,
+    target: ruleset.target,
+    enforcement: ruleset.enforcement,
+    conditions: { ref_name: {
+      include: [...(ruleset.conditions?.ref_name?.include ?? [])].sort(),
+      exclude: [...(ruleset.conditions?.ref_name?.exclude ?? [])].sort()
+    } },
+    bypass_actors: (ruleset.bypass_actors ?? [])
+      .map(({ actor_id: actorId, actor_type: actorType, bypass_mode: bypassMode }) => ({ actor_id: actorId, actor_type: actorType, bypass_mode: bypassMode }))
+      .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
+    rules: [
+      ...(byType.deletion ? [{ type: 'deletion' }] : []),
+      ...(byType.non_fast_forward ? [{ type: 'non_fast_forward' }] : []),
+      ...(byType.pull_request ? [{ type: 'pull_request', parameters: {
+        required_approving_review_count: pullRequest.required_approving_review_count,
+        require_code_owner_review: pullRequest.require_code_owner_review,
+        require_last_push_approval: pullRequest.require_last_push_approval,
+        required_review_thread_resolution: pullRequest.required_review_thread_resolution,
+        allowed_merge_methods: [...(pullRequest.allowed_merge_methods ?? [])].sort()
+      } }] : [])
+    ]
+  };
+}
 
-Without --apply, only GET requests are made and differences are reported.
---apply updates general repository settings and enables immutable releases.
---apply-main-ruleset additionally creates or updates the main-branch ruleset;
-use it only after the owner approves that access-control change.`;
+export function rulesetState(existing, desired) {
+  if (!existing) return 'missing';
+  return JSON.stringify(normalizeRuleset(existing)) === JSON.stringify(normalizeRuleset(desired)) ? 'matches' : 'different';
+}
+
+export function validateConfig(config, selectedRepository) {
+  if (!allowedOwners.has(config.owner)) throw new Error(`Owner is not allowlisted: ${config.owner}`);
+  if (config.schema_version !== 1) throw new Error(`Unsupported configuration schema version: ${config.schema_version}`);
+  if (!Array.isArray(config.repositories) || new Set(config.repositories).size !== config.repositories.length) throw new Error('Repository declaration must contain unique repository names.');
+  if (selectedRepository && !config.repositories.includes(selectedRepository)) throw new Error(`Repository is not declared for ${config.owner}: ${selectedRepository}`);
+}
+
+function usage() {
+  return `Usage: node tools/github/repository-settings.mjs [--repo NAME] [--apply [--apply-main-ruleset]]
+
+Without --apply, only GET requests are made. Omit --repo to audit every declared
+repository, or use it to audit one. --apply requires exactly one declared repo.
+--apply updates general settings and immutable releases after verification.
+--apply-main-ruleset additionally changes main protection after owner approval.`;
 }
 
 function gh(method, endpoint, body) {
   const args = ['api', '--method', method, endpoint];
   if (body !== undefined) args.push('--input', '-');
-  return execFileSync('gh', args, {
-    input: body === undefined ? undefined : `${JSON.stringify(body)}\n`,
-    encoding: 'utf8',
-    stdio: ['pipe', 'pipe', 'pipe']
-  });
+  return execFileSync('gh', args, { input: body === undefined ? undefined : `${JSON.stringify(body)}\n`, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
 }
 
-function get(endpoint) {
-  return JSON.parse(gh('GET', endpoint));
+function statusFrom(error) {
+  const detail = `${error.stderr ?? ''}\n${error.message ?? ''}`;
+  const found = detail.match(/HTTP (\d{3})/);
+  return found ? Number(found[1]) : undefined;
 }
 
-function write(method, endpoint, body) {
-  gh(method, endpoint, body);
-}
-
-function matchingRuleset(rulesets, name) {
-  return rulesets.find((ruleset) => ruleset.name === name);
-}
-
-function checkImmutableReleases(endpoint) {
+export function immutableStateFrom(get, endpoint) {
   try {
-    get(`${endpoint}/immutable-releases`);
-    return 'enabled';
-  } catch (error) {
-    const detail = error.stderr?.toString() ?? error.message;
-    if (detail.includes('404')) return 'disabled';
-    return 'unavailable';
-  }
+    const response = get(`${endpoint}/immutable-releases`);
+    return response?.enabled === true ? 'enabled' : 'unknown';
+  } catch (error) { return statusFrom(error) === 404 ? 'disabled' : 'unknown'; }
 }
 
-function syncRuleset(endpoint, desired, apply) {
-  const existing = matchingRuleset(get(`${endpoint}/rulesets`), desired.name);
-  if (!existing) {
-    console.log('  main ruleset: missing');
-    if (apply) write('POST', `${endpoint}/rulesets`, desired);
-    return;
-  }
-  const current = get(`${endpoint}/rulesets/${existing.id}`);
-  const fields = ['target', 'enforcement', 'conditions', 'bypass_actors', 'rules'];
-  const changed = fields.some((field) => JSON.stringify(current[field]) !== JSON.stringify(desired[field]));
-  console.log(`  main ruleset: ${changed ? 'different' : 'matches'}`);
-  if (changed && apply) write('PUT', `${endpoint}/rulesets/${existing.id}`, desired);
+const defaultApi = {
+  get(endpoint) { return JSON.parse(gh('GET', endpoint)); },
+  write(method, endpoint, body) { gh(method, endpoint, body); },
+  immutableState(endpoint) { return immutableStateFrom(this.get.bind(this), endpoint); }
+};
+
+function inspectRuleset(api, endpoint, desired) {
+  const summary = api.get(`${endpoint}/rulesets`);
+  const match = summary.find((ruleset) => ruleset.name === desired.name);
+  if (!match) return { state: 'missing' };
+  return { state: rulesetState(api.get(`${endpoint}/rulesets/${match.id}`), desired), id: match.id };
 }
 
-export function run({ config, flags, api = { get, write, checkImmutableReleases } }) {
-  let mismatches = 0;
-  for (const repository of config.repositories) {
+function assertVerified(label, state) {
+  if (state !== 'matches' && state !== 'enabled') throw new Error(`${label} verification failed: ${state}`);
+}
+
+export function run({ config, flags, api = defaultApi, log = console.log }) {
+  validateConfig(config, flags.repository);
+  const repositories = flags.repository ? [flags.repository] : config.repositories;
+  const report = { repositories: [], failures: [] };
+  for (const repository of repositories) {
     const endpoint = `repos/${config.owner}/${repository}`;
-    const actual = api.get(endpoint);
-    const diff = differences(actual, config.repository);
-    const immutable = api.checkImmutableReleases(endpoint);
-    console.log(`${config.owner}/${repository}`);
-    if (!diff.length) console.log('  repository settings: match');
-    for (const item of diff) {
-      mismatches += 1;
-      console.log(`  ${item.field}: ${JSON.stringify(item.actual)} -> ${JSON.stringify(item.desired)}`);
+    const result = { repository, settings: [], immutableReleases: 'unknown', mainRuleset: 'unknown' };
+    report.repositories.push(result);
+    try {
+      const actual = api.get(endpoint);
+      result.settings = differences(actual, config.repository);
+      result.immutableReleases = api.immutableState(endpoint);
+      result.mainRuleset = inspectRuleset(api, endpoint, config.main_ruleset).state;
+      log(`${config.owner}/${repository}`);
+      log(result.settings.length ? `  repository settings: ${result.settings.length} difference(s)` : '  repository settings: match');
+      for (const item of result.settings) log(`  ${item.field}: ${JSON.stringify(item.actual)} -> ${JSON.stringify(item.desired)}`);
+      log(`  immutable releases: ${result.immutableReleases}`);
+      log(`  main ruleset: ${result.mainRuleset}`);
+      if (!flags.apply) continue;
+      if (result.settings.length) {
+        api.write('PATCH', endpoint, config.repository);
+        const verification = differences(api.get(endpoint), config.repository);
+        if (verification.length) throw new Error(`repository settings verification failed: ${verification.map((item) => item.field).join(', ')}`);
+      }
+      if (result.immutableReleases === 'disabled') {
+        api.write('PUT', `${endpoint}/immutable-releases`);
+        assertVerified('immutable releases', api.immutableState(endpoint));
+      }
+      if (flags.applyMainRuleset) {
+        const ruleset = inspectRuleset(api, endpoint, config.main_ruleset);
+        if (ruleset.state === 'missing') api.write('POST', `${endpoint}/rulesets`, config.main_ruleset);
+        else if (ruleset.state === 'different') api.write('PUT', `${endpoint}/rulesets/${ruleset.id}`, config.main_ruleset);
+        assertVerified('main ruleset', inspectRuleset(api, endpoint, config.main_ruleset).state);
+      }
+    } catch (error) {
+      const failure = { repository, error: error.message };
+      report.failures.push(failure);
+      log(`  ERROR: ${failure.error}`);
     }
-    if (immutable !== 'enabled') {
-      mismatches += 1;
-      console.log(`  immutable releases: ${immutable} -> enabled`);
-    } else console.log('  immutable releases: enabled');
-    if (flags.apply && diff.length) api.write('PATCH', endpoint, config.repository);
-    if (flags.apply && immutable === 'disabled') api.write('PUT', `${endpoint}/immutable-releases`);
-    if (flags.applyMainRuleset) syncRuleset(endpoint, config.main_ruleset, true);
-    else console.log('  main ruleset: not changed (requires --apply-main-ruleset)');
   }
-  return mismatches;
+  return report;
+}
+
+export function reportDifferences(report) {
+  return report.repositories.reduce((total, result) => total + result.settings.length + (result.immutableReleases === 'enabled' ? 0 : 1) + (result.mainRuleset === 'matches' ? 0 : 1), 0);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     const flags = parseArgs(process.argv.slice(2));
-    if (flags.help) {
-      console.log(usage());
-      process.exit(0);
-    }
+    if (flags.help) { console.log(usage()); process.exit(0); }
     const config = JSON.parse(readFileSync(configPath, 'utf8'));
-    const mismatches = run({ config, flags });
-    console.log(`\n${mismatches ? `${mismatches} difference(s) found.` : 'All managed settings match.'}`);
-    process.exit(0);
-  } catch (error) {
-    console.error(error.message);
-    process.exit(1);
-  }
+    const report = run({ config, flags });
+    console.log(`\n${reportDifferences(report)} difference(s) found; ${report.failures.length} error(s).`);
+    process.exit(report.failures.length ? 1 : 0);
+  } catch (error) { console.error(error.message); process.exit(1); }
 }

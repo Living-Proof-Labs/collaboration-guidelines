@@ -6,7 +6,7 @@
     "node": ">=24.10.0"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node --test test/*.test.mjs ../../../tests/github/*.test.mjs",
     "check": "markdownlint \"../../../*.md\" \"../../../docs/*.md\" \"../../../templates/generated-docs/*.md\" \"../../../.github/*.md\" \"../../../.gitlab/*.md\" \"../../../.codex/*.md\" \"../../../.cursor/*.md\""
   },
   "dependencies": {

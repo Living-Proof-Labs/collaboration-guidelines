@@ -24,17 +24,22 @@ task github:settings:check
 # Test the argument safety and diff logic.
 task github:settings:test
 
-# After an authorized settings change has been approved:
-node tools/github/repository-settings.mjs --apply
+# After an authorized settings change has been approved, apply one named repo:
+node tools/github/repository-settings.mjs --apply --repo website
 
 # A separate, explicit approval is required before changing main protection.
-node tools/github/repository-settings.mjs --apply --apply-main-ruleset
+node tools/github/repository-settings.mjs --apply --apply-main-ruleset --repo website
 ```
 
-The first apply updates only the repository fields GitHub exposes through the
-repository update API and enables immutable releases when that endpoint is
-available. The second command also creates or updates the declared `main`
-ruleset. Never run either apply command from an unreviewed workflow, fork pull
+The first apply updates only one named, declared repository through GitHub's
+repository update API and then reads it back to verify the result. It enables
+immutable releases only when the dedicated endpoint positively reports that
+they are disabled, and verifies that result too. The second command also creates
+or updates the declared `main` ruleset and verifies the managed fields. Every
+write target is derived from the fixed owner allow-list and repository manifest;
+the tool will not bulk-apply, accept an undeclared repository, or write to an
+arbitrary endpoint. It reports each failed operation with its repository and
+reason. Never run either apply command from an unreviewed workflow, fork pull
 request, or with a token broader than needed.
 
 Some owner preferences are retained in `manual_or_unavailable_settings` because
@@ -105,10 +110,12 @@ permission.
 ## 2026-10-29 read-only organization audit
 
 The configured account enumerated 12 active, non-fork repositories in
-`Living-Proof-Labs`; none was archived, so none is excluded. Each is public,
-has `main` as its default branch, and has no repository ruleset. Each `main`
-branch reported `protected: false`, so a person with write access can currently
-push to it directly. No repository-level settings were changed by this audit.
+`Living-Proof-Labs`; none was archived, so none is excluded. Each is public and
+has `main` as its default branch. Each `main` branch reported `protected: false`;
+the repository-ruleset listing was empty; and the effective-rules endpoint for
+`main` returned an empty list. This includes inherited organization rules, so a
+person with write access can currently push to it directly. No repository-level
+settings were changed by this audit.
 
 | Repository | General defaults match | Main protected / rulesets |
 | --- | --- | --- |
@@ -126,9 +133,9 @@ push to it directly. No repository-level settings were changed by this audit.
 | `livingproof-sim-gazebo` | No | No / none |
 
 `website` is the baseline for merge method, merge title/message, branch updates,
-auto-merge, branch deletion, wiki/issues/discussions/projects, and downloads.
-The other 11 retain some older values (notably squash/rebase enabled or branch
-automation disabled) and will be listed precisely by the check command.
+auto-merge, branch deletion, and wiki/issues/discussions/projects. The other 11
+retain some older values (notably squash/rebase enabled or branch automation
+disabled) and will be listed precisely by the check command.
 
 The token could list direct collaborators but could not read organization
 membership, organization base permission, Actions permission settings, or
