@@ -1,20 +1,5 @@
 {
   "schema_version": 1,
-  "owner": "Living-Proof-Labs",
-  "repositories": [
-    ".github",
-    "capability-verifier",
-    "collaboration-guidelines",
-    "living-proof-labs.github.io",
-    "livingproof",
-    "livingproof-capability-report",
-    "livingproof-common",
-    "livingproof-sim-gazebo",
-    "livingproof-sim-mujoco",
-    "robot-capability-specs",
-    "unitree-foxglove-sdk",
-    "website"
-  ],
   "repository": {
     "has_wiki": false,
     "has_issues": true,
@@ -42,20 +27,11 @@
     "name": "Protect main: pull requests only",
     "target": "branch",
     "enforcement": "active",
-    "conditions": {
-      "ref_name": {
-        "include": ["~DEFAULT_BRANCH"],
-        "exclude": []
-      }
-    },
+    "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
     "bypass_actors": [],
     "rules": [
-      {
-        "type": "deletion"
-      },
-      {
-        "type": "non_fast_forward"
-      },
+      { "type": "deletion" },
+      { "type": "non_fast_forward" },
       {
         "type": "pull_request",
         "parameters": {

@@ -2,22 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 /** Audit or deliberately apply Living Proof Labs' repository defaults. */
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
+import path from 'node:path';
 import process from 'node:process';
 
-const configPath = new URL('../../config/github/repositories.json', import.meta.url);
-const allowedOwners = new Set(['Living-Proof-Labs']);
+const policyPath = new URL('../../config/github/repository-policy.json', import.meta.url);
 
 export function parseArgs(args) {
   let repository;
   let apply = false;
   let applyMainRuleset = false;
   let help = false;
+  let inventoryPath;
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
     if (argument === '--apply') apply = true;
     else if (argument === '--apply-main-ruleset') applyMainRuleset = true;
     else if (argument === '--help') help = true;
+    else if (argument === '--inventory') {
+      inventoryPath = args[index + 1];
+      if (!inventoryPath || inventoryPath.startsWith('-')) throw new Error('--inventory requires a JSON file path.');
+      index += 1;
+    }
     else if (argument === '--repo') {
       repository = args[index + 1];
       if (!repository || repository.startsWith('-')) throw new Error('--repo requires a repository name.');
@@ -25,8 +31,9 @@ export function parseArgs(args) {
     } else throw new Error(`Unknown option: ${argument}`);
   }
   if (applyMainRuleset && !apply) throw new Error('--apply-main-ruleset requires --apply.');
+  if (!help && !inventoryPath) throw new Error('--inventory is required so the consumer controls its repository inventory.');
   if (apply && !repository) throw new Error('--apply requires exactly one --repo from the declaration.');
-  return { apply, applyMainRuleset, help, repository };
+  return { apply, applyMainRuleset, help, inventoryPath, repository };
 }
 
 export function differences(actual, desired) {
@@ -95,15 +102,23 @@ export function updateRulesetPayload(existing, desired) {
   };
 }
 
-export function validateConfig(config, selectedRepository) {
-  if (!allowedOwners.has(config.owner)) throw new Error(`Owner is not allowlisted: ${config.owner}`);
-  if (config.schema_version !== 1) throw new Error(`Unsupported configuration schema version: ${config.schema_version}`);
-  if (!Array.isArray(config.repositories) || new Set(config.repositories).size !== config.repositories.length) throw new Error('Repository declaration must contain unique repository names.');
-  if (selectedRepository && !config.repositories.includes(selectedRepository)) throw new Error(`Repository is not declared for ${config.owner}: ${selectedRepository}`);
+export function validateConfig(policy, inventory, selectedRepository) {
+  if (policy.schema_version !== 1) throw new Error(`Unsupported policy schema version: ${policy.schema_version}`);
+  if (inventory.schema_version !== 1) throw new Error(`Unsupported inventory schema version: ${inventory.schema_version}`);
+  if (typeof inventory.owner !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9-]*$/.test(inventory.owner)) throw new Error('Inventory owner must be a GitHub account name.');
+  if (!Array.isArray(inventory.repositories) || new Set(inventory.repositories).size !== inventory.repositories.length || !inventory.repositories.every((name) => name === '.github' || /^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(name))) throw new Error('Inventory must contain unique, valid GitHub repository names.');
+  if (selectedRepository && !inventory.repositories.includes(selectedRepository)) throw new Error(`Repository is not declared for ${inventory.owner}: ${selectedRepository}`);
+}
+
+export function loadInventory(inventoryPath, cwd = process.cwd()) {
+  const root = realpathSync(cwd);
+  const resolved = realpathSync(path.resolve(root, inventoryPath));
+  if (!resolved.startsWith(`${root}${path.sep}`) || path.extname(resolved) !== '.json') throw new Error('Inventory must be a JSON file inside the current working directory.');
+  return JSON.parse(readFileSync(resolved, 'utf8'));
 }
 
 function usage() {
-  return `Usage: node tools/github/repository-settings.mjs [--repo NAME] [--apply [--apply-main-ruleset]]
+  return `Usage: node tools/github/repository-settings.mjs --inventory PATH [--repo NAME] [--apply [--apply-main-ruleset]]
 
 Without --apply, only GET requests are made. Omit --repo to audit every declared
 repository, or use it to audit one. --apply requires exactly one declared repo.
@@ -147,12 +162,12 @@ function assertVerified(label, state) {
   if (state !== 'matches' && state !== 'enabled') throw new Error(`${label} verification failed: ${state}`);
 }
 
-export function run({ config, flags, api = defaultApi, log = console.log }) {
-  validateConfig(config, flags.repository);
-  const repositories = flags.repository ? [flags.repository] : config.repositories;
+export function run({ policy, inventory, flags, api = defaultApi, log = console.log }) {
+  validateConfig(policy, inventory, flags.repository);
+  const repositories = flags.repository ? [flags.repository] : inventory.repositories;
   const report = { repositories: [], failures: [] };
   for (const repository of repositories) {
-    const endpoint = `repos/${config.owner}/${repository}`;
+    const endpoint = `repos/${inventory.owner}/${repository}`;
     const result = {
       repository, settings: [], settingsOutcome: 'unchanged', immutableReleases: 'unknown',
       immutableOutcome: 'unknown', mainRuleset: 'unknown', mainRulesetOutcome: 'not-requested'
@@ -160,18 +175,18 @@ export function run({ config, flags, api = defaultApi, log = console.log }) {
     report.repositories.push(result);
     try {
       const actual = api.get(endpoint);
-      result.settings = differences(actual, config.repository);
+      result.settings = differences(actual, policy.repository);
       result.immutableReleases = api.immutableState(endpoint);
-      result.mainRuleset = inspectRuleset(api, endpoint, config.main_ruleset).state;
-      log(`${config.owner}/${repository}`);
+      result.mainRuleset = inspectRuleset(api, endpoint, policy.main_ruleset).state;
+      log(`${inventory.owner}/${repository}`);
       log(result.settings.length ? `  repository settings: ${result.settings.length} difference(s)` : '  repository settings: match');
       for (const item of result.settings) log(`  ${item.field}: ${JSON.stringify(item.actual)} -> ${JSON.stringify(item.desired)}`);
       log(`  immutable releases: ${result.immutableReleases}`);
       log(`  main ruleset: ${result.mainRuleset}`);
       if (!flags.apply) continue;
       if (result.settings.length) {
-        api.write('PATCH', endpoint, config.repository);
-        const verification = differences(api.get(endpoint), config.repository);
+        api.write('PATCH', endpoint, policy.repository);
+        const verification = differences(api.get(endpoint), policy.repository);
         if (verification.length) throw new Error(`repository settings verification failed: ${verification.map((item) => item.field).join(', ')}`);
         result.settings = [];
         result.settingsOutcome = 'applied';
@@ -185,13 +200,13 @@ export function run({ config, flags, api = defaultApi, log = console.log }) {
         result.immutableOutcome = 'unchanged';
       }
       if (flags.applyMainRuleset) {
-        const ruleset = inspectRuleset(api, endpoint, config.main_ruleset);
-        if (ruleset.state === 'missing') api.write('POST', `${endpoint}/rulesets`, config.main_ruleset);
+        const ruleset = inspectRuleset(api, endpoint, policy.main_ruleset);
+        if (ruleset.state === 'missing') api.write('POST', `${endpoint}/rulesets`, policy.main_ruleset);
         else if (ruleset.state === 'different') {
           const existing = api.get(`${endpoint}/rulesets/${ruleset.id}`);
-          api.write('PUT', `${endpoint}/rulesets/${ruleset.id}`, updateRulesetPayload(existing, config.main_ruleset));
+          api.write('PUT', `${endpoint}/rulesets/${ruleset.id}`, updateRulesetPayload(existing, policy.main_ruleset));
         }
-        assertVerified('main ruleset', inspectRuleset(api, endpoint, config.main_ruleset).state);
+        assertVerified('main ruleset', inspectRuleset(api, endpoint, policy.main_ruleset).state);
         result.mainRuleset = 'matches';
         result.mainRulesetOutcome = ruleset.state === 'matches' ? 'unchanged' : 'applied';
       }
@@ -213,8 +228,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     const flags = parseArgs(process.argv.slice(2));
     if (flags.help) { console.log(usage()); process.exit(0); }
-    const config = JSON.parse(readFileSync(configPath, 'utf8'));
-    const report = run({ config, flags });
+    const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
+    const inventory = loadInventory(flags.inventoryPath);
+    const report = run({ policy, inventory, flags });
     console.log(`\n${reportDifferences(report)} difference(s) found; ${report.failures.length} error(s).`);
     process.exit(report.failures.length ? 1 : 0);
   } catch (error) { console.error(error.message); process.exit(1); }

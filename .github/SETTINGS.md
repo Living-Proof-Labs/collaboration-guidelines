@@ -4,43 +4,50 @@
 
 GitHub is currently the primary origin for Living Proof Labs repositories.
 This guide records GitHub-specific preferences, audit evidence, and the
-versioned configuration at
-[`config/github/repositories.json`](../config/github/repositories.json). The
+versioned policy at
+[`config/github/repository-policy.json`](../config/github/repository-policy.json).
+The
 tool at `tools/github/repository-settings.mjs` is a read-only audit by default;
 it is not authorization to change a repository.
 
 ## Managed defaults and change control
 
-The JSON declaration lists every current, non-archived repository owned by
-Living Proof Labs. It is deliberately small infrastructure as code: a Node
-script calls the documented GitHub REST API through authenticated `gh`, reports
-drift, and is idempotent when an authorized operator opts into application. It
-does not need a long-lived service, a cloud credential, or Terraform state.
+The policy deliberately does not list consumer repositories or hard-code an
+organization. A consuming group-directory repository owns its inventory and
+passes it with `--inventory`; the Node tool calls the documented GitHub REST API
+through authenticated `gh`, reports drift, and is idempotent when an authorized
+operator opts into application. It does not need a long-lived service, a cloud
+credential, or Terraform state.
 
 ```sh
 # Read-only: reports differences and makes GET requests only.
-task github:settings:check
+node tools/github/repository-settings.mjs --inventory config/github/repositories.json
 
 # Test the argument safety and diff logic.
 task github:settings:test
 
 # After an authorized settings change has been approved, apply one named repo:
-node tools/github/repository-settings.mjs --apply --repo website
+node tools/github/repository-settings.mjs \
+  --inventory config/github/repositories.json \
+  --apply --repo website
 
 # A separate, explicit approval is required before changing main protection.
-node tools/github/repository-settings.mjs --apply --apply-main-ruleset --repo website
+node tools/github/repository-settings.mjs \
+  --inventory config/github/repositories.json \
+  --apply --apply-main-ruleset --repo website
 ```
 
-The first apply updates only one named, declared repository through GitHub's
+The first apply updates only one named repository in the consumer-controlled
+inventory through GitHub's
 repository update API and then reads it back to verify the result. It enables
 immutable releases only when the dedicated endpoint positively reports that
 they are disabled, and verifies that result too. The second command also creates
 or updates the declared `main` ruleset and verifies the managed fields. When a
 matching named ruleset has additional rules or pull-request parameters, an
 update preserves those unmanaged protections rather than replacing them. Every
-write target is derived from the fixed owner allow-list and repository manifest;
-the tool will not bulk-apply, accept an undeclared repository, or write to an
-arbitrary endpoint. It reports each failed operation with its repository and
+write target is derived from the validated inventory; the tool will not
+bulk-apply, accept an undeclared repository, or write to an arbitrary endpoint.
+It reports each failed operation with its repository and
 reason. Its output separately labels settings, immutable releases, and the main
 ruleset as applied, unchanged, unknown, or failed; an unknown immutable-release
 read is never presented as a successful change. Never run either apply command
@@ -112,45 +119,13 @@ write tokens or secrets to untrusted fork code. Keep the default `GITHUB_TOKEN`
 read-only unless a trusted post-merge job explicitly needs a narrower elevated
 permission.
 
-## 2026-10-29 read-only organization audit
+## Consumer inventory
 
-The configured account enumerated 12 active, non-fork repositories in
-`Living-Proof-Labs`; none was archived, so none is excluded. Each is public and
-has `main` as its default branch. Each `main` branch reported `protected: false`;
-the repository-ruleset listing was empty; and the effective-rules endpoint for
-`main` returned an empty list. This includes inherited organization rules, so a
-person with write access can currently push to it directly. No repository-level
-settings were changed by this audit.
-
-| Repository | General defaults match | Main protected / rulesets |
-| --- | --- | --- |
-| `website` | Yes | No / none |
-| `unitree-foxglove-sdk` | No | No / none |
-| `robot-capability-specs` | No | No / none |
-| `collaboration-guidelines` | No | No / none |
-| `capability-verifier` | No | No / none |
-| `livingproof-capability-report` | No | No / none |
-| `livingproof` | No | No / none |
-| `.github` | No | No / none |
-| `livingproof-common` | No | No / none |
-| `livingproof-sim-mujoco` | No | No / none |
-| `living-proof-labs.github.io` | No | No / none |
-| `livingproof-sim-gazebo` | No | No / none |
-
-`website` is the baseline for merge method, merge title/message, branch updates,
-auto-merge, branch deletion, and wiki/issues/discussions/projects. The other 11
-retain some older values (notably squash/rebase enabled or branch automation
-disabled) and will be listed precisely by the check command.
-
-The token could list direct collaborators but could not read organization
-membership, organization base permission, Actions permission settings, or
-immutable-release state (403). Direct-collaborator responses named `aroller`
-as an administrator on `website`, and `rivet-agent-lpl` as an administrator on
-`robot-capability-specs`, `collaboration-guidelines`,
-`capability-verifier`, and `livingproof-capability-report`; an empty direct
-collaborator list does **not** prove that no team or organization role grants
-access. Treat the remaining access picture as unknown until an organization
-owner performs that review. The audit did not inspect secrets.
+Each consumer keeps its own inventory JSON, with `schema_version`, a GitHub
+owner name, and unique repository names. The tool rejects malformed names,
+undeclared selected repositories, non-JSON inventories, and paths outside the
+consumer's current working directory. Keep dated organization audits and access
+findings with that inventory, not in this reusable policy repository.
 
 ## Explicit owner preferences
 

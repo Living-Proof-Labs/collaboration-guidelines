@@ -18,7 +18,8 @@ const desiredRuleset = {
     } }
   ]
 };
-const config = { schema_version: 1, owner: 'Living-Proof-Labs', repositories: ['example'], repository: { has_wiki: false }, main_ruleset: desiredRuleset };
+const policy = { schema_version: 1, repository: { has_wiki: false }, main_ruleset: desiredRuleset };
+const inventory = { schema_version: 1, owner: 'example-org', repositories: ['example'] };
 
 function fakeApi({ repository = { has_wiki: false }, immutable = 'enabled', ruleset } = {}) {
   const writes = [];
@@ -41,11 +42,12 @@ test('reports only fields that differ from the declaration', () => {
 });
 
 test('does not permit accidental apply or an undeclared target', () => {
-  assert.throws(() => parseArgs(['--apply-main-ruleset']), /requires --apply/);
-  assert.throws(() => parseArgs(['--apply']), /requires exactly one --repo/);
-  assert.throws(() => validateConfig(config, 'other'), /not declared/);
-  assert.deepEqual(parseArgs(['--apply', '--repo', 'example']), {
-    apply: true, applyMainRuleset: false, help: false, repository: 'example'
+  assert.throws(() => parseArgs(['--inventory', 'inventory.json', '--apply-main-ruleset']), /requires --apply/);
+  assert.throws(() => parseArgs(['--inventory', 'inventory.json', '--apply']), /requires exactly one --repo/);
+  assert.throws(() => parseArgs([]), /--inventory is required/);
+  assert.throws(() => validateConfig(policy, inventory, 'other'), /not declared/);
+  assert.deepEqual(parseArgs(['--inventory', 'inventory.json', '--apply', '--repo', 'example']), {
+    apply: true, applyMainRuleset: false, help: false, inventoryPath: 'inventory.json', repository: 'example'
   });
 });
 
@@ -85,7 +87,7 @@ test('immutable-release audit distinguishes enabled, disabled, and unknown', () 
 
 test('read-only audit inspects missing rulesets and writes nothing', () => {
   const { api, writes } = fakeApi({ immutable: 'unknown' });
-  const report = run({ config, flags: parseArgs([]), api, log: () => {} });
+  const report = run({ policy, inventory, flags: parseArgs(['--inventory', 'inventory.json']), api, log: () => {} });
   assert.equal(report.repositories[0].mainRuleset, 'missing');
   assert.equal(report.repositories[0].immutableReleases, 'unknown');
   assert.equal(reportDifferences(report), 2);
@@ -95,7 +97,7 @@ test('read-only audit inspects missing rulesets and writes nothing', () => {
 
 test('apply is a no-op when normalized state already matches', () => {
   const { api, writes } = fakeApi({ ruleset: desiredRuleset });
-  const report = run({ config, flags: parseArgs(['--apply', '--apply-main-ruleset', '--repo', 'example']), api, log: () => {} });
+  const report = run({ policy, inventory, flags: parseArgs(['--inventory', 'inventory.json', '--apply', '--apply-main-ruleset', '--repo', 'example']), api, log: () => {} });
   assert.deepEqual(report.failures, []);
   assert.deepEqual(writes, []);
 });
