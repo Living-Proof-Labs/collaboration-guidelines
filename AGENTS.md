@@ -28,6 +28,12 @@ or higher-priority instructions.
   inspect code and exercise the installed change and adjacent behavior in a fresh
   environment.
   Keep ordinary regression in continuous integration and findings proportionate.
+- A pull request that changes something users run, such as a quickstart, install
+  documentation, or a release, needs a [verification comment from Vera](docs/independent-review.md#verification-of-user-run-paths)
+  before merge.
+- A bot without its own GitHub account signs each GitHub post it writes (pull
+  request descriptions, comments, and reviews) with its name, for example a final
+  `— Vera` line.
 
 ## Write plainly
 
