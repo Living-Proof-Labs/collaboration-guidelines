@@ -5,7 +5,7 @@ import { mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
-  differences, immutableStateFrom, loadInventory, parseArgs, reportDifferences, rulesetState, run,
+  differences, immutableStateFrom, loadInventory, normalizeRuleset, parseArgs, reportDifferences, rulesetState, run,
   updateRulesetPayload, validateConfig
 } from '../../tools/github/repository-settings.mjs';
 
@@ -77,6 +77,25 @@ test('normalizes server defaults and rule order before comparing', () => {
     extra_server_field: 'ignored'
   };
   assert.equal(rulesetState(serverResponse, desiredRuleset), 'matches');
+});
+
+test('does not turn an omitted ruleset bypass list into an empty list', () => {
+  const omitted = { ...desiredRuleset };
+  delete omitted.bypass_actors;
+  assert.equal(normalizeRuleset(omitted).bypass_actors, undefined);
+  assert.equal(rulesetState(omitted, desiredRuleset), 'unknown');
+  assert.equal(rulesetState({ ...desiredRuleset, bypass_actors: [] }, desiredRuleset), 'matches');
+});
+
+test('audits sponsorships through the documented GraphQL field', () => {
+  const sponsorshipPolicy = { ...policy, graphql_repository: { hasSponsorshipsEnabled: false } };
+  const { api } = fakeApi({ ruleset: desiredRuleset });
+  api.graphqlRepository = () => ({ hasSponsorshipsEnabled: false });
+  const matching = run({ policy: sponsorshipPolicy, inventory, flags: parseArgs(['--inventory', 'inventory.json']), api, log: () => {} });
+  assert.deepEqual(matching.repositories[0].sponsorships, []);
+  api.graphqlRepository = () => ({ hasSponsorshipsEnabled: true });
+  const drifted = run({ policy: sponsorshipPolicy, inventory, flags: parseArgs(['--inventory', 'inventory.json']), api, log: () => {} });
+  assert.deepEqual(drifted.repositories[0].sponsorships, [{ field: 'graphql.hasSponsorshipsEnabled', actual: true, desired: false }]);
 });
 
 test('ruleset update preserves unmanaged protections and parameters', () => {
