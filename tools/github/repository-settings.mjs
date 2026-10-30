@@ -12,12 +12,14 @@ export function parseArgs(args) {
   let repository;
   let apply = false;
   let applyMainRuleset = false;
+  let applyImmutableReleasesWhenUnknown = false;
   let help = false;
   let inventoryPath;
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
     if (argument === '--apply') apply = true;
     else if (argument === '--apply-main-ruleset') applyMainRuleset = true;
+    else if (argument === '--apply-immutable-releases-when-unknown') applyImmutableReleasesWhenUnknown = true;
     else if (argument === '--help') help = true;
     else if (argument === '--inventory') {
       inventoryPath = args[index + 1];
@@ -31,9 +33,10 @@ export function parseArgs(args) {
     } else throw new Error(`Unknown option: ${argument}`);
   }
   if (applyMainRuleset && !apply) throw new Error('--apply-main-ruleset requires --apply.');
+  if (applyImmutableReleasesWhenUnknown && !apply) throw new Error('--apply-immutable-releases-when-unknown requires --apply.');
   if (!help && !inventoryPath) throw new Error('--inventory is required so the consumer controls its repository inventory.');
   if (apply && !repository) throw new Error('--apply requires exactly one --repo from the declaration.');
-  return { apply, applyMainRuleset, help, inventoryPath, repository };
+  return { apply, applyMainRuleset, applyImmutableReleasesWhenUnknown, help, inventoryPath, repository };
 }
 
 export function differences(actual, desired) {
@@ -65,6 +68,7 @@ export function normalizeRuleset(ruleset) {
       ...(byType.non_fast_forward ? [{ type: 'non_fast_forward' }] : []),
       ...(byType.pull_request ? [{ type: 'pull_request', parameters: {
         required_approving_review_count: pullRequest.required_approving_review_count,
+        dismiss_stale_reviews_on_push: pullRequest.dismiss_stale_reviews_on_push,
         require_code_owner_review: pullRequest.require_code_owner_review,
         require_last_push_approval: pullRequest.require_last_push_approval,
         required_review_thread_resolution: pullRequest.required_review_thread_resolution,
@@ -124,13 +128,15 @@ export function loadInventory(inventoryPath, cwd = process.cwd()) {
 }
 
 function usage() {
-  return `Usage: node tools/github/repository-settings.mjs --inventory PATH [--repo NAME] [--apply [--apply-main-ruleset]]
+  return `Usage: node tools/github/repository-settings.mjs --inventory PATH [--repo NAME] [--apply [--apply-main-ruleset] [--apply-immutable-releases-when-unknown]]
 
 Without --apply, only GET requests are made. Omit --repo to audit every declared
 repository, or use it to audit one. --apply requires exactly one declared repo.
 --apply updates general settings and immutable releases after verification.
 --apply-main-ruleset additionally changes main protection; authorize that
-access-control operation separately from ordinary policy application.`;
+access-control operation separately from ordinary policy application.
+--apply-immutable-releases-when-unknown requests immutable releases even when
+GitHub's read endpoint cannot verify state; the outcome remains unverified.`;
 }
 
 function gh(method, endpoint, body) {
@@ -222,6 +228,11 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
         result.immutableOutcome = 'applied';
       } else if (result.immutableReleases === 'enabled') {
         result.immutableOutcome = 'unchanged';
+      } else if (flags.applyImmutableReleasesWhenUnknown) {
+        api.write('PUT', `${endpoint}/immutable-releases`);
+        // The endpoint can remain unreadable after a successful idempotent PUT.
+        // Preserve unknown state rather than treating the write response as proof.
+        result.immutableOutcome = 'applied-unverified';
       }
       if (flags.applyMainRuleset) {
         const ruleset = inspectRuleset(api, endpoint, policy.main_ruleset);
