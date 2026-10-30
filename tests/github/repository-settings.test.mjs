@@ -47,11 +47,13 @@ test('reports only fields that differ from the declaration', () => {
 
 test('does not permit accidental apply or an undeclared target', () => {
   assert.throws(() => parseArgs(['--inventory', 'inventory.json', '--apply-main-ruleset']), /requires --apply/);
+  assert.throws(() => parseArgs(['--inventory', 'inventory.json', '--apply-immutable-releases-when-unknown']), /requires --apply/);
   assert.throws(() => parseArgs(['--inventory', 'inventory.json', '--apply']), /requires exactly one --repo/);
   assert.throws(() => parseArgs([]), /--inventory is required/);
   assert.throws(() => validateConfig(policy, inventory, 'other'), /not declared/);
   assert.deepEqual(parseArgs(['--inventory', 'inventory.json', '--apply', '--repo', 'example']), {
-    apply: true, applyMainRuleset: false, help: false, inventoryPath: 'inventory.json', repository: 'example'
+    apply: true, applyMainRuleset: false, applyImmutableReleasesWhenUnknown: false,
+    help: false, inventoryPath: 'inventory.json', repository: 'example'
   });
 });
 
@@ -128,6 +130,23 @@ test('immutable-release audit distinguishes enabled, disabled, and unknown', () 
   assert.equal(immutableStateFrom(() => ({ enabled: false }), 'repos/example'), 'unknown');
   assert.equal(immutableStateFrom(() => { throw { stderr: 'HTTP 404 Not Found' }; }, 'repos/example'), 'disabled');
   assert.equal(immutableStateFrom(() => { throw { stderr: 'HTTP 403 Forbidden' }; }, 'repos/example'), 'unknown');
+});
+
+test('requires an explicit flag before requesting immutable releases with unknown state', () => {
+  const { api, writes } = fakeApi({ immutable: 'unknown' });
+  const withoutFlag = run({ policy, inventory, flags: parseArgs(['--inventory', 'inventory.json', '--apply', '--repo', 'example']), api, log: () => {} });
+  assert.equal(withoutFlag.repositories[0].immutableOutcome, 'unknown');
+  assert.deepEqual(writes, []);
+
+  const flagged = fakeApi({ immutable: 'unknown' });
+  const withFlag = run({
+    policy, inventory,
+    flags: parseArgs(['--inventory', 'inventory.json', '--apply', '--apply-immutable-releases-when-unknown', '--repo', 'example']),
+    api: flagged.api, log: () => {}
+  });
+  assert.equal(withFlag.repositories[0].immutableOutcome, 'applied-unverified');
+  assert.equal(withFlag.repositories[0].immutableReleases, 'unknown');
+  assert.deepEqual(flagged.writes, [{ method: 'PUT', endpoint: 'repos/example-org/example/immutable-releases', body: undefined }]);
 });
 
 test('read-only audit inspects missing rulesets and writes nothing', () => {
