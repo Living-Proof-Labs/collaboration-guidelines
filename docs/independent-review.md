@@ -77,14 +77,16 @@ environment. Keep the purpose and outcome visible outside the collapsed output.
 ## Verification of user-run paths
 
 A pull request that changes something users run, such as a quickstart, install
-documentation, or a release, needs a verification comment from Vera before merge.
-Vera follows the changed path as a user would and reports each check as passed,
-failed, blocked, or not run, tied to the full commit SHA it tested. A later commit
-needs a new comment or an explicit assessment that earlier results still apply.
+documentation, or a release, needs a verification comment from the verification
+agent (currently Vera) before merge. The verification agent follows the changed
+path as a user would and reports each check as passed, failed, blocked, or not
+run, tied to the full commit SHA it tested. A later commit needs a new comment or
+an explicit assessment that earlier results still apply.
 
-Vera also runs a weekly drift check of those user-run paths, following each
-quickstart and install document against the current releases, and reports the
-results. Report a failure or blocked step in the affected repository.
+The verification agent also runs a weekly drift check of those user-run paths,
+following each quickstart and install document against the current releases.
+It files each failure or blocked step as an issue in the affected repository,
+labelled `drift`; there is no central tracking issue.
 
 ## Definition of done
 
@@ -98,8 +100,8 @@ results. Report a failure or blocked step in the affected repository.
 - Blocking findings are resolved and verified. Nonblocking suggestions and any
   remaining coverage/environment gaps have a clear disposition; unrun or blocked
   checks are never reported as passes. A material verification gap stays open.
-- For a change to something users run, Vera's verification comment covers the
-  merge candidate's commit SHA.
+- For a change to something users run, the verification agent's comment covers
+  the merge candidate's commit SHA.
 - The review decision links the evidence and explains why the change can proceed
   or what remains blocked. Existing merge/release rules still apply.
 

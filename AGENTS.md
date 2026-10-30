@@ -29,8 +29,9 @@ or higher-priority instructions.
   environment.
   Keep ordinary regression in continuous integration and findings proportionate.
 - A pull request that changes something users run, such as a quickstart, install
-  documentation, or a release, needs a [verification comment from Vera](docs/independent-review.md#verification-of-user-run-paths)
-  before merge.
+  documentation, or a release, needs a verification comment from the
+  verification agent (currently Vera) before merge; see
+  [verification of user-run paths](docs/independent-review.md#verification-of-user-run-paths).
 - A bot without its own GitHub account signs each GitHub post it writes (pull
   request descriptions, comments, and reviews) with its name, for example a final
   `— Vera` line.
