@@ -65,6 +65,7 @@ export function normalizeRuleset(ruleset) {
       ...(byType.non_fast_forward ? [{ type: 'non_fast_forward' }] : []),
       ...(byType.pull_request ? [{ type: 'pull_request', parameters: {
         required_approving_review_count: pullRequest.required_approving_review_count,
+        dismiss_stale_reviews_on_push: pullRequest.dismiss_stale_reviews_on_push,
         require_code_owner_review: pullRequest.require_code_owner_review,
         require_last_push_approval: pullRequest.require_last_push_approval,
         required_review_thread_resolution: pullRequest.required_review_thread_resolution,

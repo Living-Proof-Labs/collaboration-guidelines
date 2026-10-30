@@ -16,6 +16,7 @@ const desiredRuleset = {
     { type: 'deletion' }, { type: 'non_fast_forward' },
     { type: 'pull_request', parameters: {
       required_approving_review_count: 0, require_code_owner_review: false,
+      dismiss_stale_reviews_on_push: false,
       require_last_push_approval: false, required_review_thread_resolution: false,
       allowed_merge_methods: ['merge']
     } }
@@ -79,6 +80,12 @@ test('normalizes server defaults and rule order before comparing', () => {
   assert.equal(rulesetState(serverResponse, desiredRuleset), 'matches');
 });
 
+test('declares GitHub-required pull-request ruleset parameters', () => {
+  const pullRequest = desiredRuleset.rules.find((rule) => rule.type === 'pull_request');
+  assert.equal(pullRequest.parameters.dismiss_stale_reviews_on_push, false);
+  assert.deepEqual(pullRequest.parameters.allowed_merge_methods, ['merge']);
+});
+
 test('does not turn an omitted ruleset bypass list into an empty list', () => {
   const omitted = { ...desiredRuleset };
   delete omitted.bypass_actors;
@@ -111,7 +118,7 @@ test('ruleset update preserves unmanaged protections and parameters', () => {
   const changed = { ...desiredRuleset, enforcement: 'evaluate' };
   const payload = updateRulesetPayload(existing, changed);
   const pullRequest = payload.rules.find((rule) => rule.type === 'pull_request');
-  assert.equal(pullRequest.parameters.dismiss_stale_reviews_on_push, true);
+  assert.equal(pullRequest.parameters.dismiss_stale_reviews_on_push, false);
   assert.deepEqual(payload.rules.find((rule) => rule.type === 'required_status_checks'), existing.rules[3]);
   assert.equal(payload.enforcement, 'evaluate');
 });
