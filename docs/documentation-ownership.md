@@ -35,6 +35,18 @@ manuals identified development snapshots, including candidate package metadata;
 their source revisions must remain distinct from actual package releases.
 These are dated observations, not continuing availability or compatibility claims.
 
+## Amendment: `.github` authors, the root site publishes
+
+[Website #19](https://github.com/Living-Proof-Labs/living-proof-labs.github.io/issues/19)
+found the architecture merged in
+[.github #12](https://github.com/Living-Proof-Labs/.github/pull/12) absent from the
+root site, because organization content was maintained in two repositories. The
+recipe now makes `.github` the single authored source for the organization
+overview, vision, architecture, and directory, and keeps `living-proof-labs.github.io`
+as the publisher that builds a pinned `.github` commit. This replaces the earlier
+"root site owns vision prose, no cross-repository build" rule for these subjects
+only; product manuals and their independent deployments are unchanged.
+
 ## Adoption sequence and boundaries
 
 Review and release the recipe first. Then establish canonical root destinations,
