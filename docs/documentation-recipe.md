@@ -14,17 +14,48 @@ it does not replace their verification requirements or enable any deployment.
 
 | Subject | Canonical owner | Other destinations |
 | --- | --- | --- |
-| Organization vision, ecosystem status, and manual directory | Root documentation site in `living-proof-labs.github.io` | Short summaries link here |
+| Organization overview, vision, architecture, and manual/project directory | Authored in `.github` (`docs/`, with the directory generated from the canonical `config/github/repositories.json` inventory) | Published by `living-proof-labs.github.io` from a pinned `.github` revision; short summaries link to the published page |
 | GitHub organization welcome | `.github/profile/README.md` | Short mission, scope, and prominent root documentation link |
+| Root site build, theme, search, redirects, and deployment | Publisher: `living-proof-labs.github.io` | Contains no editable copy of organization prose or inventory |
 | Shared contribution and engineering standards, including this recipe | `collaboration-guidelines` | Consumers link to their explicitly adopted release and state local additions/overrides |
 | Capability requirements, conditions, acceptance criteria, and contract revisions | `robot-capability-specs` | Executors and reporters reference the contracts they actually consume |
 | Product behavior, installation, public interfaces, and limitations | The owning product repository | Root offers a short description and opens its rendered manual |
 
-The owner may call `.github` the conceptual organization root. GitHub's profile
-publication and organization Pages hosting are separate mechanisms: the profile
-is in `.github`; the root site is in `living-proof-labs.github.io`. Keep full
-vision prose in the root site and link from the short profile. Do not add remote
-includes, a cross-repository build, or copies of product manuals to achieve this.
+`.github` is the organization root for authored content: browsing the
+organization on GitHub and reading the root site show the same source. GitHub's
+profile publication and organization Pages hosting remain separate mechanisms, so
+the root site repository is the publisher, not a second author. See
+[Organization content and its publisher](#organization-content-and-its-publisher).
+Do not add remote includes, floating cross-repository builds, or copies of product
+manuals; product repositories keep publishing their own manuals.
+
+### Organization content and its publisher
+
+Keep reusable tooling separate from authored content:
+
+| Concern | Lives in | Never in |
+| --- | --- | --- |
+| Organization prose (overview, vision, architecture, contribution to that content) | `.github/docs/`, with its page list, navigation order, and redirects declared beside it | The publisher, as an editable copy |
+| Repository inventory and directory descriptions | `.github/config/github/repositories.json` plus directory metadata that may name only inventoried repositories | A hand-maintained table on the site |
+| Build, theme, search, redirect pages, link/missing-page checks, deployment | `living-proof-labs.github.io` | `.github` (beyond running the publisher's checks on its own content) |
+
+- The publisher consumes **one pinned `.github` commit** recorded in its repository
+  (a full 40-character SHA, changed by a reviewed pull request) or, for local
+  preview only, an explicitly identified working tree. It never builds from a
+  moving branch.
+- Each build records both identities in `build.json` and on the Version and source
+  page: the content repository and commit, and the publisher commit. A reader can
+  trace any published page back to its authored source.
+- `.github` validates its own content in pull requests with the same publisher
+  checks, run from a pinned publisher revision: missing pages, broken local links
+  and fragments, unknown directory entries, and diagrams left as code fail.
+- Published URLs are stable. An intentional move keeps the old URL working through
+  a declared redirect that the publisher's checks verify.
+- Content changes merge in `.github` first; the publisher then repins in its own
+  reviewed pull request. Production deployment remains a separately authorized step.
+
+This is the one bounded cross-repository build in the organization. It is not a
+precedent for product manuals, which stay independent.
 
 Product contracts remain with their implementer: for example, the reporter owns
 its bundle schema and grading/rendering behavior, while specs owns capability
@@ -60,10 +91,10 @@ Record an inapplicable item in the adoption review rather than inventing a featu
 
 Documentation-only repositories use reading/authoring examples and applicable
 document checks. They need no dummy CLI, API, runtime, or executable feature suite.
-The root directory and GitHub profile retain their explicit lightweight editorial
-validation exceptions; this recipe does not require Task, Docker, releases, or a
-search service for those small surfaces. Other exceptions remain explicit local
-overrides, not implicit adoption claims.
+The GitHub profile retains its explicit lightweight editorial validation
+exception. Organization content in `.github` uses the publisher's checks as above;
+this recipe does not require releases or a search service of `.github` itself.
+Other exceptions remain explicit local overrides, not implicit adoption claims.
 
 For Task repositories, generate from the reviewed Taskfiles using native
 `--list --json` and `--summary` information, as described in
