@@ -107,14 +107,20 @@ linear-history rule would force squash or rebase merging, so it is omitted here:
 
 Every registered repository publishes GitHub Pages built by GitHub Actions
 (`"pages": { "build_type": "workflow" }`). The audit reports one of four states
-per repository:
+per repository, and what `--apply-pages` does for each:
 
-| State | Meaning | Apply with `--apply-pages` |
-| --- | --- | --- |
-| `matches` | A site exists and builds from GitHub Actions | Nothing written |
-| `drifted` | A site exists with another source (for example a legacy branch build) | `PUT .../pages` with only `build_type`; the custom domain, HTTPS enforcement and other settings are left as they are, and a changed custom domain fails verification |
-| `missing` | `GET .../pages` is 404 **and** the repository reports `has_pages: false` | `POST .../pages` with `build_type: workflow` |
-| `inaccessible` | Any other failure, including a 404 while `has_pages` is true or unknown, or 401/403 | Nothing written; reported as an error, never as missing |
+- `matches`: a site exists and builds from GitHub Actions. Apply writes
+  nothing.
+- `drifted`: a site exists with another source, for example a legacy branch
+  build. Apply sends `PUT .../pages` with only `build_type`, so the custom
+  domain, HTTPS enforcement and other settings stay as they are; a changed
+  custom domain fails verification.
+- `missing`: `GET .../pages` is 404 **and** the repository reports
+  `has_pages: false`. Apply sends `POST .../pages` with
+  `build_type: workflow`.
+- `inaccessible`: any other failure, including a 404 while `has_pages` is
+  true or unknown, or 401/403. Apply writes nothing and reports an error,
+  never a missing site.
 
 GitHub answers 404 both when there is no site and when the caller cannot read
 Pages, so a 404 alone is never treated as confirmed absence. After a write the
