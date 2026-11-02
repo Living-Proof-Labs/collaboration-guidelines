@@ -25,6 +25,7 @@
     "auto_close_linked_issues": true
   },
   "immutable_releases": true,
+  "pages": { "build_type": "workflow" },
   "main_ruleset": {
     "name": "Protect main: pull requests only",
     "target": "branch",

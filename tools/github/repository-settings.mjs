@@ -13,6 +13,7 @@ export function parseArgs(args) {
   let apply = false;
   let applyMainRuleset = false;
   let applyImmutableReleasesWhenUnknown = false;
+  let applyPages = false;
   let help = false;
   let inventoryPath;
   for (let index = 0; index < args.length; index += 1) {
@@ -20,6 +21,7 @@ export function parseArgs(args) {
     if (argument === '--apply') apply = true;
     else if (argument === '--apply-main-ruleset') applyMainRuleset = true;
     else if (argument === '--apply-immutable-releases-when-unknown') applyImmutableReleasesWhenUnknown = true;
+    else if (argument === '--apply-pages') applyPages = true;
     else if (argument === '--help') help = true;
     else if (argument === '--inventory') {
       inventoryPath = args[index + 1];
@@ -34,9 +36,10 @@ export function parseArgs(args) {
   }
   if (applyMainRuleset && !apply) throw new Error('--apply-main-ruleset requires --apply.');
   if (applyImmutableReleasesWhenUnknown && !apply) throw new Error('--apply-immutable-releases-when-unknown requires --apply.');
+  if (applyPages && !apply) throw new Error('--apply-pages requires --apply.');
   if (!help && !inventoryPath) throw new Error('--inventory is required so the consumer controls its repository inventory.');
   if (apply && !repository) throw new Error('--apply requires exactly one --repo from the declaration.');
-  return { apply, applyMainRuleset, applyImmutableReleasesWhenUnknown, help, inventoryPath, repository };
+  return { apply, applyMainRuleset, applyImmutableReleasesWhenUnknown, applyPages, help, inventoryPath, repository };
 }
 
 export function differences(actual, desired) {
@@ -128,7 +131,7 @@ export function loadInventory(inventoryPath, cwd = process.cwd()) {
 }
 
 function usage() {
-  return `Usage: node tools/github/repository-settings.mjs --inventory PATH [--repo NAME] [--apply [--apply-main-ruleset] [--apply-immutable-releases-when-unknown]]
+  return `Usage: node tools/github/repository-settings.mjs --inventory PATH [--repo NAME] [--apply [--apply-main-ruleset] [--apply-immutable-releases-when-unknown] [--apply-pages]]
 
 Without --apply, only GET requests are made. Omit --repo to audit every declared
 repository, or use it to audit one. --apply requires exactly one declared repo.
@@ -136,7 +139,10 @@ repository, or use it to audit one. --apply requires exactly one declared repo.
 --apply-main-ruleset additionally changes main protection; authorize that
 access-control operation separately from ordinary policy application.
 --apply-immutable-releases-when-unknown requests immutable releases even when
-GitHub's read endpoint cannot verify state; the outcome remains unverified.`;
+GitHub's read endpoint cannot verify state; the outcome remains unverified.
+--apply-pages creates or corrects the GitHub Pages site so it builds from GitHub
+Actions (policy "pages"), changing only its source; it needs the Pages
+repository permission (see .github/SETTINGS.md).`;
 }
 
 function gh(method, endpoint, body) {
@@ -164,6 +170,25 @@ export function immutableStateFrom(get, endpoint) {
   } catch (error) { return statusFrom(error) === 404 ? 'disabled' : 'unknown'; }
 }
 
+/**
+ * Pages state for one repository: matches, drifted (another source), missing or inaccessible.
+ *
+ * GitHub answers 404 both when no site exists and when the caller cannot read Pages, so a 404
+ * is a confirmed absence only when the repository itself reports has_pages: false. Any other
+ * failure is inaccessible, never missing.
+ */
+export function pagesStateFrom(get, endpoint, repository, desired) {
+  try {
+    const site = get(`${endpoint}/pages`);
+    const state = site?.build_type === desired.build_type ? 'matches' : 'drifted';
+    return { state, buildType: site?.build_type, cname: site?.cname ?? null };
+  } catch (error) {
+    const status = statusFrom(error);
+    if (status === 404 && repository?.has_pages === false) return { state: 'missing' };
+    return { state: 'inaccessible', status: status ?? 'unknown' };
+  }
+}
+
 const defaultApi = {
   get(endpoint) { return JSON.parse(gh('GET', endpoint)); },
   write(method, endpoint, body) { gh(method, endpoint, body); },
@@ -180,6 +205,23 @@ function inspectRuleset(api, endpoint, desired) {
   return { state: rulesetState(api.get(`${endpoint}/rulesets/${match.id}`), desired), id: match.id };
 }
 
+function applyPages(api, endpoint, repository, desired, current) {
+  if (current.state === 'matches') return { ...current, outcome: 'unchanged' };
+  if (current.state === 'inaccessible') {
+    throw new Error(`pages state is inaccessible (HTTP ${current.status}); nothing written`);
+  }
+  // POST creates the site; PUT changes only build_type, so a custom domain, HTTPS
+  // enforcement and every other Pages setting stay as they are.
+  if (current.state === 'missing') api.write('POST', `${endpoint}/pages`, { build_type: desired.build_type });
+  else api.write('PUT', `${endpoint}/pages`, { build_type: desired.build_type });
+  const after = pagesStateFrom(api.get.bind(api), endpoint, api.get(endpoint), desired);
+  if (after.state !== 'matches') throw new Error(`pages verification failed: ${after.state}`);
+  if (current.state === 'drifted' && after.cname !== current.cname) {
+    throw new Error(`pages verification failed: custom domain changed from ${current.cname} to ${after.cname}`);
+  }
+  return { ...after, outcome: 'applied' };
+}
+
 function assertVerified(label, state) {
   if (state !== 'matches' && state !== 'enabled') throw new Error(`${label} verification failed: ${state}`);
 }
@@ -192,7 +234,8 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
     const endpoint = `repos/${inventory.owner}/${repository}`;
     const result = {
       repository, settings: [], settingsOutcome: 'unchanged', immutableReleases: 'unknown',
-      sponsorships: [], immutableOutcome: 'unknown', mainRuleset: 'unknown', mainRulesetOutcome: 'not-requested'
+      sponsorships: [], immutableOutcome: 'unknown', mainRuleset: 'unknown', mainRulesetOutcome: 'not-requested',
+      pages: policy.pages ? 'unknown' : 'not-managed', pagesOutcome: 'not-requested'
     };
     report.repositories.push(result);
     try {
@@ -205,6 +248,11 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
       }
       result.immutableReleases = api.immutableState(endpoint);
       result.mainRuleset = inspectRuleset(api, endpoint, policy.main_ruleset).state;
+      let pages;
+      if (policy.pages) {
+        pages = pagesStateFrom(api.get.bind(api), endpoint, actual, policy.pages);
+        result.pages = pages.state;
+      }
       log(`${inventory.owner}/${repository}`);
       log(result.settings.length ? `  repository settings: ${result.settings.length} difference(s)` : '  repository settings: match');
       for (const item of result.settings) log(`  ${item.field}: ${JSON.stringify(item.actual)} -> ${JSON.stringify(item.desired)}`);
@@ -212,6 +260,11 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
       for (const item of result.sponsorships) log(`  ${item.field}: ${JSON.stringify(item.actual)} -> ${JSON.stringify(item.desired)}`);
       log(`  immutable releases: ${result.immutableReleases}`);
       log(`  main ruleset: ${result.mainRuleset}`);
+      if (pages) {
+        const detail = pages.state === 'drifted' ? ` (source ${pages.buildType} -> ${policy.pages.build_type})`
+          : pages.state === 'inaccessible' ? ` (HTTP ${pages.status}; not treated as missing)` : '';
+        log(`  pages: ${pages.state}${detail}`);
+      }
       if (!flags.apply) continue;
       if (result.settings.length) {
         api.write('PATCH', endpoint, policy.repository);
@@ -245,7 +298,12 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
         result.mainRuleset = 'matches';
         result.mainRulesetOutcome = ruleset.state === 'matches' ? 'unchanged' : 'applied';
       }
-      log(`  outcome: settings=${result.settingsOutcome}; immutable-releases=${result.immutableOutcome}; main-ruleset=${result.mainRulesetOutcome}`);
+      if (flags.applyPages && pages) {
+        const applied = applyPages(api, endpoint, actual, policy.pages, pages);
+        result.pages = applied.state;
+        result.pagesOutcome = applied.outcome;
+      }
+      log(`  outcome: settings=${result.settingsOutcome}; immutable-releases=${result.immutableOutcome}; main-ruleset=${result.mainRulesetOutcome}${pages ? `; pages=${result.pagesOutcome}` : ''}`);
     } catch (error) {
       const failure = { repository, error: error.message };
       report.failures.push(failure);
@@ -256,7 +314,7 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
 }
 
 export function reportDifferences(report) {
-  return report.repositories.reduce((total, result) => total + result.settings.length + result.sponsorships.length + (result.immutableReleases === 'enabled' ? 0 : 1) + (result.mainRuleset === 'matches' ? 0 : 1), 0);
+  return report.repositories.reduce((total, result) => total + result.settings.length + result.sponsorships.length + (result.immutableReleases === 'enabled' ? 0 : 1) + (result.mainRuleset === 'matches' ? 0 : 1) + (['matches', 'not-managed'].includes(result.pages) ? 0 : 1), 0);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
