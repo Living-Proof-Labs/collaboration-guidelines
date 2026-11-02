@@ -31,6 +31,11 @@ node tools/github/repository-settings.mjs \
   --inventory config/github/repositories.json \
   --apply --repo example-repository
 
+# Create or correct the Pages site (GitHub Actions source) for one repository:
+node tools/github/repository-settings.mjs \
+  --inventory config/github/repositories.json \
+  --apply --apply-pages --repo example-repository
+
 # A separate, explicit approval is required before changing main protection.
 node tools/github/repository-settings.mjs \
   --inventory config/github/repositories.json \
@@ -97,6 +102,40 @@ without requiring approval, that bypasses can be scoped to roles/users/teams/
 apps, and that force-push blocking is on by default. It also documents that a
 linear-history rule would force squash or rebase merging, so it is omitted here:
 [available rules for rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets).
+
+### GitHub Pages
+
+Every registered repository publishes GitHub Pages built by GitHub Actions
+(`"pages": { "build_type": "workflow" }`). The audit reports one of four states
+per repository, and what `--apply-pages` does for each:
+
+- `matches`: a site exists and builds from GitHub Actions. Apply writes
+  nothing.
+- `drifted`: a site exists with another source, for example a legacy branch
+  build. Apply sends `PUT .../pages` with only `build_type`, so the custom
+  domain, HTTPS enforcement and other settings stay as they are; a changed
+  custom domain fails verification.
+- `missing`: `GET .../pages` is 404 **and** the repository reports
+  `has_pages: false`. Apply sends `POST .../pages` with
+  `build_type: workflow`.
+- `inaccessible`: any other failure, including a 404 while `has_pages` is
+  true or unknown, or 401/403. Apply writes nothing and reports an error,
+  never a missing site.
+
+GitHub answers 404 both when there is no site and when the caller cannot read
+Pages, so a 404 alone is never treated as confirmed absence. After a write the
+tool reads the site back and requires `matches`; applying again to the same
+repository writes nothing (`pages=unchanged`). Pages is applied only with
+`--apply --apply-pages --repo NAME`, one declared repository at a time.
+
+Permissions: the read-only audit needs the GitHub App (or token) permission
+**Pages: read**; `--apply-pages` needs **Pages: write**. Repository
+administration alone does not cover the Pages endpoints. Granting the Apply App
+the Pages permission is a separate access change that needs the owner's
+explicit approval; until then `--apply-pages` reports `inaccessible`.
+Publishing workflows deploy with their own job-scoped `pages: write` and
+`id-token: write` and never receive the repository-administration credential
+used by this tool.
 
 ### Releases and workflows
 

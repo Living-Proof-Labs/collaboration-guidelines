@@ -5,7 +5,7 @@ import { mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
-  differences, immutableStateFrom, loadInventory, normalizeRuleset, parseArgs, reportDifferences, rulesetState, run,
+  differences, immutableStateFrom, loadInventory, normalizeRuleset, pagesStateFrom, parseArgs, reportDifferences, rulesetState, run,
   updateRulesetPayload, validateConfig
 } from '../../tools/github/repository-settings.mjs';
 
@@ -52,7 +52,7 @@ test('does not permit accidental apply or an undeclared target', () => {
   assert.throws(() => parseArgs([]), /--inventory is required/);
   assert.throws(() => validateConfig(policy, inventory, 'other'), /not declared/);
   assert.deepEqual(parseArgs(['--inventory', 'inventory.json', '--apply', '--repo', 'example']), {
-    apply: true, applyMainRuleset: false, applyImmutableReleasesWhenUnknown: false,
+    apply: true, applyMainRuleset: false, applyImmutableReleasesWhenUnknown: false, applyPages: false,
     help: false, inventoryPath: 'inventory.json', repository: 'example'
   });
 });
@@ -164,4 +164,109 @@ test('apply is a no-op when normalized state already matches', () => {
   const report = run({ policy, inventory, flags: parseArgs(['--inventory', 'inventory.json', '--apply', '--apply-main-ruleset', '--repo', 'example']), api, log: () => {} });
   assert.deepEqual(report.failures, []);
   assert.deepEqual(writes, []);
+});
+
+const pagesPolicy = { ...policy, pages: { build_type: 'workflow' } };
+
+/** A fake Pages API: `site` is the GET /pages body, or an error status to throw. */
+function pagesApi({ site, hasPages = site !== undefined && typeof site === 'object', status } = {}) {
+  const writes = [];
+  let current = site;
+  const api = {
+    get(endpoint) {
+      if (endpoint.endsWith('/rulesets')) return [{ id: 7, name: desiredRuleset.name }];
+      if (endpoint.endsWith('/rulesets/7')) return desiredRuleset;
+      if (endpoint.endsWith('/pages')) {
+        if (status) throw { stderr: `gh: HTTP ${status}` };
+        if (current === undefined) throw { stderr: 'gh: Not Found (HTTP 404)' };
+        return current;
+      }
+      return { has_wiki: false, has_pages: current !== undefined ? true : hasPages };
+    },
+    immutableState() { return 'enabled'; },
+    write(method, endpoint, body) {
+      writes.push({ method, endpoint, body });
+      if (method === 'POST') current = { build_type: body.build_type, cname: null };
+      if (method === 'PUT') current = { ...current, build_type: body.build_type };
+    }
+  };
+  return { api, writes };
+}
+
+const audit = parseArgs(['--inventory', 'inventory.json']);
+const applyPages = parseArgs(['--inventory', 'inventory.json', '--apply', '--apply-pages', '--repo', 'example']);
+const quiet = () => {};
+
+test('pages audit distinguishes compliant, drifted, missing and inaccessible', () => {
+  const states = {
+    compliant: pagesApi({ site: { build_type: 'workflow', cname: 'docs.example.com' } }),
+    drifted: pagesApi({ site: { build_type: 'legacy', cname: 'docs.example.com' } }),
+    missing: pagesApi({ hasPages: false }),
+    unreadable404: pagesApi({ hasPages: true }),
+    forbidden: pagesApi({ status: 403 })
+  };
+  const seen = Object.fromEntries(Object.entries(states).map(([name, { api, writes }]) => {
+    const report = run({ policy: pagesPolicy, inventory, flags: audit, api, log: quiet });
+    assert.deepEqual(writes, []);
+    return [name, report.repositories[0].pages];
+  }));
+  assert.deepEqual(seen, {
+    compliant: 'matches', drifted: 'drifted', missing: 'missing', unreadable404: 'inaccessible', forbidden: 'inaccessible'
+  });
+});
+
+test('pages apply creates a missing site, reads it back, and a second apply writes nothing', () => {
+  const { api, writes } = pagesApi({ hasPages: false });
+  const first = run({ policy: pagesPolicy, inventory, flags: applyPages, api, log: quiet });
+  assert.deepEqual(first.failures, []);
+  assert.equal(first.repositories[0].pagesOutcome, 'applied');
+  assert.equal(first.repositories[0].pages, 'matches');
+  assert.deepEqual(writes, [{ method: 'POST', endpoint: 'repos/example-org/example/pages', body: { build_type: 'workflow' } }]);
+  const second = run({ policy: pagesPolicy, inventory, flags: applyPages, api, log: quiet });
+  assert.equal(second.repositories[0].pagesOutcome, 'unchanged');
+  assert.equal(writes.length, 1);
+});
+
+test('pages apply corrects only the source and keeps the custom domain', () => {
+  const { api, writes } = pagesApi({ site: { build_type: 'legacy', cname: 'docs.example.com', https_enforced: true } });
+  const report = run({ policy: pagesPolicy, inventory, flags: applyPages, api, log: quiet });
+  assert.deepEqual(report.failures, []);
+  assert.deepEqual(writes, [{ method: 'PUT', endpoint: 'repos/example-org/example/pages', body: { build_type: 'workflow' } }]);
+  assert.deepEqual(api.get('repos/example-org/example/pages'), { build_type: 'workflow', cname: 'docs.example.com', https_enforced: true });
+});
+
+test('pages apply fails verification if the custom domain is lost', () => {
+  const { api } = pagesApi({ site: { build_type: 'legacy', cname: 'docs.example.com' } });
+  const write = api.write;
+  api.write = (method, endpoint, body) => { write(method, endpoint, body); api.get = ((get) => (e) => (e.endsWith('/pages') ? { build_type: 'workflow', cname: null } : get(e)))(api.get); };
+  const report = run({ policy: pagesPolicy, inventory, flags: applyPages, api, log: quiet });
+  assert.match(report.failures[0].error, /custom domain changed/);
+});
+
+test('pages apply never writes to an inaccessible site', () => {
+  for (const options of [{ status: 403 }, { hasPages: true }]) {
+    const { api, writes } = pagesApi(options);
+    const report = run({ policy: pagesPolicy, inventory, flags: applyPages, api, log: quiet });
+    assert.match(report.failures[0].error, /inaccessible/);
+    assert.deepEqual(writes, []);
+  }
+});
+
+test('pages needs its own apply flag and is audited only when declared', () => {
+  assert.throws(() => parseArgs(['--inventory', 'inventory.json', '--apply-pages']), /requires --apply/);
+  const { api, writes } = pagesApi({ hasPages: false });
+  const settingsOnly = run({ policy: pagesPolicy, inventory, flags: parseArgs(['--inventory', 'inventory.json', '--apply', '--repo', 'example']), api, log: quiet });
+  assert.equal(settingsOnly.repositories[0].pagesOutcome, 'not-requested');
+  assert.deepEqual(writes, []);
+  const undeclared = run({ policy, inventory, flags: audit, api, log: quiet });
+  assert.equal(undeclared.repositories[0].pages, 'not-managed');
+  assert.equal(reportDifferences(run({ policy: pagesPolicy, inventory, flags: audit, api, log: quiet })), 1);
+});
+
+test('pages state treats 404 as missing only when the repository confirms no site', () => {
+  const notFound = () => { throw { stderr: 'HTTP 404 Not Found' }; };
+  const desired = { build_type: 'workflow' };
+  assert.equal(pagesStateFrom(notFound, 'repos/x', { has_pages: false }, desired).state, 'missing');
+  assert.equal(pagesStateFrom(notFound, 'repos/x', {}, desired).state, 'inaccessible');
+  assert.equal(pagesStateFrom(() => { throw new Error('network'); }, 'repos/x', { has_pages: false }, desired).state, 'inaccessible');
 });
