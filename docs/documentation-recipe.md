@@ -17,7 +17,7 @@ it does not replace their verification requirements or enable any deployment.
 | Organization overview, vision, architecture, and manual/project directory | Authored in `.github` (`docs/`, with the directory generated from the canonical `config/github/repositories.json` inventory) | Published by `living-proof-labs.github.io` from a pinned `.github` revision; short summaries link to the published page |
 | GitHub organization welcome | `.github/profile/README.md` | Short mission, scope, and prominent root documentation link |
 | Root site build, search, redirects, and deployment | Publisher: `living-proof-labs.github.io` | Contains no editable copy of organization prose or inventory |
-| Docs brand for documentation sites (the landing index and each repository's docs): theme colours, fonts, `brand.css` | `collaboration-guidelines` [`brand/docs/`](../brand/docs/README.md), released with this repository | Target: each documentation site pins one release by tag, commit, and sha256 and keeps no palette of its own. Migration is in progress ([#40](https://github.com/Living-Proof-Labs/collaboration-guidelines/issues/40)): the publisher still keeps a copy in `docs/brand.css`, which its `tools/build_docs.py` copies into the landing build. The marketing website (livingprooflabs.com, `website`) keeps its own styles and is out of scope for now |
+| Docs brand for documentation sites (the landing index and each repository's docs): theme colours, fonts, `brand.css` | `collaboration-guidelines` [`brand/docs/`](../brand/docs/README.md), released with this repository | Every documentation site pins one release by tag, commit, and sha256. No repository keeps its own copy or palette. The marketing website (livingprooflabs.com, `website`) and its own styles are out of scope for now |
 | Shared contribution and engineering standards, including this recipe | `collaboration-guidelines` | Consumers link to their explicitly adopted release and state local additions/overrides |
 | Capability requirements, conditions, acceptance criteria, and contract revisions | `robot-capability-specs` | Executors and reporters reference the contracts they actually consume |
 | Product behavior, installation, public interfaces, and limitations | The owning product repository | Root offers a short description and opens its rendered manual |
@@ -38,7 +38,7 @@ Keep reusable tooling separate from authored content:
 | --- | --- | --- |
 | Organization prose (overview, vision, architecture, contribution to that content) | `.github/docs/`, with its page list, navigation order, and redirects declared beside it | The publisher, as an editable copy |
 | Repository inventory and directory descriptions | `.github/config/github/repositories.json` plus directory metadata that may name only inventoried repositories | A hand-maintained table on the site |
-| Build, search, redirect pages, link/missing-page checks, deployment, and theme configuration | `living-proof-labs.github.io` (target brand source: `collaboration-guidelines` `brand/docs/`) | `.github` (beyond running the publisher's checks on its own content) |
+| Build, search, redirect pages, link/missing-page checks, deployment, and theme configuration | `living-proof-labs.github.io` (brand source: `collaboration-guidelines` `brand/docs/`) | `.github` (beyond running the publisher's checks on its own content) |
 
 - The publisher consumes **one pinned `.github` commit** recorded in its repository
   (a full 40-character SHA, changed by a reviewed pull request) or, for local
