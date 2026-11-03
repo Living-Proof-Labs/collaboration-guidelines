@@ -52,9 +52,10 @@ only; product manuals and their independent deployments are unchanged.
 Review and release the recipe first. Then establish canonical root destinations,
 shorten profile/LivingProof duplicates while preserving their links, publish the
 guidelines manual separately, and adopt the released recipe in each repository.
-Do not retarget published tags or force all projects into one build. Documentation
-sites share one pinned docs theme from [`brand/docs/`](../brand/docs/README.md); each
-project keeps its own build and deployment.
+Do not retarget published tags or force all projects into one build.
+Documentation sites share one pinned docs theme from
+[`brand/docs/`](../brand/docs/README.md); each project keeps its own build and
+deployment.
 
 Existing publication cleanup is tracked by
 [Reporter #17](https://github.com/Living-Proof-Labs/livingproof-capability-report/issues/17),
