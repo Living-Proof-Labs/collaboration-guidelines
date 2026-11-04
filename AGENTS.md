@@ -58,20 +58,24 @@ or higher-priority instructions.
 - Maintain repository Docker setup for reproducible development and applicable
   runtime environments. Repositories with a development/tooling image, including
   documentation-only ones, must publish it; CI jobs must run inside it pinned by
-  digest (GitHub Actions `container:`), and the development container must
-  reference the same image. Running outside it needs a documented reason in the
-  workflow. Until a repository publishes its image, CI uses the documented
-  fallback environment, and the workflow names the issue that tracks publishing
-  it. Task exposes contributor commands. Follow the
+  its multi-arch index digest (GitHub Actions `container:`), and the development
+  container must reference the same image. Running outside it needs a
+  documented reason in the workflow. Until a repository publishes its image, CI
+  uses the documented fallback environment, and the workflow names the issue
+  that tracks publishing it. Task exposes contributor commands. Follow the
   [developer interface guide](docs/developer-interface.md).
 - A repository with a demo or quickstart must give a single `docker run` against
   a released image, with no install or build. The README keeps the manual setup,
   including exact runtime versions.
-- Published images must be multi-arch (at least linux/amd64 and linux/arm64)
-  unless a documented reason exists. Version tags are immutable: never re-tag or
-  overwrite one, and the release must fail if the tag already exists.
-  User-facing docs and demos reference the versioned tag so Docker selects the
-  platform; locks and CI may pin the multi-arch index digest.
+- Published images must be multi-arch, at least linux/amd64 and linux/arm64.
+  An image that is not must say why in its release notes and README, and link
+  the open issue that tracks adding the missing platforms. Version tags are
+  immutable: never re-tag or overwrite one. The release job must check that the
+  tag is absent before pushing (for example, `docker buildx imagetools inspect
+  IMAGE:TAG` must fail) and must not push `latest` or any moving tag.
+  User-facing docs and demos must reference the version tag, so Docker selects
+  the host platform. Locks, CI and development containers must pin the
+  multi-arch index digest, not a per-platform manifest digest.
 - Renovate keeps pins (images, Actions, tool versions) current. Each repository
   must require status checks that exercise real behaviour, not only lint, on its
   branch ruleset, and those checks must be strong enough that a green run shows

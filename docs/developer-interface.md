@@ -25,11 +25,15 @@ A repository with a demo or quickstart must give a single `docker run` against
 a released image that needs no install or build. The README keeps the manual
 setup, including exact runtime versions.
 
-Published images must be multi-arch, at least linux/amd64 and linux/arm64,
-unless the repository documents why not. Version tags are immutable: never
-re-tag or overwrite one, and the release must fail if the tag already exists.
-User-facing docs and demos reference the versioned tag so Docker selects the
-host platform; locks and CI may pin the multi-arch index digest.
+Published images must be multi-arch, at least linux/amd64 and linux/arm64. An
+image that is not must say why in its release notes and README, and link the
+open issue that tracks adding the missing platforms. Version tags are immutable:
+never re-tag or overwrite one. The release job must check that the tag is absent
+before pushing (for example, `docker buildx imagetools inspect IMAGE:TAG` must
+fail) and must not push `latest` or any moving tag. User-facing docs and demos
+must reference the version tag, so Docker selects the host platform. Locks, CI
+and development containers must pin the multi-arch index digest, not a
+per-platform manifest digest.
 
 Renovate keeps pins current: images, Actions, and tool versions. Each
 repository must require status checks that exercise real behaviour, not only
@@ -91,9 +95,9 @@ Taskfile, use the ordinary `task setup` and `task verify` commands in the
 prepared environment instead.
 
 Continuous integration jobs must run inside the published development image,
-pinned by digest (GitHub Actions `container:`), and use the same detailed
-tasks, with provider configuration limited to orchestration. A job that runs
-outside the image documents why in the workflow.
+pinned by its multi-arch index digest (GitHub Actions `container:`), and use the
+same detailed tasks, with provider configuration limited to orchestration. A job
+that runs outside the image documents why in the workflow.
 Shared Actions or reusable workflows still handle standard services such as
 releases. Test the release image separately when one exists; passing
 tooling-image checks does not establish that the shipped image runs correctly.
@@ -178,11 +182,12 @@ tasks. When an operating-system-specific command is needed, mark its
 require platform-specific bootstrap tools.
 
 Continuous integration must run inside the repository development/tooling
-image, pinned by digest, and invoke the same setup and verification tasks. A
-runner that cannot use that image must document the reason and its equivalent prepared
-environment in the workflow, and verify the supported differences. Pinned shared
-Actions/reusable workflows continue to provide standard services such as
-releases. Do not add a parallel release engine to Task.
+image, pinned by its multi-arch index digest, and invoke the same setup and
+verification tasks. A runner that cannot use that image must document the reason
+and its equivalent prepared environment in the workflow, and verify the
+supported differences. Pinned shared Actions/reusable workflows continue to
+provide standard services such as releases. Do not add a parallel release
+engine to Task.
 
 The initial templates and this repository's tasks were executed on Linux.
 Windows and macOS are intended targets, not verified by that run; test them
@@ -234,11 +239,14 @@ item before calling the work complete:
 
 - Docker setup and the development container reuse the intended tooling; direct
   Task commands work inside the prepared environment without a host-wrapper loop.
+- Published images are multi-arch (amd64 and arm64) or link the tracking issue;
+  version tags are never re-pushed; docs use the tag and locks/CI/devcontainers
+  pin the index digest.
 - Continuous integration runs those tasks inside the published image pinned by
-  digest, or the workflow documents why not, including the fallback and its
-  tracking issue for repositories without a published image. An application
-  release image is tested separately; documentation-only work verifies its
-  tools.
+  its multi-arch index digest, or the workflow documents why not, including the
+  fallback and its tracking issue for repositories without a published image. An
+  application release image is tested separately; documentation-only work
+  verifies its tools.
 - A demo or quickstart runs with a single `docker run` against a released image;
   the README states exact runtime versions for manual setup.
 - The branch ruleset requires status checks that exercise real behaviour, strong

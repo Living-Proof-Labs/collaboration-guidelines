@@ -161,7 +161,7 @@ provenance. A filename ending in `.tar.gz` may be a source package; do not exclu
 archives solely by suffix. The shared release Action does not select or upload
 consumer assets, so this selection belongs in each consumer's workflow.
 
-Release notes must name each registry image, its immutable registry digest, and
+Release notes must name each registry image, its multi-arch index digest, and
 supported platforms, with copyable pull/run commands for that product. A local
 Docker image ID is not a registry manifest digest. Verify registry consumption
 before final release publication and retain granular evidence identifying the
