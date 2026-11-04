@@ -56,9 +56,19 @@ or higher-priority instructions.
 - Use Task schema v3 for common project commands: `task setup`, `task check`, and
   `task test`. Delegate to native ecosystem tools rather than reimplementing them.
 - Maintain repository Docker setup for reproducible development and applicable
-  runtime environments. Development containers reuse that setup; Task exposes
-  contributor commands, and continuous integration reuses the tasks and images
-  where appropriate. Follow the [developer interface guide](docs/developer-interface.md).
+  runtime environments. Publish the development/tooling image; CI jobs run inside
+  it pinned by digest (GitHub Actions `container:`), and the development container
+  references the same image. Running outside it needs a documented reason in the
+  workflow. Task exposes contributor commands. Follow the
+  [developer interface guide](docs/developer-interface.md).
+- A repository with a demo or quickstart gives a single `docker run` against a
+  released image, with no install or build. The README keeps the manual setup,
+  including exact runtime versions.
+- Renovate keeps pins (images, Actions, tool versions) current. An automated update
+  lands only when required status checks that exercise real behaviour, not only
+  lint, pass on the branch ruleset. Each repository requires those checks, and its
+  tests are strong enough that a green run shows the update is safe without human
+  supervision. See [dependency updates](docs/dependency-updates.md).
 - Shared hosts install Docker and Task; repository containers supply language
   runtimes and package managers. Task installs
   project tooling and dependencies using pinned versions and committed locks.
