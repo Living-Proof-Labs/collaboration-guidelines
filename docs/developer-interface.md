@@ -14,12 +14,27 @@ Every repository maintains Docker setup for a reproducible development and,
 where applicable, runtime environment. Keep environment definitions in the
 repository: pinned base images and tool versions, dependency locks, and
 documented build targets. Docker defines the environment; Task defines project
-commands. A development-container configuration reuses the same Dockerfile
-target or Compose service rather than installing a second, independently
-maintained toolchain.
+commands. Every repository with a development/tooling image, including
+documentation-only repositories, must publish that image. The
+development-container configuration must reference the published image by
+digest rather than installing a second, independently maintained toolchain.
+Until a repository publishes its image, CI uses the documented fallback
+environment, and the workflow names the issue that tracks publishing it.
+
+A repository with a demo or quickstart must give a single `docker run` against
+a released image that needs no install or build. The README keeps the manual
+setup, including exact runtime versions.
+
+Renovate keeps pins current: images, Actions, and tool versions. Each
+repository must require status checks that exercise real behaviour, not only
+lint, on its branch ruleset, and those checks must be strong enough that a green
+run shows the update is safe. Test-gated automerge is the target, enabled per
+repository only with Aaron's approval once its required checks are proven. Until
+then the [dependency update pilot](dependency-updates.md) keeps automerge off.
 
 Documentation-only repositories need a tooling environment for linting, links,
-and tests. They do not need an invented application runtime or release image.
+and tests, published as above. They do not need an invented application
+runtime or release image.
 For applications, keep a lean release target separate from the development
 target: share necessary base/build stages and locks, then copy only required
 outputs and runtime dependencies into the release image. Keep editors, test
@@ -69,8 +84,10 @@ document and verify that separate capability explicitly. With a single direct
 Taskfile, use the ordinary `task setup` and `task verify` commands in the
 prepared environment instead.
 
-Continuous integration should use the same detailed tasks and development
-images where appropriate, with provider configuration limited to orchestration.
+Continuous integration jobs must run inside the published development image,
+pinned by digest (GitHub Actions `container:`), and use the same detailed
+tasks, with provider configuration limited to orchestration. A job that runs
+outside the image documents why in the workflow.
 Shared Actions or reusable workflows still handle standard services such as
 releases. Test the release image separately when one exists; passing
 tooling-image checks does not establish that the shipped image runs correctly.
@@ -154,12 +171,12 @@ tasks. When an operating-system-specific command is needed, mark its
 `platforms` and document the supported systems. Native dependencies can still
 require platform-specific bootstrap tools.
 
-Continuous integration runs the repository development/tooling image where
-appropriate, then invokes the same setup and verification tasks. A runner that
-cannot use that image must document its equivalent prepared environment and
-verify the supported differences. Pinned shared Actions/reusable workflows
-continue to provide standard services such as releases. Do not add a parallel
-release engine to Task.
+Continuous integration must run inside the repository development/tooling
+image, pinned by digest, then invokes the same setup and verification tasks. A runner
+that cannot use that image must document the reason and its equivalent prepared
+environment in the workflow, and verify the supported differences. Pinned shared
+Actions/reusable workflows continue to provide standard services such as
+releases. Do not add a parallel release engine to Task.
 
 The initial templates and this repository's tasks were executed on Linux.
 Windows and macOS are intended targets, not verified by that run; test them
@@ -211,8 +228,15 @@ item before calling the work complete:
 
 - Docker setup and the development container reuse the intended tooling; direct
   Task commands work inside the prepared environment without a host-wrapper loop.
-- Continuous integration runs those tasks and appropriate images. An application
-  release image is tested separately; documentation-only work verifies its tools.
+- Continuous integration runs those tasks inside the published image pinned by
+  digest, or the workflow documents why not, including the fallback and its
+  tracking issue for repositories without a published image. An application
+  release image is tested separately; documentation-only work verifies its
+  tools.
+- A demo or quickstart runs with a single `docker run` against a released image;
+  the README states exact runtime versions for manual setup.
+- The branch ruleset requires status checks that exercise real behaviour, strong
+  enough that a green Renovate update is shown safe.
 - Tests produce individual machine-readable results, such as JUnit XML. Publish
   them to the provider's check/test interface where supported, with identifiable
   passed, failed, and skipped cases and failure details. Uploading a report file
