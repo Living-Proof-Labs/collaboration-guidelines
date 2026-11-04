@@ -67,6 +67,11 @@ or higher-priority instructions.
 - A repository with a demo or quickstart must give a single `docker run` against
   a released image, with no install or build. The README keeps the manual setup,
   including exact runtime versions.
+- Published images must be multi-arch (at least linux/amd64 and linux/arm64)
+  unless a documented reason exists. Version tags are immutable: never re-tag or
+  overwrite one, and the release must fail if the tag already exists.
+  User-facing docs and demos reference the versioned tag so Docker selects the
+  platform; locks and CI may pin the multi-arch index digest.
 - Renovate keeps pins (images, Actions, tool versions) current. Each repository
   must require status checks that exercise real behaviour, not only lint, on its
   branch ruleset, and those checks must be strong enough that a green run shows

@@ -25,6 +25,12 @@ A repository with a demo or quickstart must give a single `docker run` against
 a released image that needs no install or build. The README keeps the manual
 setup, including exact runtime versions.
 
+Published images must be multi-arch, at least linux/amd64 and linux/arm64,
+unless the repository documents why not. Version tags are immutable: never
+re-tag or overwrite one, and the release must fail if the tag already exists.
+User-facing docs and demos reference the versioned tag so Docker selects the
+host platform; locks and CI may pin the multi-arch index digest.
+
 Renovate keeps pins current: images, Actions, and tool versions. Each
 repository must require status checks that exercise real behaviour, not only
 lint, on its branch ruleset, and those checks must be strong enough that a green
@@ -172,8 +178,8 @@ tasks. When an operating-system-specific command is needed, mark its
 require platform-specific bootstrap tools.
 
 Continuous integration must run inside the repository development/tooling
-image, pinned by digest, then invokes the same setup and verification tasks. A runner
-that cannot use that image must document the reason and its equivalent prepared
+image, pinned by digest, and invoke the same setup and verification tasks. A
+runner that cannot use that image must document the reason and its equivalent prepared
 environment in the workflow, and verify the supported differences. Pinned shared
 Actions/reusable workflows continue to provide standard services such as
 releases. Do not add a parallel release engine to Task.
