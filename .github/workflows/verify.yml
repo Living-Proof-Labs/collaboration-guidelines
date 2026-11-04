@@ -8,6 +8,8 @@ permissions:
   contents: read
 jobs:
   verify:
+    # Runs on the host until the tooling image is published; tracked in
+    # https://github.com/Living-Proof-Labs/collaboration-guidelines/issues/47
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

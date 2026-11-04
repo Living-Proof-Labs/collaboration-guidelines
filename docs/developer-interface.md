@@ -14,22 +14,27 @@ Every repository maintains Docker setup for a reproducible development and,
 where applicable, runtime environment. Keep environment definitions in the
 repository: pinned base images and tool versions, dependency locks, and
 documented build targets. Docker defines the environment; Task defines project
-commands. Publish the development/tooling image. The development-container
-configuration references that published image by digest rather than installing
-a second, independently maintained toolchain.
+commands. Every repository with a development/tooling image, including
+documentation-only repositories, publishes that image. The development-container
+configuration references the published image by digest rather than installing
+a second, independently maintained toolchain. Until a repository publishes its
+image, CI uses the documented fallback environment, and the workflow names the
+issue that tracks publishing it.
 
 A repository with a demo or quickstart gives a single `docker run` against a
 released image that needs no install or build. The README keeps the manual
 setup, including exact runtime versions.
 
-Renovate keeps pins current: images, Actions, and tool versions. An automated
-update may land only when required status checks that exercise real behaviour,
-not only lint, pass on the branch ruleset. Each repository requires those
-checks, and its tests must be strong enough that a green run means the update
-is safe without human supervision. See [dependency updates](dependency-updates.md).
+Renovate keeps pins current: images, Actions, and tool versions. Each
+repository must require status checks that exercise real behaviour, not only
+lint, on its branch ruleset, and those checks must be strong enough that a green
+run shows the update is safe. Test-gated automerge is the target, enabled per
+repository only with Aaron's approval once its required checks are proven. Until
+then the [dependency update pilot](dependency-updates.md) keeps automerge off.
 
 Documentation-only repositories need a tooling environment for linting, links,
-and tests. They do not need an invented application runtime or release image.
+and tests, published as above. They do not need an invented application
+runtime or release image.
 For applications, keep a lean release target separate from the development
 target: share necessary base/build stages and locks, then copy only required
 outputs and runtime dependencies into the release image. Keep editors, test
@@ -228,8 +233,8 @@ item before calling the work complete:
   tested separately; documentation-only work verifies its tools.
 - A demo or quickstart runs with a single `docker run` against a released image;
   the README states exact runtime versions for manual setup.
-- The branch ruleset requires status checks that exercise real behaviour, so a
-  green Renovate update is safe to land without supervision.
+- The branch ruleset requires status checks that exercise real behaviour, strong
+  enough that a green Renovate update is shown safe.
 - Tests produce individual machine-readable results, such as JUnit XML. Publish
   them to the provider's check/test interface where supported, with identifiable
   passed, failed, and skipped cases and failure details. Uploading a report file

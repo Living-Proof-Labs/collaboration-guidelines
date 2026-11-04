@@ -56,19 +56,23 @@ or higher-priority instructions.
 - Use Task schema v3 for common project commands: `task setup`, `task check`, and
   `task test`. Delegate to native ecosystem tools rather than reimplementing them.
 - Maintain repository Docker setup for reproducible development and applicable
-  runtime environments. Publish the development/tooling image; CI jobs run inside
-  it pinned by digest (GitHub Actions `container:`), and the development container
-  references the same image. Running outside it needs a documented reason in the
-  workflow. Task exposes contributor commands. Follow the
+  runtime environments. Repositories with a development/tooling image, including
+  documentation-only ones, must publish it; CI jobs must run inside it pinned by
+  digest (GitHub Actions `container:`), and the development container must
+  reference the same image. Running outside it needs a documented reason in the
+  workflow. Until a repository publishes its image, CI uses the documented
+  fallback environment, and the workflow names the issue that tracks publishing
+  it. Task exposes contributor commands. Follow the
   [developer interface guide](docs/developer-interface.md).
-- A repository with a demo or quickstart gives a single `docker run` against a
-  released image, with no install or build. The README keeps the manual setup,
+- A repository with a demo or quickstart must give a single `docker run` against
+  a released image, with no install or build. The README keeps the manual setup,
   including exact runtime versions.
-- Renovate keeps pins (images, Actions, tool versions) current. An automated update
-  lands only when required status checks that exercise real behaviour, not only
-  lint, pass on the branch ruleset. Each repository requires those checks, and its
-  tests are strong enough that a green run shows the update is safe without human
-  supervision. See [dependency updates](docs/dependency-updates.md).
+- Renovate keeps pins (images, Actions, tool versions) current. Each repository
+  must require status checks that exercise real behaviour, not only lint, on its
+  branch ruleset, and those checks must be strong enough that a green run shows
+  the update is safe. Test-gated automerge is the target, enabled per repository
+  only with Aaron's approval once its required checks are proven; until then the
+  [dependency update pilot](docs/dependency-updates.md) keeps automerge off.
 - Shared hosts install Docker and Task; repository containers supply language
   runtimes and package managers. Task installs
   project tooling and dependencies using pinned versions and committed locks.
