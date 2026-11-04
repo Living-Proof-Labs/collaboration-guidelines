@@ -15,14 +15,14 @@ where applicable, runtime environment. Keep environment definitions in the
 repository: pinned base images and tool versions, dependency locks, and
 documented build targets. Docker defines the environment; Task defines project
 commands. Every repository with a development/tooling image, including
-documentation-only repositories, publishes that image. The development-container
-configuration references the published image by digest rather than installing
-a second, independently maintained toolchain. Until a repository publishes its
-image, CI uses the documented fallback environment, and the workflow names the
-issue that tracks publishing it.
+documentation-only repositories, must publish that image. The
+development-container configuration must reference the published image by
+digest rather than installing a second, independently maintained toolchain.
+Until a repository publishes its image, CI uses the documented fallback
+environment, and the workflow names the issue that tracks publishing it.
 
-A repository with a demo or quickstart gives a single `docker run` against a
-released image that needs no install or build. The README keeps the manual
+A repository with a demo or quickstart must give a single `docker run` against
+a released image that needs no install or build. The README keeps the manual
 setup, including exact runtime versions.
 
 Renovate keeps pins current: images, Actions, and tool versions. Each
@@ -84,10 +84,10 @@ document and verify that separate capability explicitly. With a single direct
 Taskfile, use the ordinary `task setup` and `task verify` commands in the
 prepared environment instead.
 
-Continuous integration jobs run inside the published development image, pinned
-by digest (GitHub Actions `container:`), and use the same detailed tasks, with
-provider configuration limited to orchestration. A job that runs outside the
-image documents why in the workflow.
+Continuous integration jobs must run inside the published development image,
+pinned by digest (GitHub Actions `container:`), and use the same detailed
+tasks, with provider configuration limited to orchestration. A job that runs
+outside the image documents why in the workflow.
 Shared Actions or reusable workflows still handle standard services such as
 releases. Test the release image separately when one exists; passing
 tooling-image checks does not establish that the shipped image runs correctly.
@@ -171,8 +171,8 @@ tasks. When an operating-system-specific command is needed, mark its
 `platforms` and document the supported systems. Native dependencies can still
 require platform-specific bootstrap tools.
 
-Continuous integration runs inside the repository development/tooling image,
-pinned by digest, then invokes the same setup and verification tasks. A runner
+Continuous integration must run inside the repository development/tooling
+image, pinned by digest, then invokes the same setup and verification tasks. A runner
 that cannot use that image must document the reason and its equivalent prepared
 environment in the workflow, and verify the supported differences. Pinned shared
 Actions/reusable workflows continue to provide standard services such as
@@ -229,8 +229,10 @@ item before calling the work complete:
 - Docker setup and the development container reuse the intended tooling; direct
   Task commands work inside the prepared environment without a host-wrapper loop.
 - Continuous integration runs those tasks inside the published image pinned by
-  digest, or the workflow documents why not. An application release image is
-  tested separately; documentation-only work verifies its tools.
+  digest, or the workflow documents why not, including the fallback and its
+  tracking issue for repositories without a published image. An application
+  release image is tested separately; documentation-only work verifies its
+  tools.
 - A demo or quickstart runs with a single `docker run` against a released image;
   the README states exact runtime versions for manual setup.
 - The branch ruleset requires status checks that exercise real behaviour, strong

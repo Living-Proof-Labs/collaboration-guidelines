@@ -7,6 +7,9 @@ starts with a reusable, inactive `renovate-preset.json`. This change does not
 install a bot. Automerge and platform automerge are disabled. Updates are limited
 to two concurrent pull requests and one per hour, before 06:00 UTC on Mondays.
 Every update, including majors and pre-1.0 versions, needs review.
+Test-gated automerge is the target (see [AGENTS.md](../AGENTS.md)): it is
+enabled per repository only with Aaron's approval once its required checks are
+proven; automerge stays off in this pilot.
 
 ## Inventory and boundaries
 
