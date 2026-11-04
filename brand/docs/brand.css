@@ -88,3 +88,38 @@
     margin-left: 0.3rem;
   }
 }
+
+/* Shared content components for every manual (ported from living-proof-labs.github.io PR #17).
+   Pages opt in with a wrapper class, e.g. <div class="glossary" markdown>. */
+
+/* Glossary: term column stands out; narrow screens stack term, meaning, muted example. */
+.md-typeset .glossary table:not([class]) td:first-child {
+  white-space: nowrap;
+}
+
+.md-typeset .glossary table:not([class]) td:last-child {
+  color: var(--lpl-text-muted);
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .glossary table:not([class]) { display: block; border: 0; }
+  .md-typeset .glossary thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .md-typeset .glossary tbody, .md-typeset .glossary tr, .md-typeset .glossary td { display: block; }
+  .md-typeset .glossary tr { padding: 0.6rem 0; border-top: 1px solid var(--md-default-fg-color--lightest); }
+  .md-typeset .glossary table:not([class]) td { padding: 0.1rem 0.2rem; border: 0; white-space: normal; }
+  .md-typeset .glossary td:last-child { font-size: 0.9em; }
+  .md-typeset .glossary td:last-child::before { content: "Example: "; font-weight: 600; }
+}
+
+/* Landing components: call-to-action row, step cards, Available now / Next cards, status badges. */
+.md-typeset .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; margin: 1.2rem 0; }
+.md-typeset .hero-actions .md-button { margin: 0; }
+.md-typeset .how-steps,
+.md-typeset .now-building { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 1rem; margin: 1rem 0; }
+.md-typeset .how-steps > div,
+.md-typeset .now-building > div { border: 1px solid var(--md-default-fg-color--lightest); border-radius: 0.6rem; padding: 0.9rem 1rem; }
+.md-typeset .how-steps h3 { margin-top: 0; font-size: 1em; }
+.md-typeset .now-building ul { margin-top: 0.5rem; }
+.md-typeset .badge { display: inline-block; font-size: 0.75em; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 999px; }
+.md-typeset .badge-now { background: var(--lpl-accent-tint); color: var(--lpl-accent); }
+.md-typeset .badge-next { background: transparent; color: var(--lpl-text-muted); box-shadow: inset 0 0 0 1px var(--md-default-fg-color--lightest); }
