@@ -15,6 +15,7 @@ import { GlobalConfig } from '/usr/local/renovate/dist/config/global.js';
 import { init } from '/usr/local/renovate/dist/logger/index.js';
 await init();
 import { applyPackageRules } from '/usr/local/renovate/dist/util/package-rules/index.js';
+import { calcLimit, counts, isLimitReached, setCount } from '/usr/local/renovate/dist/workers/global/limits.js';
 const read = (file) => readFileSync(file, 'utf8');
 const preset = JSON.parse(read('renovate-preset.json'));
 const [markdown, task] = preset.customManagers;
@@ -130,6 +131,87 @@ test('replacement reconciles stale display tag while preserving version-like pat
   const output = await update(input, 'AGENTS.md', markdown);
   assert.ok(output.includes('[Working guidelines v4.2.2]'));
   assert.ok(output.includes('/blob/v4.2.2/AGENTS.md#v4.1.0)'));
+});
+
+test('published Living Proof Labs dependencies are unscheduled; third parties keep Monday', async () => {
+  const internal = preset.packageRules.at(-1);
+  assert.equal(preset.packageRules[0].schedule, undefined);
+  assert.deepEqual(internal.schedule, ['at any time']);
+  assert.equal(internal.prHourlyLimit, 0);
+  assert.equal(internal.prConcurrentLimit, 0);
+  assert.equal(internal.branchConcurrentLimit, undefined);
+  const resolved = (dep) => applyPackageRules({...preset, ...dep, packageName: dep.packageName ?? dep.depName}, 'test');
+  const guidelines = await resolved({depName: 'Living-Proof-Labs/collaboration-guidelines', datasource: 'github-releases'});
+  assert.equal(guidelines.groupName, 'collaboration guidelines');
+  assert.deepEqual(guidelines.schedule, ['at any time']);
+  assert.equal(guidelines.prHourlyLimit, 0);
+  assert.equal(guidelines.prConcurrentLimit, 0);
+  for (const depName of ['Living-Proof-Labs/some-action', 'living-proof-labs/some-action', 'ghcr.io/living-proof-labs/tooling', 'ghcr.io/living-proof-labs/nested/tooling', 'ghcr.io/Living-Proof-Labs/Tooling', '@living-proof-labs/sdk', '@Living-Proof-Labs/SDK']) {
+    const rule = await resolved({depName});
+    assert.deepEqual(rule.schedule, ['at any time'], depName);
+    assert.equal(rule.prHourlyLimit, 0, depName);
+    assert.equal(rule.prConcurrentLimit, 0, depName);
+    assert.equal(rule.groupName, undefined, depName);
+  }
+  for (const sourceUrl of ['https://github.com/Living-Proof-Labs/livingproof-common', 'https://github.com/living-proof-labs/livingproof-common.git', 'https://github.com/Living-Proof-Labs/livingproof-common/tree/main']) {
+    const rule = await resolved({depName: 'livingproof-common', sourceUrl});
+    assert.deepEqual(rule.schedule, ['at any time'], sourceUrl);
+    assert.equal(rule.prHourlyLimit, 0, sourceUrl);
+  }
+  for (const dep of [
+    {depName: 'actions/checkout'},
+    {depName: 'go-task/setup-task'},
+    {depName: 'dorny/test-reporter'},
+    {depName: 'actions/upload-artifact'},
+    {depName: 'ghcr.io/astral-sh/uv', sourceUrl: 'https://github.com/astral-sh/uv'},
+    {depName: 'python', sourceUrl: 'https://github.com/docker-library/python'},
+    {depName: 'pytest', sourceUrl: 'https://github.com/pytest-dev/pytest'},
+    {depName: 'jsonschema', sourceUrl: 'https://github.com/python-jsonschema/jsonschema'},
+    {depName: 'ruff', sourceUrl: 'https://github.com/astral-sh/ruff'},
+    {depName: 'Living-Proof-Labs-other/tool', sourceUrl: 'https://github.com/Living-Proof-Labs-other/tool'},
+    {depName: 'ghcr.io/living-proof-labs-other/tool'},
+    {depName: '@living-proof-labs-other/sdk', sourceUrl: 'https://github.com/other/sdk'},
+  ]) {
+    const rule = await resolved(dep);
+    assert.deepEqual(rule.schedule, ['before 6am on monday'], dep.depName);
+    assert.equal(rule.prHourlyLimit, 1, dep.depName);
+    assert.equal(rule.prConcurrentLimit, 2, dep.depName);
+  }
+  const earlierMonday = {
+    ...preset,
+    packageRules: [
+      {matchPackageNames: ['Living-Proof-Labs/collaboration-guidelines'], schedule: ['before 6am on monday']},
+      ...preset.packageRules,
+    ],
+  };
+  const cleared = await applyPackageRules({...earlierMonday, depName: 'Living-Proof-Labs/collaboration-guidelines', packageName: 'Living-Proof-Labs/collaboration-guidelines'}, 'test');
+  assert.deepEqual(cleared.schedule, ['at any time']);
+  const restored = await applyPackageRules({
+    ...preset,
+    packageRules: [
+      ...preset.packageRules,
+      {matchPackageNames: ['Living-Proof-Labs/collaboration-guidelines'], schedule: ['before 6am on monday']},
+    ],
+    depName: 'Living-Proof-Labs/collaboration-guidelines',
+    packageName: 'Living-Proof-Labs/collaboration-guidelines',
+  }, 'test');
+  assert.deepEqual(restored.schedule, ['before 6am on monday']);
+  counts.clear();
+  setCount('HourlyPRs', 5);
+  setCount('ConcurrentPRs', 5);
+  setCount('Branches', 5);
+  setCount('HourlyCommits', 0);
+  const branch = (upgrade) => ({upgrades: [upgrade], isVulnerabilityAlert: false});
+  assert.equal(calcLimit([guidelines], 'prHourlyLimit'), 0);
+  assert.equal(calcLimit([guidelines], 'prConcurrentLimit'), 0);
+  assert.equal(calcLimit([guidelines], 'branchConcurrentLimit'), 0);
+  const third = await resolved({depName: 'pytest', sourceUrl: 'https://github.com/pytest-dev/pytest'});
+  assert.equal(calcLimit([third], 'prHourlyLimit'), 1);
+  assert.equal(calcLimit([third], 'prConcurrentLimit'), 2);
+  assert.equal(calcLimit([third], 'branchConcurrentLimit'), 2);
+  assert.equal(isLimitReached('Branches', branch(guidelines)), false);
+  assert.equal(isLimitReached('Branches', branch(third)), true);
+  counts.clear();
 });
 
 test('replacement preserves blob-like segments in paths and fragments', async () => {

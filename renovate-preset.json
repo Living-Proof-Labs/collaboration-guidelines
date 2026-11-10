@@ -20,6 +20,18 @@
       "groupName": "collaboration guidelines",
       "allowedVersions": "/^v[0-9]+\\.[0-9]+\\.[0-9]+$/",
       "separateMajorMinor": false
+    },
+    {
+      "description": "Living Proof Labs releases open with no schedule and no pull request rate limit. This rule is last so an earlier rule cannot restore the Monday schedule.",
+      "matchJsonata": [
+        "$matchRegexOrGlob(packageName, [\"/^Living-Proof-Labs/[^/]+$/i\"])",
+        "$matchRegexOrGlob(packageName, [\"/^ghcr\\\\.io/living-proof-labs/.+/i\"])",
+        "$matchRegexOrGlob(packageName, [\"/^@living-proof-labs/.+/i\"])",
+        "$matchRegexOrGlob(sourceUrl, [\"/^https://github\\\\.com/Living-Proof-Labs//i\"])"
+      ],
+      "schedule": ["at any time"],
+      "prHourlyLimit": 0,
+      "prConcurrentLimit": 0
     }
   ],
   "customManagers": [
