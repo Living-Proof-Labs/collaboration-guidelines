@@ -15,7 +15,9 @@ pre-1.0 versions, needs review.
 The last `packageRules` entry clears the Monday schedule for a dependency we
 publish. `schedule` is not a mergeable option, so `["at any time"]` replaces
 `["before 6am on monday"]` instead of being appended to it. Renovate treats
-`at any time` as no schedule. The entry stays last: the earlier
+`at any time` as no schedule, so the Monday window does not skip the update.
+Mend Renovate still picks it up on the next run. The setting does not start
+that run. The entry stays last: the earlier
 collaboration-guidelines rule does not set `schedule`, and a later rule that
 did would put the Monday window back.
 
@@ -41,8 +43,8 @@ uses no limit when any upgrade on the branch has `0`. This preset does not
 make that grouping.
 
 An internal pull request is not itself delayed by those caps, but it still
-counts toward them. Renovate counts every branch that is not a vulnerability
-alert when it applies the concurrent, branch, and hourly limits. Two open
+counts toward them. Renovate excludes vulnerability-alert pull requests from
+the concurrent and branch counts. The hourly count includes them. Two open
 internal pull requests fill the repository limit of 2, so a third-party update
 waits.
 
