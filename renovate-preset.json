@@ -22,6 +22,12 @@
       "separateMajorMinor": false
     },
     {
+      "description": "Keep requires-python as a range. Pin would rewrite >=3.11 to an exact interpreter and drop older supported versions.",
+      "matchManagers": ["pep621"],
+      "matchDepTypes": ["requires-python"],
+      "rangeStrategy": "auto"
+    },
+    {
       "description": "Living Proof Labs releases open with no schedule and no pull request rate limit. This rule is last so an earlier rule cannot restore the Monday schedule.",
       "matchJsonata": [
         "$matchRegexOrGlob(packageName, [\"/^Living-Proof-Labs/[^/]+$/i\"])",

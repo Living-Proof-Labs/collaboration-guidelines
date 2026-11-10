@@ -214,6 +214,45 @@ test('published Living Proof Labs dependencies are unscheduled; third parties ke
   counts.clear();
 });
 
+test('requires-python stays a range and other pep621 dependencies stay pinned', async () => {
+  const pythonRule = preset.packageRules.at(-2);
+  assert.equal(pythonRule.rangeStrategy, 'auto');
+  assert.deepEqual(pythonRule.matchManagers, ['pep621']);
+  assert.deepEqual(pythonRule.matchDepTypes, ['requires-python']);
+  assert.equal(preset.packageRules.at(-1).schedule[0], 'at any time');
+  assert.equal(preset.packageRules.at(-1).rangeStrategy, undefined);
+  const resolved = (dep) => applyPackageRules({...preset, ...dep, packageName: dep.packageName ?? dep.depName}, 'test');
+  const python = await resolved({manager: 'pep621', depType: 'requires-python', depName: 'python', currentValue: '>=3.11'});
+  assert.equal(python.rangeStrategy, 'auto');
+  assert.notEqual(python.rangeStrategy, 'pin');
+  assert.deepEqual(python.schedule, ['before 6am on monday']);
+  for (const dep of [
+    {manager: 'pep621', depType: 'project.dependencies', depName: 'jsonschema', currentValue: '==4.25.1'},
+    {manager: 'pep621', depType: 'dependency-groups', depName: 'pytest', currentValue: '==8.4.2'},
+    {manager: 'pip-compile', depType: 'requires-python', depName: 'python', currentValue: '>=3.11'},
+  ]) {
+    const rule = await resolved(dep);
+    assert.equal(rule.rangeStrategy, 'pin', dep.depName);
+  }
+  const internalRuntime = await resolved({
+    manager: 'pep621',
+    depType: 'requires-python',
+    depName: 'python',
+    currentValue: '>=3.11',
+    sourceUrl: 'https://github.com/Living-Proof-Labs/livingproof-common',
+  });
+  assert.equal(internalRuntime.rangeStrategy, 'auto');
+  assert.deepEqual(internalRuntime.schedule, ['at any time']);
+  const internalPackage = await resolved({
+    manager: 'pep621',
+    depType: 'project.dependencies',
+    depName: 'livingproof-common',
+    sourceUrl: 'https://github.com/Living-Proof-Labs/livingproof-common',
+  });
+  assert.equal(internalPackage.rangeStrategy, 'pin');
+  assert.deepEqual(internalPackage.schedule, ['at any time']);
+});
+
 test('replacement preserves blob-like segments in paths and fragments', async () => {
   for (const suffix of ['/docs/blob/v1.2.3/guide.md', '/AGENTS.md#example/blob/v1.2.3']) {
     const input = `<!-- renovate: guidelines -->\n[Guide v4.1.0](https://github.com/Living-Proof-Labs/collaboration-guidelines/blob/v4.1.0${suffix})\n`;

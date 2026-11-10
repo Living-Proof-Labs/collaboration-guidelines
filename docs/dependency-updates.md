@@ -40,6 +40,25 @@ dependency with a third-party one would also be unlimited, because Renovate
 uses no limit when any upgrade on the branch has `0`. This preset does not
 make that grouping.
 
+An internal pull request is not itself delayed by those caps, but it still
+counts toward them. Renovate counts every branch that is not a vulnerability
+alert when it applies the concurrent, branch, and hourly limits. Two open
+internal pull requests fill the repository limit of 2, so a third-party update
+waits.
+
+The internal match needs Renovate 44.115.0 or later. `$matchRegexOrGlob`
+shipped in that release. An older runner logs a warning and treats the rule as
+not matching, so those dependencies stay on the Monday schedule.
+
+## Python version constraint
+
+`rangeStrategy` is `pin` for the repository. A `pep621` `requires-python`
+constraint uses `auto` instead. Pin would rewrite `>=3.11` to an exact
+interpreter such as `==3.15.2` and drop 3.11 through 3.14. `auto` leaves the
+range, and lookup then proposes no update. Other pep621 dependencies stay
+pinned. This rule sits ahead of the internal schedule rule. That later rule
+does not set `rangeStrategy`, and this rule does not set `schedule`.
+
 Test-gated automerge is the target (see [AGENTS.md](../AGENTS.md)): it is
 enabled per repository only with Aaron's approval once its required checks are
 proven; automerge stays off in this pilot.
