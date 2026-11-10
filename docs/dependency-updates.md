@@ -4,9 +4,42 @@
 
 Issue [#19](https://github.com/Living-Proof-Labs/collaboration-guidelines/issues/19)
 starts with a reusable, inactive `renovate-preset.json`. This change does not
-install a bot. Automerge and platform automerge are disabled. Updates are limited
-to two concurrent pull requests and one per hour, before 06:00 UTC on Mondays.
-Every update, including majors and pre-1.0 versions, needs review.
+install a bot. Automerge and platform automerge are disabled. Third-party
+updates are limited to two concurrent pull requests and one per hour, before
+06:00 UTC on Mondays. A dependency Living Proof Labs publishes is not on that
+schedule and is not held by those limits. Every update, including majors and
+pre-1.0 versions, needs review.
+
+## Releases we publish
+
+The last `packageRules` entry clears the Monday schedule for a dependency we
+publish. `schedule` is not a mergeable option, so `["at any time"]` replaces
+`["before 6am on monday"]` instead of being appended to it. Renovate treats
+`at any time` as no schedule. The entry stays last: the earlier
+collaboration-guidelines rule does not set `schedule`, and a later rule that
+did would put the Monday window back.
+
+The entry matches when any one of these is true:
+
+- The package name is `Living-Proof-Labs/<repository>`. GitHub Actions and the
+  annotated guidelines pins use that name.
+- The package name is a container image under `ghcr.io/living-proof-labs/`.
+- The package name is an npm package in the `@living-proof-labs` scope, which
+  still matches when registry metadata has no GitHub source URL.
+- `sourceUrl` is under `https://github.com/Living-Proof-Labs/`. npm, pip, and
+  other registries identify a package from this organization that way after
+  lookup. Several matchers in one rule all have to match, so each alternative
+  is its own expression in one `matchJsonata` list. Any expression is enough.
+
+Those dependencies set `prHourlyLimit` and `prConcurrentLimit` to `0`, which
+means no limit. Otherwise an open pull request or a pull request already
+created this hour would delay an internal release. The repository limits still
+apply to every other dependency. `branchConcurrentLimit` is left unset, so it
+keeps inheriting `prConcurrentLimit`. A branch that grouped an internal
+dependency with a third-party one would also be unlimited, because Renovate
+uses no limit when any upgrade on the branch has `0`. This preset does not
+make that grouping.
+
 Test-gated automerge is the target (see [AGENTS.md](../AGENTS.md)): it is
 enabled per repository only with Aaron's approval once its required checks are
 proven; automerge stays off in this pilot.

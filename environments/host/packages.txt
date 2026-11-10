@@ -7,5 +7,5 @@ gh=2.45.0-1ubuntu0.3
 glab=1.36.0-1ubuntu0.3
 curl=8.5.0-2ubuntu10.16
 jq=1.7.1-3ubuntu0.24.04.2
-ca-certificates=20260816ubuntu0.24.04.1
+ca-certificates=20260816ubuntu0.24.04.2
 openssh-client=1:9.6p1-3ubuntu13.20
