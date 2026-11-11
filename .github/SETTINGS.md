@@ -105,12 +105,17 @@ linear-history rule would force squash or rebase merging, so it is omitted here:
 
 ### GitHub Pages
 
-Every registered repository publishes GitHub Pages built by GitHub Actions
-(`"pages": { "build_type": "workflow" }`). The audit reports one of four states
-per repository, and what `--apply-pages` does for each:
+Every registered repository that publishes GitHub Pages builds it with GitHub
+Actions. The policy sets `pages.build_type` to `workflow` and
+`pages.https_enforced` to `true` (Enforce HTTPS). The audit below is
+`tools/github/repository-settings.mjs`. It reports one of four source states,
+and `--apply-pages` sends only `build_type`. It does not send
+`https_enforced` or `cname`. [Apply the pinned policy](#apply-the-pinned-policy)
+is the command that writes Enforce HTTPS, and only for a repository that
+already has a Pages site.
 
 - `matches`: a site exists and builds from GitHub Actions. Apply writes
-  nothing.
+  nothing. This comparison does not include Enforce HTTPS.
 - `drifted`: a site exists with another source, for example a legacy branch
   build. Apply sends `PUT .../pages` with only `build_type`, so the custom
   domain, HTTPS enforcement and other settings stay as they are; a changed
@@ -159,6 +164,131 @@ fork-controlled code in a `pull_request_target` workflow, and do not expose
 write tokens or secrets to untrusted fork code. Keep the default `GITHUB_TOKEN`
 read-only unless a trusted post-merge job explicitly needs a narrower elevated
 permission.
+
+## Repository policy
+
+[`config/github/repository-policy.json`](../config/github/repository-policy.json)
+is the desired GitHub state. It names no organization and no repository list.
+`schema_version` is `1`. The organization command below and
+`tools/github/repository-settings.mjs` both read this declaration. The local
+tool does not write Enforce HTTPS.
+
+- `repository` holds REST repository settings. Wiki, discussions, and projects
+  are off. Issues are on. Anyone can open a pull request. Merge commits are
+  the only merge method; the commit title is the pull request title and the
+  message is blank. Updating a pull request branch is suggested, auto-merge is
+  allowed, and the head branch is deleted after merge.
+- `graphql_repository` turns sponsorships off
+  (`hasSponsorshipsEnabled: false`). That field is read and written with
+  GitHub GraphQL, not the REST repository object.
+- `manual_or_unavailable_settings` lists preferences the apply command does
+  not write: Archive Program preservation on, Git LFS objects in source archives
+  off,
+  the per-push ref-update limit off, and automatic closing of linked issues
+  on. The organization command names each one and skips it.
+- `immutable_releases` is `true`: a published release cannot be edited. It
+  does not block creating the next release. See
+  [Releases and workflows](#releases-and-workflows).
+- `pages.build_type` is `workflow`, so an existing site builds with GitHub
+  Actions. `pages.https_enforced` is `true`, which is Enforce HTTPS on an
+  existing project Pages site. A repository with no site is left alone.
+- `main_ruleset` is the active default-branch ruleset in
+  [Recommended main protection](#recommended-main-protection).
+
+## Apply the pinned policy
+
+Apply this file from a checkout of the
+[Living Proof Labs `.github` repository](https://github.com/Living-Proof-Labs/.github)
+with
+[`scripts/apply-repo-policy`](https://github.com/Living-Proof-Labs/.github/blob/main/scripts/apply-repo-policy).
+That repository pins this file by collaboration-guidelines commit and git
+blob SHA in its `config/github/repository-policy.json`. The command downloads
+the file from that commit over HTTPS, does not send `GH_TOKEN` for the
+download, and stops if the blob SHA differs. The tag recorded in the pin is
+not the fetch ref. `--policy FILE` reads a local file and does not check a
+blob SHA, which is how to review an unpinned revision before the pin moves.
+A normal apply uses the pin.
+
+```text
+scripts/apply-repo-policy (--dry-run | --apply)
+    [--policy FILE] [--org ORG] [--repo NAME]
+```
+
+Help prints that synopsis on one line.
+
+```sh
+# Export GH_TOKEN in the environment first. Do not pass it as an argument.
+scripts/apply-repo-policy --dry-run
+scripts/apply-repo-policy --apply
+
+# The same entry point through Task:
+task github:policy:apply -- --dry-run
+task github:policy:apply -- --apply
+```
+
+Choose exactly one of `--dry-run` or `--apply`. `--org` sets the organization
+login (default `Living-Proof-Labs`). `--repo` limits the run to one repository
+name, not `owner/name`.
+
+Run the dry-run first. It prints each difference as
+`setting: current -> desired`, then `outcome: not written (dry-run)`. It
+performs no REST write and no GraphQL mutation. It does send read requests,
+including a GraphQL query for `hasSponsorshipsEnabled`, because that value is
+not on the REST repository object.
+
+`--apply` writes only a setting whose current value differs from the policy.
+A second run reports no changes when those reads match. Re-running is
+idempotent. A failure to read or write one setting is reported on that
+repository and the command continues with the others. The process exits
+non-zero if any repository failed. Repositories come from
+`GET /orgs/{org}/repos?type=all`. An empty list is a failure, not a clean run.
+
+`pages.https_enforced` is sent with `PUT /repos/{owner}/{repo}/pages` only
+when a Pages site already exists and the live value differs. The request body
+contains only the Pages fields that differ (`https_enforced` and, when the
+source also differs, `build_type`). The command does not send `cname`, does
+not create a Pages site, and skips a repository with no site. A 404 from
+Pages when `has_pages` is not `false` is a permission failure, not an absent
+site, and that repository's Pages settings are not written.
+
+Settings listed in `manual_or_unavailable_settings` are named and skipped.
+They have no API call.
+
+### Token
+
+The token comes only from the `GH_TOKEN` environment variable. It may be a
+classic personal access token, a fine-grained personal access token, or a
+GitHub App installation token. The command never stores the token and never
+writes it to disk, arguments, or logs.
+
+A classic personal access token needs the `repo` scope. A fine-grained token
+or GitHub App installation token needs repository permissions on the
+repositories the installation can access:
+
+- Repository settings, immutable releases, the main ruleset, and sponsorships
+  require Administration: read and write.
+- `pages.build_type` and `pages.https_enforced` require Pages: read and write,
+  plus Administration: read and write.
+- The organization repository list requires Metadata: read.
+
+Pages is an additional permission on top of Administration. Metadata read
+alone cannot change settings. GitHub Apps receive Metadata automatically.
+Private repositories still have to be included in the installation. An App
+manifest that requests only Administration and Metadata cannot enforce HTTPS
+until the App that mints `GH_TOKEN` also has Pages: read and write. This
+command does not install an App or mint a token.
+
+If the main ruleset's bypass actors are unreadable, the ruleset is not
+written.
+
+### Repin after this file changes
+
+After this change merges and a release is published, the `.github` repository
+updates the pinned `commit` and `policy_blob_sha` in its own
+`config/github/repository-policy.json`. Pin the commit that contains the
+published file, not a moving branch. Until that pin moves, the command keeps
+the previous policy and does not invent `pages.https_enforced`. Use
+`--policy FILE` for a dry-run of this revision before the pin moves.
 
 ## Consumer inventory
 
