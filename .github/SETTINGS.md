@@ -209,9 +209,13 @@ not the fetch ref. `--policy FILE` reads a local file and does not check a
 blob SHA, which is how to review an unpinned revision before the pin moves.
 A normal apply uses the pin.
 
-In that checkout, run `task setup` once before `scripts/apply-repo-policy`.
-The task runs `bash tools/setup.sh` and installs the pinned Node under
-`.tools`. Without that Node, `tools/with-node.sh` exits 69 and prints
+In that checkout, install the pinned Node once before
+`scripts/apply-repo-policy`. When Task is already installed, `task setup`
+runs `bash tools/setup.sh` and installs that Node under `.tools`. When Task
+is not installed, run `bash tools/setup.sh` directly instead of `task setup`.
+`tools/task.sh` prints that same command and exits 69 when it cannot find
+Task (`Task is not installed. Run: bash tools/setup.sh`). Without the pinned
+Node, `tools/with-node.sh` exits 69 and prints
 `Node is not installed. Run: task setup`.
 
 ```text
@@ -223,6 +227,7 @@ Help prints that synopsis on one line.
 
 ```sh
 # In Living-Proof-Labs/.github, once: task setup
+# If the task command is missing: bash tools/setup.sh
 # Export GH_TOKEN in the environment first. Do not pass it as an argument.
 scripts/apply-repo-policy --dry-run
 scripts/apply-repo-policy --apply
@@ -278,7 +283,51 @@ They have no API call.
   login. `--repo` is a repository name; `owner/name` is rejected. `--policy
   FILE` has to be readable JSON.
 - `69` means the pinned Node is missing. `tools/with-node.sh` returns 69
-  before Node starts. Run `task setup` in the `.github` checkout.
+  before Node starts. Run `task setup` in the `.github` checkout, or
+  `bash tools/setup.sh` when the `task` command is missing.
+
+`task github:policy:apply -- ...` is the Taskfile task `github:policy:apply`,
+whose command is `bash scripts/apply-repo-policy` with the arguments after
+`--`. The task does not set `ignore_error`, and that invocation does not pass
+Task's `--exit-code` flag. Task 3.54.0, the version `tools/setup.sh` installs,
+then exits 201. That code is Task's `CodeTaskRunError`. The script's own code
+is named in the message:
+
+```text
+task: Failed to run task "github:policy:apply": exit status N
+```
+
+`N` is the script code from the list above, and the script's own error text
+is printed on the preceding line. A local run of that Task binary against
+Living-Proof-Labs/.github commit `c44c29d98a22ca8f7a69f972bcce4f5f20e0ea5f`
+showed three failures. The `github:policy:apply` command and
+`scripts/apply-repo-policy` at that commit match `main` commit
+`a6b6a5add856640b0f42a7a5811059e20c808421`. None of the runs called GitHub:
+the usage and missing-token runs return before the client is created, and the
+missing-Node run stops in `tools/with-node.sh`.
+
+- No `--dry-run` or `--apply`: the script prints
+  `Choose exactly one of --dry-run or --apply.` and exits 64. Task exits 201
+  and the message ends with `exit status 64`.
+- `--dry-run` with `GH_TOKEN` unset: the script prints the missing-token
+  line below and exits 1. Task exits 201 and the message ends with
+  `exit status 1`.
+- Node not installed under `.tools`: the script prints
+  `Node is not installed. Run: task setup` and exits 69. Task exits 201 and
+  the message ends with `exit status 69`.
+
+The missing-token line is:
+
+<!-- markdownlint-disable MD013 -->
+
+```text
+GH_TOKEN is not set. Export a personal access token or a GitHub App installation token. This command reads that variable and does not store it.
+```
+
+<!-- markdownlint-enable MD013 -->
+
+`--help` still exits 0. The script's own codes are unchanged when it is run
+as `scripts/apply-repo-policy` without Task.
 
 ### Token
 
@@ -302,7 +351,9 @@ alone cannot change settings. GitHub Apps receive Metadata automatically.
 Private repositories still have to be included in the installation. An App
 manifest that requests only Administration and Metadata cannot enforce HTTPS
 until the App that mints `GH_TOKEN` also has Pages: read and write. This
-command does not install an App or mint a token.
+command does not install an App or mint a token. The organization owner's
+procedure for Rivet, Cody, and Vera's Apps, including Rivet's installation
+token for `GH_TOKEN`, is [Bot GitHub Apps](GITHUB-APPS.md).
 
 If the main ruleset's bypass actors are unreadable, the ruleset is not
 written.

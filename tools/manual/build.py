@@ -39,7 +39,8 @@ def build():
     paths = ['README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'LICENSE.md']
     paths += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'docs').glob('*.md'))]
     paths += [f'{provider}/{name}' for provider in ('.github', '.gitlab', '.codex', '.cursor')
-              for name in ('DEVELOPMENT.md', 'SETTINGS.md', 'GENERATED-DOCS.md')
+              for name in ('DEVELOPMENT.md', 'GITHUB-APPS.md', 'SETTINGS.md',
+                           'GENERATED-DOCS.md')
               if (ROOT / provider / name).is_file()]
     paths += ['templates/generated-docs/README.md']
     mapping = {p: p.replace('README.md', 'index.md') for p in paths}

@@ -95,6 +95,7 @@ Keep provider-specific configuration separate from the shared working agreement.
 The [GitHub settings guide](.github/SETTINGS.md) distinguishes explicit owner
 preferences, observed settings, and inspection gaps. It describes the
 repository policy, including Enforce HTTPS for an existing project Pages site,
-and how to apply that policy from the organization `.github` repository. It
-also describes equivalent provider concepts without claiming untested
-integrations.
+and how to apply that policy from the organization `.github` repository. The
+[bot GitHub App guide](.github/GITHUB-APPS.md) is the organization owner's
+procedure for registering Rivet, Cody, and Vera. The settings guide also
+describes equivalent provider concepts without claiming untested integrations.

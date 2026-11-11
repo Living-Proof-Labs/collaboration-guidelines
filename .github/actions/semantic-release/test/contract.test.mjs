@@ -35,7 +35,8 @@ test('relative documentation links and adoption pin examples resolve structurall
     'docs/documentation-recipe.md', 'docs/documentation-ownership.md', 'docs/manual.md',
     'docs/shared-host.md', '.codex/DEVELOPMENT.md', '.cursor/DEVELOPMENT.md',
     'docs/releases.md', 'docs/licensing.md', 'docs/developer-interface.md',
-    '.github/SETTINGS.md', '.github/DEVELOPMENT.md', '.gitlab/DEVELOPMENT.md']) {
+    '.github/SETTINGS.md', '.github/GITHUB-APPS.md', '.github/DEVELOPMENT.md',
+    '.gitlab/DEVELOPMENT.md']) {
     const body = await read(path);
     for (const [, link] of body.matchAll(/\]\(([^)]+)\)/g)) {
       if (!/^https?:/.test(link)) await access(resolve(root, dirname(path), link.split('#')[0]));
