@@ -361,19 +361,37 @@ exit codes.
 A new installation token is stateless and looks like `ghs_<APPID>_<JWT>`,
 as described in the
 [installation token rollout](https://github.blog/changelog/2026-10-02-stateless-github-app-installation-tokens-rolled-out/).
-`scripts/app-token` at the `.github` commit above can reject that token and
-exit 1 with `Installation token response did not include a usable token.`
-The preview and the rotation check below then fail until
-Living-Proof-Labs/.github accepts this token. This repository does not
-contain that helper.
+`scripts/app-token` at the `.github` commit above rejects that token and
+exits 1 with `Installation token response did not include a usable token.`
+Earlier commits reject `ghs_<APPID>_<JWT>` tokens. The minimum
+Living-Proof-Labs/.github commit that contains the fix is
+`c2ba2653ec7ec2685525a63f41ec29f47c70a657`
+([pull request 51](https://github.com/Living-Proof-Labs/.github/pull/51)).
+Use that commit, or a later one that contains it, for the preview and the
+rotation check. This repository does not contain that helper.
 
 ## Rotate a key
 
 1. On **Key pairs**, click **New key** and let GitHub download the new PEM.
    The previous key still signs until you delete it.
-2. Update `<BOT>_GITHUB_APP_PRIVATE_KEY` on that bot's secret card with the
-   new PEM text. Delete the downloaded `.pem` after the card is updated.
-   Do not leave it in Downloads, the checkout, or a shared folder.
+2. Copy the downloaded PEM onto `<BOT>_GITHUB_APP_PRIVATE_KEY` without
+   printing it. Do not `echo` or `cat` the key to the terminal. On macOS,
+   with the downloaded name in place of `the-key.pem`:
+
+   ```sh
+   pbcopy < ~/Downloads/the-key.pem
+   ```
+
+   On Linux:
+
+   ```sh
+   xclip -selection clipboard < the-key.pem
+   wl-copy < the-key.pem
+   ```
+
+   Paste that clipboard text into the secret card. Delete the downloaded
+   `.pem` after the card is updated. Do not leave it in Downloads, the
+   checkout, or a shared folder.
 3. Rivet, Cody, or Vera runs the helper in the environment that has the
    updated card. Use `cody` or `vera` instead of `rivet` for that bot:
 
