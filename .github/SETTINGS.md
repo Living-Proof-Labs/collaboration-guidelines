@@ -209,6 +209,11 @@ not the fetch ref. `--policy FILE` reads a local file and does not check a
 blob SHA, which is how to review an unpinned revision before the pin moves.
 A normal apply uses the pin.
 
+In that checkout, run `task setup` once before `scripts/apply-repo-policy`.
+The task runs `bash tools/setup.sh` and installs the pinned Node under
+`.tools`. Without that Node, `tools/with-node.sh` exits 69 and prints
+`Node is not installed. Run: task setup`.
+
 ```text
 scripts/apply-repo-policy (--dry-run | --apply)
     [--policy FILE] [--org ORG] [--repo NAME]
@@ -217,6 +222,7 @@ scripts/apply-repo-policy (--dry-run | --apply)
 Help prints that synopsis on one line.
 
 ```sh
+# In Living-Proof-Labs/.github, once: task setup
 # Export GH_TOKEN in the environment first. Do not pass it as an argument.
 scripts/apply-repo-policy --dry-run
 scripts/apply-repo-policy --apply
@@ -239,8 +245,8 @@ not on the REST repository object.
 `--apply` writes only a setting whose current value differs from the policy.
 A second run reports no changes when those reads match. Re-running is
 idempotent. A failure to read or write one setting is reported on that
-repository and the command continues with the others. The process exits
-non-zero if any repository failed. Repositories come from
+repository and the command continues with the others. The process exits 1
+if any repository failed. Repositories come from
 `GET /orgs/{org}/repos?type=all`. An empty list is a failure, not a clean run.
 
 `pages.https_enforced` is sent with `PUT /repos/{owner}/{repo}/pages` only
@@ -253,6 +259,26 @@ site, and that repository's Pages settings are not written.
 
 Settings listed in `manual_or_unavailable_settings` are named and skipped.
 They have no API call.
+
+### Exit status
+
+`scripts/apply-repo-policy` runs `tools/with-node.sh`, which starts
+`tools/github/apply-repo-policy.mjs`. The command returns one of these codes.
+
+- `0` is success. Help (`--help` or `-h`) returns 0 and does not read
+  `GH_TOKEN`. A dry-run or apply returns 0 when no repository reported an
+  error.
+- `1` is a failed run. `GH_TOKEN` is unset, empty, or has whitespace at
+  either end; at least one repository reported an error; or the program
+  caught any other error that is not a usage error. A blob SHA mismatch, an
+  empty organization repository list, and a policy the command rejects use
+  this code.
+- `64` is a usage error. Pass exactly one of `--dry-run` or `--apply`. Each
+  option that takes a value needs that value. `--org` is an organization
+  login. `--repo` is a repository name; `owner/name` is rejected. `--policy
+  FILE` has to be readable JSON.
+- `69` means the pinned Node is missing. `tools/with-node.sh` returns 69
+  before Node starts. Run `task setup` in the `.github` checkout.
 
 ### Token
 
