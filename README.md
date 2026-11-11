@@ -93,5 +93,8 @@ contribution paths, tag identity, and the dated provider verification status.
 GitHub is the canonical product origin; provider CI support is verified separately.
 Keep provider-specific configuration separate from the shared working agreement.
 The [GitHub settings guide](.github/SETTINGS.md) distinguishes explicit owner
-preferences, observed settings, and inspection gaps. It describes equivalent
-provider concepts without claiming untested integrations.
+preferences, observed settings, and inspection gaps. It describes the
+repository policy, including Enforce HTTPS for an existing project Pages site,
+and how to apply that policy from the organization `.github` repository. It
+also describes equivalent provider concepts without claiming untested
+integrations.

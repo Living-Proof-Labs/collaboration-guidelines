@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
@@ -261,6 +261,12 @@ test('pages needs its own apply flag and is audited only when declared', () => {
   const undeclared = run({ policy, inventory, flags: audit, api, log: quiet });
   assert.equal(undeclared.repositories[0].pages, 'not-managed');
   assert.equal(reportDifferences(run({ policy: pagesPolicy, inventory, flags: audit, api, log: quiet })), 1);
+});
+
+test('shipped policy enforces HTTPS beside a workflow Pages build', () => {
+  const shipped = JSON.parse(readFileSync(new URL('../../config/github/repository-policy.json', import.meta.url), 'utf8'));
+  assert.equal(shipped.schema_version, 1);
+  assert.deepEqual(shipped.pages, { build_type: 'workflow', https_enforced: true });
 });
 
 test('pages state treats 404 as missing only when the repository confirms no site', () => {

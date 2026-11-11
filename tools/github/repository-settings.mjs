@@ -141,8 +141,9 @@ access-control operation separately from ordinary policy application.
 --apply-immutable-releases-when-unknown requests immutable releases even when
 GitHub's read endpoint cannot verify state; the outcome remains unverified.
 --apply-pages creates or corrects the GitHub Pages site so it builds from GitHub
-Actions (policy "pages"), changing only its source; it needs the Pages
-repository permission (see .github/SETTINGS.md).`;
+Actions (policy pages.build_type), changing only its source. It does not write
+pages.https_enforced; the organization command in .github/SETTINGS.md does.
+It needs the Pages repository permission.`;
 }
 
 function gh(method, endpoint, body) {
