@@ -4,9 +4,10 @@ import test from 'node:test';
 import { mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
-  differences, immutableStateFrom, loadInventory, normalizeRuleset, pagesStateFrom, parseArgs, reportDifferences, rulesetState, run,
-  updateRulesetPayload, validateConfig
+  differences, immutableStateFrom, loadInventory, normalizeRuleset, pagesHttpsEnforced, pagesStateFrom, parseArgs, reportDifferences, rulesetState, run,
+  updateRulesetPayload, usage, validateConfig, validatePages
 } from '../../tools/github/repository-settings.mjs';
 
 const desiredRuleset = {
@@ -263,10 +264,93 @@ test('pages needs its own apply flag and is audited only when declared', () => {
   assert.equal(reportDifferences(run({ policy: pagesPolicy, inventory, flags: audit, api, log: quiet })), 1);
 });
 
-test('shipped policy enforces HTTPS beside a workflow Pages build', () => {
+test('shipped policy enforces HTTPS and exempts website', () => {
   const shipped = JSON.parse(readFileSync(new URL('../../config/github/repository-policy.json', import.meta.url), 'utf8'));
   assert.equal(shipped.schema_version, 1);
-  assert.deepEqual(shipped.pages, { build_type: 'workflow', https_enforced: true });
+  assert.equal(shipped.pages.build_type, 'workflow');
+  assert.equal(shipped.pages.https_enforced, true);
+  assert.deepEqual(shipped.pages.https_enforced_exempt, [
+    { repo: 'website', reason: 'HTTPS terminated at Cloudflare' }
+  ]);
+  assert.doesNotThrow(() => validatePages(shipped.pages));
+  const exempt = pagesHttpsEnforced(shipped, 'website');
+  assert.equal(exempt.enforce, false);
+  assert.equal(exempt.report, 'exempt (HTTPS terminated at Cloudflare)');
+  const enforced = pagesHttpsEnforced(shipped, 'example');
+  assert.deepEqual(enforced, { enforce: true, desired: true });
+});
+
+test('HTTPS exemption requires a unique repository name and a reason', () => {
+  const pages = (entries) => ({ build_type: 'workflow', https_enforced: true, https_enforced_exempt: entries });
+  assert.throws(() => validatePages(pages([{ repo: '', reason: 'because' }])), /non-empty repository name/);
+  assert.throws(() => validatePages(pages([{ repo: 'owner/website', reason: 'because' }])), /non-empty repository name/);
+  assert.throws(() => validatePages(pages([{ repo: 'website' }])), /reason/);
+  assert.throws(() => validatePages(pages([{ repo: 'website', reason: '   ' }])), /reason/);
+  assert.throws(() => validatePages(pages([{ repo: 'website', reason: 'because', note: 'no' }])), /note is not supported/);
+  assert.throws(() => validatePages(pages([
+    { repo: 'website', reason: 'one' },
+    { repo: 'website', reason: 'two' }
+  ])), /duplicates website/);
+  assert.throws(() => validatePages(pages('website')), /must be an array/);
+  assert.throws(() => validatePages(pages([])), /must not be empty/);
+  assert.throws(() => validatePages({
+    build_type: 'workflow',
+    https_enforced: false,
+    https_enforced_exempt: [{ repo: 'website', reason: 'HTTPS terminated at Cloudflare' }]
+  }), /requires pages\.https_enforced to be true/);
+  assert.throws(() => validatePages({
+    build_type: 'workflow',
+    https_enforced_exempt: [{ repo: 'website', reason: 'HTTPS terminated at Cloudflare' }]
+  }), /requires pages\.https_enforced to be true/);
+  assert.throws(() => validatePages({ build_type: 'workflow', cname: 'example.com' }), /cname is not supported/);
+  assert.doesNotThrow(() => validatePages(pages([{ repo: 'website', reason: 'HTTPS terminated at Cloudflare' }])));
+  assert.doesNotThrow(() => validatePages(pages([{ repo: '.github', reason: 'organization metadata repository' }])));
+});
+
+test('an invalid HTTPS exemption is rejected before any write', () => {
+  const { api, writes } = fakeApi();
+  const bad = { ...policy, pages: { https_enforced: true, https_enforced_exempt: [{ repo: 'website', reason: '' }] } };
+  assert.throws(() => run({ policy: bad, inventory, flags: parseArgs(['--inventory', 'inventory.json']), api, log: quiet }), /reason/);
+  assert.deepEqual(writes, []);
+});
+
+test('an exempt repository skips Enforce HTTPS and reports the reason', () => {
+  const exemptPolicy = {
+    ...pagesPolicy,
+    pages: {
+      build_type: 'workflow',
+      https_enforced: true,
+      https_enforced_exempt: [{ repo: 'example', reason: 'HTTPS terminated at Cloudflare' }]
+    }
+  };
+  const logs = [];
+  const matched = pagesApi({ site: { build_type: 'workflow', cname: 'livingprooflabs.com', https_enforced: false } });
+  const auditReport = run({ policy: exemptPolicy, inventory, flags: audit, api: matched.api, log: (line) => logs.push(line) });
+  assert.deepEqual(auditReport.failures, []);
+  assert.equal(auditReport.repositories[0].pages, 'matches');
+  assert.equal(auditReport.repositories[0].pagesHttpsEnforced, 'exempt (HTTPS terminated at Cloudflare)');
+  assert.equal(reportDifferences(auditReport), 0);
+  assert.deepEqual(matched.writes, []);
+  assert.ok(logs.includes('  pages.https_enforced: exempt (HTTPS terminated at Cloudflare)'));
+
+  const drifted = pagesApi({ site: { build_type: 'legacy', cname: 'livingprooflabs.com', https_enforced: false } });
+  const applyReport = run({ policy: exemptPolicy, inventory, flags: applyPages, api: drifted.api, log: quiet });
+  assert.deepEqual(applyReport.failures, []);
+  assert.equal(applyReport.repositories[0].pagesHttpsEnforced, 'exempt (HTTPS terminated at Cloudflare)');
+  assert.deepEqual(drifted.writes, [{ method: 'PUT', endpoint: 'repos/example-org/example/pages', body: { build_type: 'workflow' } }]);
+  assert.equal(Object.hasOwn(drifted.writes[0].body, 'https_enforced'), false);
+});
+
+test('help points at the settings guide relative to the policy tool', () => {
+  const help = usage();
+  const match = help.match(/(\.\.\/(?:\.\.\/)*\.github\/SETTINGS\.md)/);
+  assert.ok(match, help);
+  const toolFile = fileURLToPath(new URL('../../tools/github/repository-settings.mjs', import.meta.url));
+  const guide = path.resolve(path.dirname(toolFile), match[1]);
+  const root = path.resolve(path.dirname(toolFile), '../..');
+  assert.equal(path.basename(guide), 'SETTINGS.md');
+  assert.match(readFileSync(guide, 'utf8'), /^# GitHub repository settings/m);
+  assert.equal(path.relative(root, guide), path.join('.github', 'SETTINGS.md'));
 });
 
 test('pages state treats 404 as missing only when the repository confirms no site', () => {

@@ -115,8 +115,65 @@ export function updateRulesetPayload(existing, desired) {
   };
 }
 
+const PAGES_KEYS = new Set(['build_type', 'https_enforced', 'https_enforced_exempt']);
+
+function isRepositoryName(name) {
+  return typeof name === 'string' && (name === '.github' || /^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(name));
+}
+
+/** Closed pages schema. Unknown keys are rejected, including on each exemption. */
+export function validatePages(pages) {
+  if (pages === undefined) return;
+  if (!pages || typeof pages !== 'object' || Array.isArray(pages)) throw new Error('policy.pages must be an object.');
+  for (const key of Object.keys(pages)) {
+    if (!PAGES_KEYS.has(key)) throw new Error(`policy.pages.${key} is not supported.`);
+  }
+  if (pages.build_type !== undefined && pages.build_type !== 'legacy' && pages.build_type !== 'workflow') {
+    throw new Error('policy.pages.build_type must be legacy or workflow.');
+  }
+  if (Object.hasOwn(pages, 'https_enforced') && typeof pages.https_enforced !== 'boolean') {
+    throw new Error('policy.pages.https_enforced must be a boolean.');
+  }
+  if (!Object.hasOwn(pages, 'https_enforced_exempt')) return;
+  const entries = pages.https_enforced_exempt;
+  if (!Array.isArray(entries)) throw new Error('policy.pages.https_enforced_exempt must be an array.');
+  if (entries.length === 0) throw new Error('policy.pages.https_enforced_exempt must not be empty.');
+  if (pages.https_enforced !== true) throw new Error('policy.pages.https_enforced_exempt requires pages.https_enforced to be true.');
+  const seen = new Set();
+  entries.forEach((entry, index) => {
+    const at = `policy.pages.https_enforced_exempt[${index}]`;
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new Error(`${at} must be an object with repo and reason.`);
+    for (const key of Object.keys(entry)) {
+      if (key !== 'repo' && key !== 'reason') throw new Error(`${at}.${key} is not supported.`);
+    }
+    if (!isRepositoryName(entry.repo)) throw new Error(`${at}.repo must be a non-empty repository name.`);
+    if (typeof entry.reason !== 'string' || entry.reason.trim() === '') throw new Error(`${at}.reason must be a non-empty string.`);
+    if (seen.has(entry.repo)) throw new Error(`${at}.repo duplicates ${entry.repo}.`);
+    seen.add(entry.repo);
+  });
+}
+
+/**
+ * How pages.https_enforced applies to one repository.
+ *
+ * An exempt repository has enforce false and report `exempt (<reason>)`.
+ * Callers must not write https_enforced and must not treat it as drift.
+ * Otherwise enforce is true when the policy sets the boolean.
+ */
+export function pagesHttpsEnforced(policy, repositoryName) {
+  const pages = policy?.pages;
+  const entries = Array.isArray(pages?.https_enforced_exempt) ? pages.https_enforced_exempt : [];
+  const exemption = entries.find((entry) => entry?.repo === repositoryName);
+  if (exemption) return { enforce: false, reason: exemption.reason, report: `exempt (${exemption.reason})` };
+  if (pages && Object.hasOwn(pages, 'https_enforced') && typeof pages.https_enforced === 'boolean') {
+    return { enforce: true, desired: pages.https_enforced };
+  }
+  return { enforce: false };
+}
+
 export function validateConfig(policy, inventory, selectedRepository) {
   if (policy.schema_version !== 1) throw new Error(`Unsupported policy schema version: ${policy.schema_version}`);
+  validatePages(policy.pages);
   if (inventory.schema_version !== 1) throw new Error(`Unsupported inventory schema version: ${inventory.schema_version}`);
   if (typeof inventory.owner !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9-]*$/.test(inventory.owner)) throw new Error('Inventory owner must be a GitHub account name.');
   if (!Array.isArray(inventory.repositories) || new Set(inventory.repositories).size !== inventory.repositories.length || !inventory.repositories.every((name) => typeof name === 'string' && (name === '.github' || /^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(name)))) throw new Error('Inventory must contain unique, valid GitHub repository names.');
@@ -130,7 +187,7 @@ export function loadInventory(inventoryPath, cwd = process.cwd()) {
   return JSON.parse(readFileSync(resolved, 'utf8'));
 }
 
-function usage() {
+export function usage() {
   return `Usage: node tools/github/repository-settings.mjs --inventory PATH [--repo NAME] [--apply [--apply-main-ruleset] [--apply-immutable-releases-when-unknown] [--apply-pages]]
 
 Without --apply, only GET requests are made. Omit --repo to audit every declared
@@ -142,7 +199,9 @@ access-control operation separately from ordinary policy application.
 GitHub's read endpoint cannot verify state; the outcome remains unverified.
 --apply-pages creates or corrects the GitHub Pages site so it builds from GitHub
 Actions (policy pages.build_type), changing only its source. It does not write
-pages.https_enforced; the organization command in .github/SETTINGS.md does.
+pages.https_enforced. The organization command is documented relative to this
+file at ../../.github/SETTINGS.md. A repository in pages.https_enforced_exempt
+is not an Enforce HTTPS failure and is reported as exempt (<reason>).
 It needs the Pages repository permission.`;
 }
 
@@ -206,15 +265,20 @@ function inspectRuleset(api, endpoint, desired) {
   return { state: rulesetState(api.get(`${endpoint}/rulesets/${match.id}`), desired), id: match.id };
 }
 
-function applyPages(api, endpoint, repository, desired, current) {
+function applyPages(api, endpoint, repositoryName, desired, current) {
   if (current.state === 'matches') return { ...current, outcome: 'unchanged' };
   if (current.state === 'inaccessible') {
     throw new Error(`pages state is inaccessible (HTTP ${current.status}); nothing written`);
   }
-  // POST creates the site; PUT changes only build_type, so a custom domain, HTTPS
-  // enforcement and every other Pages setting stay as they are.
-  if (current.state === 'missing') api.write('POST', `${endpoint}/pages`, { build_type: desired.build_type });
-  else api.write('PUT', `${endpoint}/pages`, { build_type: desired.build_type });
+  // POST creates the site; PUT changes only build_type, so a custom domain and
+  // every other Pages setting stay as they are. https_enforced is never sent.
+  // pagesHttpsEnforced tells the organization command to omit it as well when
+  // the repository is exempt.
+  const https = pagesHttpsEnforced({ pages: desired }, repositoryName);
+  const body = { build_type: desired.build_type };
+  if (https.report) delete body.https_enforced;
+  if (current.state === 'missing') api.write('POST', `${endpoint}/pages`, body);
+  else api.write('PUT', `${endpoint}/pages`, body);
   const after = pagesStateFrom(api.get.bind(api), endpoint, api.get(endpoint), desired);
   if (after.state !== 'matches') throw new Error(`pages verification failed: ${after.state}`);
   if (current.state === 'drifted' && after.cname !== current.cname) {
@@ -250,9 +314,12 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
       result.immutableReleases = api.immutableState(endpoint);
       result.mainRuleset = inspectRuleset(api, endpoint, policy.main_ruleset).state;
       let pages;
+      let https;
       if (policy.pages) {
         pages = pagesStateFrom(api.get.bind(api), endpoint, actual, policy.pages);
         result.pages = pages.state;
+        https = pagesHttpsEnforced(policy, repository);
+        if (https.report) result.pagesHttpsEnforced = https.report;
       }
       log(`${inventory.owner}/${repository}`);
       log(result.settings.length ? `  repository settings: ${result.settings.length} difference(s)` : '  repository settings: match');
@@ -266,6 +333,7 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
           : pages.state === 'inaccessible' ? ` (HTTP ${pages.status}; not treated as missing)` : '';
         log(`  pages: ${pages.state}${detail}`);
       }
+      if (https?.report) log(`  pages.https_enforced: ${https.report}`);
       if (!flags.apply) continue;
       if (result.settings.length) {
         api.write('PATCH', endpoint, policy.repository);
@@ -300,7 +368,7 @@ export function run({ policy, inventory, flags, api = defaultApi, log = console.
         result.mainRulesetOutcome = ruleset.state === 'matches' ? 'unchanged' : 'applied';
       }
       if (flags.applyPages && pages) {
-        const applied = applyPages(api, endpoint, actual, policy.pages, pages);
+        const applied = applyPages(api, endpoint, repository, policy.pages, pages);
         result.pages = applied.state;
         result.pagesOutcome = applied.outcome;
       }

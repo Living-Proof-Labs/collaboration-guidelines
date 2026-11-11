@@ -114,6 +114,22 @@ and `--apply-pages` sends only `build_type`. It does not send
 is the command that writes Enforce HTTPS, and only for a repository that
 already has a Pages site.
 
+`pages.https_enforced_exempt` names repositories that skip Enforce HTTPS.
+Each entry has `repo` and `reason`. `repo` is a non-empty repository name,
+not `owner/name`, and it cannot be repeated. `reason` is a required
+non-empty string. Any other key is rejected. `website` is exempt because
+its custom domain, livingprooflabs.com, is served through Cloudflare.
+GitHub has no certificate for that name and returns HTTP 422 for
+`https_enforced`. The recorded reason is `HTTPS terminated at Cloudflare`.
+
+`.github` `scripts/apply-repo-policy` rejects unknown Pages keys. It must
+first gain `https_enforced_exempt` support (skip `https_enforced` for listed
+repos and report `exempt (<reason>)`). Only then should its pin move to the
+release containing this file. `pagesHttpsEnforced` in
+`tools/github/repository-settings.mjs` returns that report and
+`enforce: false`, so a caller omits the write. Other Pages settings,
+including `build_type`, still apply.
+
 - `matches`: a site exists and builds from GitHub Actions. Apply writes
   nothing. This comparison does not include Enforce HTTPS.
 - `drifted`: a site exists with another source, for example a legacy branch
@@ -168,10 +184,13 @@ permission.
 ## Repository policy
 
 [`config/github/repository-policy.json`](../config/github/repository-policy.json)
-is the desired GitHub state. It names no organization and no repository list.
+is the desired GitHub state. It names no organization and no inventory.
+`pages.https_enforced_exempt` names repositories that skip Enforce HTTPS,
+each with a required reason. `website` is the current exception.
 `schema_version` is `1`. The organization command below and
 `tools/github/repository-settings.mjs` both read this declaration. The local
-tool does not write Enforce HTTPS.
+tool does not write Enforce HTTPS. For an exempt repository it reports
+`exempt (<reason>)` and does not treat that setting as drift.
 
 - `repository` holds REST repository settings. Wiki, discussions, and projects
   are off. Issues are on. Anyone can open a pull request. Merge commits are
@@ -192,6 +211,12 @@ tool does not write Enforce HTTPS.
 - `pages.build_type` is `workflow`, so an existing site builds with GitHub
   Actions. `pages.https_enforced` is `true`, which is Enforce HTTPS on an
   existing project Pages site. A repository with no site is left alone.
+  `pages.https_enforced_exempt` lists exceptions. `website` is exempt
+  because HTTPS for livingprooflabs.com is terminated at Cloudflare.
+  `.github` `scripts/apply-repo-policy` rejects unknown Pages keys. It must
+  first gain `https_enforced_exempt` support (skip `https_enforced` for
+  listed repos and report `exempt (<reason>)`). Only then should its pin
+  move to the release containing this file.
 - `main_ruleset` is the active default-branch ruleset in
   [Recommended main protection](#recommended-main-protection).
 
@@ -252,10 +277,14 @@ if any repository failed. Repositories come from
 `pages.https_enforced` is sent with `PUT /repos/{owner}/{repo}/pages` only
 when a Pages site already exists and the live value differs. The request body
 contains only the Pages fields that differ (`https_enforced` and, when the
-source also differs, `build_type`). The command does not send `cname`, does
-not create a Pages site, and skips a repository with no site. A 404 from
-Pages when `has_pages` is not `false` is a permission failure, not an absent
-site, and that repository's Pages settings are not written.
+source also differs, `build_type`). `.github` `scripts/apply-repo-policy`
+rejects unknown Pages keys. It must first gain `https_enforced_exempt`
+support (skip `https_enforced` for listed repos and report
+`exempt (<reason>)`). Only then should its pin move to the release containing
+this file. The command does not send `cname`, does not create a Pages site,
+and skips a repository with no site.
+A 404 from Pages when `has_pages` is not `false` is a permission failure,
+not an absent site, and that repository's Pages settings are not written.
 
 Settings listed in `manual_or_unavailable_settings` are named and skipped.
 They have no API call.
@@ -313,8 +342,12 @@ After this change merges and a release is published, the `.github` repository
 updates the pinned `commit` and `policy_blob_sha` in its own
 `config/github/repository-policy.json`. Pin the commit that contains the
 published file, not a moving branch. Until that pin moves, the command keeps
-the previous policy and does not invent `pages.https_enforced`. Use
-`--policy FILE` for a dry-run of this revision before the pin moves.
+the previous policy and does not invent `pages.https_enforced`. `.github`
+`scripts/apply-repo-policy` rejects unknown Pages keys. It must first gain
+`https_enforced_exempt` support (skip `https_enforced` for listed repos and
+report `exempt (<reason>)`). Only then should its pin move to the release
+containing this file. Use `--policy FILE` for a dry-run of this revision
+before the pin moves.
 
 ## Consumer inventory
 
