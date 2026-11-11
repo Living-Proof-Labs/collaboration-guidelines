@@ -25,7 +25,13 @@
     "auto_close_linked_issues": true
   },
   "immutable_releases": true,
-  "pages": { "build_type": "workflow", "https_enforced": true },
+  "pages": {
+    "build_type": "workflow",
+    "https_enforced": true,
+    "https_enforced_exempt": [
+      { "repo": "website", "reason": "HTTPS terminated at Cloudflare" }
+    ]
+  },
   "main_ruleset": {
     "name": "Protect main: pull requests only",
     "target": "branch",
