@@ -7,15 +7,13 @@ This is the organization owner's procedure for registering one private GitHub
 App each for Rivet, Cody, and Vera, then storing the App id and private key
 on that bot's secret card in Grok Bot. Keel has no manifest in this set yet.
 
-The manifests, `scripts/app-token`, and `task github:app-token:help` were
-checked at
+The manifests, `scripts/app-token`, and `task github:app-token:help` are on
+`main` of
 [Living-Proof-Labs/.github](https://github.com/Living-Proof-Labs/.github)
-commit `c44c29d98a22ca8f7a69f972bcce4f5f20e0ea5f`
+at commit `65825afccd15718edc059c348c4c54b49b284659`. For the files this
+guide uses, that commit matches `c44c29d98a22ca8f7a69f972bcce4f5f20e0ea5f`
 ([pull request 49](https://github.com/Living-Proof-Labs/.github/pull/49)).
-Check out that commit. After the pull request merges, use the `main` revision
-that contains the same files. The form, callback, and exchange helpers are
-also on `main` at `a6b6a5add856640b0f42a7a5811059e20c808421`; the bot manifests
-and `scripts/app-token` are the pull-request additions.
+Check out that `main` commit.
 
 The settings-audit credential stays separate. It uses
 `REPO_ADMIN_APP_CLIENT_ID` and `REPO_ADMIN_APP_PRIVATE_KEY` on the
@@ -107,8 +105,11 @@ change the manifest in the repository before trying again.
 
 ## Create each App
 
-Finish one bot before starting the next. The callback listens only on
-`127.0.0.1:8787`.
+Run this on the organization owner's computer. Finish one bot before starting
+the next. The callback listens only on `127.0.0.1:8787`, so the browser that
+submits the form has to be on that same computer. The exchange runs
+`gh auth token`. Log `gh` in as an organization owner for that exchange. The
+shared `rivet-agent-lpl` login is the wrong account for it.
 
 The commands below use Rivet. For Cody or Vera, change the manifest path and
 use a different directory. Write every output file outside the git checkout.
@@ -193,8 +194,7 @@ Usage: node tools/github/exchange-app-manifest-code.mjs --code-file FILE --outpu
 <!-- markdownlint-enable MD013 -->
 
 A run without `--execute` does not contact GitHub and does not write the
-response. The exchange reads a GitHub credential by running `gh auth token`.
-Authenticate the GitHub CLI as the organization owner, then exchange the code:
+response. Exchange the code with the organization owner's `gh` login:
 
 ```sh
 bash tools/with-node.sh node tools/github/exchange-app-manifest-code.mjs \
@@ -210,46 +210,75 @@ registration fields GitHub returns. Webhooks are off, so the webhook secret is
 unused. Leave the webhook secret and the client secret out of the secret
 card.
 
-Read `id` and `pem` from the file without printing it into the shell, a pull
-request, or a chat. Shell history must not gain the PEM, the webhook secret,
-or the one-time code. Delete `${dir}` after the secret card below has both
-values. Never post a key anywhere.
+Print the numeric App id, which is not a secret. Copy the PEM to the
+clipboard so it does not appear in the terminal. On macOS the clipboard
+command is `pbcopy`. On Linux it is often `wl-copy` or
+`xclip -selection clipboard`.
+
+```sh
+jq -r .id "${dir}/registration"
+jq -r .pem "${dir}/registration" | pbcopy
+```
+
+If `jq` is not installed, copy those two fields from the file in an editor
+instead of printing the file in the shell.
+
+Paste the PEM into the secret card. If that card stores one line, the helper
+accepts the same text with newlines written as the two characters `\n`.
+Delete `${dir}` after the card has the id and the PEM. Shell history must
+not gain the PEM, the webhook secret, or the one-time code. Never post a
+key anywhere.
 
 ## Install the App
 
-Install each App only on the Living-Proof-Labs organization. Choose
-repositories deliberately: on the installation page, select Living-Proof-Labs
-and then select repositories one by one.
+Install each App only on Living-Proof-Labs. From the App, open
+**Developer settings → GitHub Apps → Edit → Install App**, then click
+**Install** next to Living-Proof-Labs. GitHub then offers **All repositories**
+or **Only select repositories**.
 
 Rivet's installation has to include every repository
-`scripts/apply-repo-policy` manages, including `.github`. The command lists
-`GET /orgs/Living-Proof-Labs/repos?type=all`. It does not limit that list to
+`scripts/apply-repo-policy` manages. The command lists
+`GET /orgs/Living-Proof-Labs/repos?type=all` and does not limit that list to
 the inventory file. An installation token returns only repositories the
 installation includes, so a repository left out is absent from the run, and
-an empty list fails. Select every repository that list should include. The
-registered names, including `.github`, are in
-[`config/github/repositories.json`](https://github.com/Living-Proof-Labs/.github/blob/c44c29d98a22ca8f7a69f972bcce4f5f20e0ea5f/config/github/repositories.json).
+an empty list fails. Choose **All repositories** for Rivet. That covers the
+current organization list and a repository added later.
 
-Limit Cody's installation to the repositories Cody works in. Limit Vera's
-installation to the repositories Vera works in.
+On 2026-11-11 that organization list and
+[`config/github/repositories.json`](https://github.com/Living-Proof-Labs/.github/blob/c44c29d98a22ca8f7a69f972bcce4f5f20e0ea5f/config/github/repositories.json)
+were the same 19 names. `website` and `.github` are both in that file. A
+shorter selection that drops `website` would leave it out of the policy run.
 
-The installation id is optional. When
-`<BOT>_GITHUB_APP_INSTALLATION_ID` is unset, `scripts/app-token` looks up
-`GET /orgs/Living-Proof-Labs/installation`. Set the variable only when you
-want to skip that lookup. The value is the numeric installation id, digits
-only.
+For Cody and Vera, choose **Only select repositories** and limit each
+installation to the repositories where that bot works.
+
+The installation id is optional. It is the number at the end of the
+installation URL,
+`https://github.com/organizations/Living-Proof-Labs/settings/installations/INSTALLATION_ID`.
+When `<BOT>_GITHUB_APP_INSTALLATION_ID` is unset, `scripts/app-token` looks
+up `GET /orgs/Living-Proof-Labs/installation`. Set the variable only when
+you want to skip that lookup. The value is digits only.
 
 ## Private key
 
 The first PEM is the `pem` field in the exchange response. GitHub returns that
-key once. Later keys come from the App's settings page: choose **Generate a
-private key**. GitHub downloads that PEM once as well.
+key once. Later keys are created from the App page:
+**Developer settings → GitHub Apps → Edit → Credentials → Key pairs →
+New key**. GitHub downloads one PKCS#1 PEM. The block begins with
+`-----BEGIN RSA PRIVATE KEY-----`. GitHub's private-key documentation calls
+this `PKCS#1 RSAPrivateKey`.
 
-The key is an RSA PKCS#1 PEM. The block begins with
-`-----BEGIN RSA PRIVATE KEY-----`. `scripts/app-token` wants that PEM text in
-the environment variable. A file path is rejected. A value that stores line
-breaks as the two characters `\n` is accepted, and one pair of surrounding
-quotes is stripped.
+Put that PEM text on the secret card, then delete the downloaded `.pem`.
+Do not leave the file in Downloads, the checkout, or a shared folder.
+`scripts/app-token` wants the PEM text. A file path is rejected. A value
+that stores line breaks as the two characters `\n` is accepted, and one
+pair of surrounding quotes is stripped.
+
+GitHub will not delete the last remaining key until another key exists.
+Delete a key from the same **Key pairs** page, with **Delete** beside that
+key. The
+[private key guide](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps)
+shows this page.
 
 ## Secret card
 
@@ -262,9 +291,10 @@ text, and, optionally, the installation id:
 | cody | `CODY_GITHUB_APP_ID` | `CODY_GITHUB_APP_PRIVATE_KEY` | `CODY_GITHUB_APP_INSTALLATION_ID` |
 | vera | `VERA_GITHUB_APP_ID` | `VERA_GITHUB_APP_PRIVATE_KEY` | `VERA_GITHUB_APP_INSTALLATION_ID` |
 
-`<BOT>_GITHUB_APP_ID` is the numeric App `id` from the exchange response. The
-client id is a different field; this variable takes the numeric id.
-`<BOT>_GITHUB_APP_PRIVATE_KEY` is the PEM text.
+`<BOT>_GITHUB_APP_ID` is the numeric App id. The exchange response calls it
+`id`. The same number is on the App settings page that **Edit** opens. The
+Client ID on that page is a different value. This variable takes the numeric
+App id. `<BOT>_GITHUB_APP_PRIVATE_KEY` is the PEM text.
 
 Rivet's card is what mints `GH_TOKEN` for `scripts/apply-repo-policy`. Leave
 `REPO_ADMIN_APP_CLIENT_ID` and `REPO_ADMIN_APP_PRIVATE_KEY` on the
@@ -277,36 +307,54 @@ installation token.
 
 ## First run
 
-Before any `--apply`, mint Rivet's installation token and preview the policy:
+Aaron puts Rivet's App id and PEM on Rivet's secret card. Aaron does not
+export that PEM into his own shell. Rivet runs the preview, in an environment
+where the card has supplied the variables, before any `--apply`:
 
 ```sh
 GH_TOKEN=$(scripts/app-token rivet) scripts/apply-repo-policy --dry-run
 ```
 
-Export the Rivet secret-card variables into that shell first. The command
-substitution places the token in `GH_TOKEN` for the policy process. Do not
-paste the token into git, a pull request, or a chat. The dry-run prints
-differences and performs no writes. Continue to `--apply` only after that
-preview is the change you expect.
+The command substitution places the token in `GH_TOKEN` for the policy
+process. Do not paste the token into git, a pull request, or a chat. The
+dry-run prints differences and performs no writes. Continue to `--apply`
+only after that preview is the change you expect.
 [Apply the pinned policy](SETTINGS.md#apply-the-pinned-policy) records the
 exit codes.
 
+At the `.github` commit above, `scripts/app-token` keeps an installation
+token only when every character is a letter, a digit, or an underscore.
+That test is `TOKEN_PATTERN` in `tools/github/app-token.mjs`. GitHub now
+issues stateless installation tokens, `ghs_` followed by a JSON Web Token,
+as described in the
+[installation token rollout](https://github.blog/changelog/2026-10-02-stateless-github-app-installation-tokens-rolled-out/).
+Those tokens contain `.` and `-`, so this helper exits 1 and prints
+`Installation token response did not include a usable token.` The preview
+and the rotation check below depend on this helper. They succeed only after
+Living-Proof-Labs/.github accepts the token GitHub returns. This repository
+does not contain that helper.
+
 ## Rotate a key
 
-1. On the App's settings page, choose **Generate a private key** and download
-   the new PEM. The previous key still signs until you delete it.
+1. On **Key pairs**, click **New key** and let GitHub download the new PEM.
+   The previous key still signs until you delete it.
 2. Update `<BOT>_GITHUB_APP_PRIVATE_KEY` on that bot's secret card with the
-   new PEM text.
-3. Export the updated variables and confirm the helper prints a token.
-   Use `cody` or `vera` instead of `rivet` for that bot:
+   new PEM text. Delete the downloaded `.pem` after the card is updated.
+   Do not leave it in Downloads, the checkout, or a shared folder.
+3. Rivet, Cody, or Vera runs the helper in the environment that has the
+   updated card. Use `cody` or `vera` instead of `rivet` for that bot:
 
    ```sh
    scripts/app-token rivet
    ```
 
    Standard output is the installation token. Do not paste it into git, a
-   pull request, or a chat.
-4. Delete the old key on the App's settings page. Never post a key anywhere.
+   pull request, or a chat. The
+   [token shape limit](#first-run) above applies to this check too.
+4. After the new key is on the card and the helper has printed a token,
+   delete the old key on **Key pairs**. GitHub requires a remaining key, so
+   generate the new key before deleting the old one. Never post a key
+   anywhere.
 
 ## Revoke access
 
@@ -315,6 +363,17 @@ Installation tokens already issued keep working until they expire, which is
 about an hour, or until the installation is suspended or uninstalled.
 Suspending or uninstalling the App on Living-Proof-Labs cuts off those
 installation tokens.
+
+To revoke one installation token that has already been issued, put that
+token in `GH_TOKEN` without pasting it into the command, then:
+
+```sh
+gh api -X DELETE /installation/token
+```
+
+GitHub returns 204 and that token stops working. The call is
+[Revoke an installation access token](https://docs.github.com/en/rest/apps/installations#revoke-an-installation-access-token).
+A new token still requires a private key GitHub has not deleted.
 
 To retire a bot, delete the App and clear that bot's secret card. Never post
 a key anywhere.
