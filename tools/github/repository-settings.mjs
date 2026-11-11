@@ -137,6 +137,8 @@ export function validatePages(pages) {
   if (!Object.hasOwn(pages, 'https_enforced_exempt')) return;
   const entries = pages.https_enforced_exempt;
   if (!Array.isArray(entries)) throw new Error('policy.pages.https_enforced_exempt must be an array.');
+  if (entries.length === 0) throw new Error('policy.pages.https_enforced_exempt must not be empty.');
+  if (pages.https_enforced !== true) throw new Error('policy.pages.https_enforced_exempt requires pages.https_enforced to be true.');
   const seen = new Set();
   entries.forEach((entry, index) => {
     const at = `policy.pages.https_enforced_exempt[${index}]`;

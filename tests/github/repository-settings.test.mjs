@@ -292,6 +292,16 @@ test('HTTPS exemption requires a unique repository name and a reason', () => {
     { repo: 'website', reason: 'two' }
   ])), /duplicates website/);
   assert.throws(() => validatePages(pages('website')), /must be an array/);
+  assert.throws(() => validatePages(pages([])), /must not be empty/);
+  assert.throws(() => validatePages({
+    build_type: 'workflow',
+    https_enforced: false,
+    https_enforced_exempt: [{ repo: 'website', reason: 'HTTPS terminated at Cloudflare' }]
+  }), /requires pages\.https_enforced to be true/);
+  assert.throws(() => validatePages({
+    build_type: 'workflow',
+    https_enforced_exempt: [{ repo: 'website', reason: 'HTTPS terminated at Cloudflare' }]
+  }), /requires pages\.https_enforced to be true/);
   assert.throws(() => validatePages({ build_type: 'workflow', cname: 'example.com' }), /cname is not supported/);
   assert.doesNotThrow(() => validatePages(pages([{ repo: 'website', reason: 'HTTPS terminated at Cloudflare' }])));
   assert.doesNotThrow(() => validatePages(pages([{ repo: '.github', reason: 'organization metadata repository' }])));
@@ -299,7 +309,7 @@ test('HTTPS exemption requires a unique repository name and a reason', () => {
 
 test('an invalid HTTPS exemption is rejected before any write', () => {
   const { api, writes } = fakeApi();
-  const bad = { ...policy, pages: { https_enforced_exempt: [{ repo: 'website', reason: '' }] } };
+  const bad = { ...policy, pages: { https_enforced: true, https_enforced_exempt: [{ repo: 'website', reason: '' }] } };
   assert.throws(() => run({ policy: bad, inventory, flags: parseArgs(['--inventory', 'inventory.json']), api, log: quiet }), /reason/);
   assert.deepEqual(writes, []);
 });
