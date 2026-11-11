@@ -10,10 +10,10 @@ on that bot's secret card in Grok Bot. Keel has no manifest in this set yet.
 The manifests, `scripts/app-token`, and `task github:app-token:help` are on
 `main` of
 [Living-Proof-Labs/.github](https://github.com/Living-Proof-Labs/.github)
-at commit `65825afccd15718edc059c348c4c54b49b284659`. For the files this
-guide uses, that commit matches `c44c29d98a22ca8f7a69f972bcce4f5f20e0ea5f`
-([pull request 49](https://github.com/Living-Proof-Labs/.github/pull/49)).
-Check out that `main` commit.
+at commit `c2ba2653ec7ec2685525a63f41ec29f47c70a657`
+([pull request 51](https://github.com/Living-Proof-Labs/.github/pull/51)).
+Check out that commit. It is the minimum commit that accepts a stateless
+installation token.
 
 The settings-audit credential stays separate. It uses
 `REPO_ADMIN_APP_CLIENT_ID` and `REPO_ADMIN_APP_PRIVATE_KEY` on the
@@ -237,7 +237,7 @@ card.
 
 Print the numeric App id, which is not a secret. Copy the PEM to the
 clipboard so it does not appear in the terminal. On macOS the clipboard
-command is `pbcopy`. On Linux it is often `wl-copy` or
+command is `pbcopy`. On Linux, use one of `wl-copy` or
 `xclip -selection clipboard`.
 
 ```sh
@@ -361,14 +361,9 @@ exit codes.
 A new installation token is stateless and looks like `ghs_<APPID>_<JWT>`,
 as described in the
 [installation token rollout](https://github.blog/changelog/2026-10-02-stateless-github-app-installation-tokens-rolled-out/).
-`scripts/app-token` at the `.github` commit above rejects that token and
-exits 1 with `Installation token response did not include a usable token.`
-Earlier commits reject `ghs_<APPID>_<JWT>` tokens. The minimum
-Living-Proof-Labs/.github commit that contains the fix is
-`c2ba2653ec7ec2685525a63f41ec29f47c70a657`
-([pull request 51](https://github.com/Living-Proof-Labs/.github/pull/51)).
-Use that commit, or a later one that contains it, for the preview and the
-rotation check. This repository does not contain that helper.
+Earlier commits reject a `ghs_<APPID>_<JWT>` token and exit 1 with
+`Installation token response did not include a usable token.`
+This repository does not contain that helper.
 
 ## Rotate a key
 
@@ -382,7 +377,7 @@ rotation check. This repository does not contain that helper.
    pbcopy < ~/Downloads/the-key.pem
    ```
 
-   On Linux:
+   On Linux, use one of these:
 
    ```sh
    xclip -selection clipboard < the-key.pem
@@ -396,12 +391,12 @@ rotation check. This repository does not contain that helper.
    updated card. Use `cody` or `vera` instead of `rivet` for that bot:
 
    ```sh
-   scripts/app-token rivet
+   scripts/app-token rivet >/dev/null && echo "token OK"
    ```
 
-   Standard output is the installation token. A new token looks like
-   `ghs_<APPID>_<JWT>`. Do not paste it into git, a pull request, or a chat.
-   The [token note](#first-run) above applies to this check too.
+   The command prints `token OK` and does not print the token. A new token
+   looks like `ghs_<APPID>_<JWT>`. Do not paste a token into git, a pull
+   request, or a chat. The [token note](#first-run) above applies here too.
 4. After the new key is on the card and the helper has printed a token,
    delete the old key on **Key pairs**. GitHub requires a remaining key, so
    generate the new key before deleting the old one. Never post a key
