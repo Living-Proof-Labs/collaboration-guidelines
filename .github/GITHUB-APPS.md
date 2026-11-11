@@ -145,9 +145,34 @@ bash tools/with-node.sh node tools/github/render-app-manifest-form.mjs \
 Cody's manifest is `config/github/apps/cody.manifest.json`. Vera's manifest is
 `config/github/apps/vera.manifest.json`.
 
-The form posts to
-`https://github.com/organizations/Living-Proof-Labs/settings/apps/new`.
-Open `form.html` only after the callback receiver in the next step is
+GitHub's manifest example puts `state` on the form's action URL. The helper
+writes `state` as a hidden field and leaves the action as
+`https://github.com/organizations/Living-Proof-Labs/settings/apps/new`
+with no query. Before you open the file, add the state from
+`${dir}/state` to that action:
+
+```sh
+python3 - "${dir}/form.html" "${dir}/state" <<'PY'
+import sys
+from pathlib import Path
+form = Path(sys.argv[1])
+state = Path(sys.argv[2]).read_text().strip()
+old = (
+    'action="https://github.com/organizations/'
+    'Living-Proof-Labs/settings/apps/new"'
+)
+new = old[:-1] + "?state=" + state + '"'
+text = form.read_text()
+if old not in text:
+    raise SystemExit("form action did not match")
+form.write_text(text.replace(old, new, 1))
+PY
+```
+
+The action is then
+`https://github.com/organizations/Living-Proof-Labs/settings/apps/new?state=STATE`.
+The receiver accepts the callback only when that `state` matches the state
+file. Open `form.html` only after the callback receiver in the next step is
 listening. On GitHub's confirmation page, review the manifest: the name is
 `Living Proof Labs Rivet`, `Living Proof Labs Cody`, or
 `Living Proof Labs Vera`; webhooks are off (`default_events` is empty and the
@@ -231,23 +256,21 @@ key anywhere.
 
 ## Install the App
 
-Install each App only on Living-Proof-Labs. From the App, open
-**Developer settings → GitHub Apps → Edit → Install App**, then click
-**Install** next to Living-Proof-Labs. GitHub then offers **All repositories**
-or **Only select repositories**.
+Install each App only on Living-Proof-Labs:
 
-Rivet's installation has to include every repository
-`scripts/apply-repo-policy` manages. The command lists
-`GET /orgs/Living-Proof-Labs/repos?type=all` and does not limit that list to
-the inventory file. An installation token returns only repositories the
-installation includes, so a repository left out is absent from the run, and
-an empty list fails. Choose **All repositories** for Rivet. That covers the
-current organization list and a repository added later.
+1. Open your profile picture, then **Your organizations**.
+2. Next to Living-Proof-Labs, click **Settings**.
+3. Open **Developer settings**, then **GitHub Apps**.
+4. Next to the App, click **Edit**.
+5. Click **Install App**, then **Install** next to Living-Proof-Labs.
 
-On 2026-11-11 that organization list and
-[`config/github/repositories.json`](https://github.com/Living-Proof-Labs/.github/blob/c44c29d98a22ca8f7a69f972bcce4f5f20e0ea5f/config/github/repositories.json)
-were the same 19 names. `website` and `.github` are both in that file. A
-shorter selection that drops `website` would leave it out of the policy run.
+GitHub then offers **All repositories** or **Only select repositories**.
+Install Rivet on **All repositories**. `scripts/apply-repo-policy` lists
+`GET /orgs/Living-Proof-Labs/repos?type=all`, and an installation token
+returns only repositories the installation includes. **All repositories**
+is the installation that keeps that list complete, including a repository
+added later. A selected-repository installation can leave one out, and an
+empty list fails the run.
 
 For Cody and Vera, choose **Only select repositories** and limit each
 installation to the repositories where that bot works.
@@ -262,14 +285,22 @@ you want to skip that lookup. The value is digits only.
 ## Private key
 
 The first PEM is the `pem` field in the exchange response. GitHub returns that
-key once. Later keys are created from the App page:
-**Developer settings → GitHub Apps → Edit → Credentials → Key pairs →
-New key**. GitHub downloads one PKCS#1 PEM. The block begins with
+key once. Later keys use the App's **Key pairs** page:
+
+1. Open your profile picture, then **Your organizations**.
+2. Next to Living-Proof-Labs, click **Settings**.
+3. Open **Developer settings**, then **GitHub Apps**.
+4. Next to the App, click **Edit**.
+5. Open **Credentials**, then **Key pairs**.
+6. Click **New key**.
+
+GitHub downloads one PKCS#1 PEM. The block begins with
 `-----BEGIN RSA PRIVATE KEY-----`. GitHub's private-key documentation calls
 this `PKCS#1 RSAPrivateKey`.
 
-Put that PEM text on the secret card, then delete the downloaded `.pem`.
-Do not leave the file in Downloads, the checkout, or a shared folder.
+Copy that PEM text onto the bot's secret card without printing the file.
+Then delete the downloaded `.pem`, including the copy in Trash or Downloads.
+Do not leave the file in the checkout or a shared folder.
 `scripts/app-token` wants the PEM text. A file path is rejected. A value
 that stores line breaks as the two characters `\n` is accepted, and one
 pair of surrounding quotes is stripped.
@@ -291,10 +322,15 @@ text, and, optionally, the installation id:
 | cody | `CODY_GITHUB_APP_ID` | `CODY_GITHUB_APP_PRIVATE_KEY` | `CODY_GITHUB_APP_INSTALLATION_ID` |
 | vera | `VERA_GITHUB_APP_ID` | `VERA_GITHUB_APP_PRIVATE_KEY` | `VERA_GITHUB_APP_INSTALLATION_ID` |
 
+Aaron sets these variables on that bot's secret card in Grok Bot. The bot
+does not type them. When the bot runs, the card supplies the variables.
+
 `<BOT>_GITHUB_APP_ID` is the numeric App id. The exchange response calls it
-`id`. The same number is on the App settings page that **Edit** opens. The
-Client ID on that page is a different value. This variable takes the numeric
-App id. `<BOT>_GITHUB_APP_PRIVATE_KEY` is the PEM text.
+`id`. The same number is on the App's **General** settings page, the page
+**Edit** opens. The Client ID on that page is a different value. This
+variable takes the numeric App id. `<BOT>_GITHUB_APP_PRIVATE_KEY` is the
+PEM text. Paste it, or paste the one-line form that writes each newline as
+the two characters `\n`. Do not print the PEM to set the card.
 
 Rivet's card is what mints `GH_TOKEN` for `scripts/apply-repo-policy`. Leave
 `REPO_ADMIN_APP_CLIENT_ID` and `REPO_ADMIN_APP_PRIVATE_KEY` on the
@@ -322,17 +358,14 @@ only after that preview is the change you expect.
 [Apply the pinned policy](SETTINGS.md#apply-the-pinned-policy) records the
 exit codes.
 
-At the `.github` commit above, `scripts/app-token` keeps an installation
-token only when every character is a letter, a digit, or an underscore.
-That test is `TOKEN_PATTERN` in `tools/github/app-token.mjs`. GitHub now
-issues stateless installation tokens, `ghs_` followed by a JSON Web Token,
+A new installation token is stateless and looks like `ghs_<APPID>_<JWT>`,
 as described in the
 [installation token rollout](https://github.blog/changelog/2026-10-02-stateless-github-app-installation-tokens-rolled-out/).
-Those tokens contain `.` and `-`, so this helper exits 1 and prints
-`Installation token response did not include a usable token.` The preview
-and the rotation check below depend on this helper. They succeed only after
-Living-Proof-Labs/.github accepts the token GitHub returns. This repository
-does not contain that helper.
+`scripts/app-token` at the `.github` commit above can reject that token and
+exit 1 with `Installation token response did not include a usable token.`
+The preview and the rotation check below then fail until
+Living-Proof-Labs/.github accepts this token. This repository does not
+contain that helper.
 
 ## Rotate a key
 
@@ -348,9 +381,9 @@ does not contain that helper.
    scripts/app-token rivet
    ```
 
-   Standard output is the installation token. Do not paste it into git, a
-   pull request, or a chat. The
-   [token shape limit](#first-run) above applies to this check too.
+   Standard output is the installation token. A new token looks like
+   `ghs_<APPID>_<JWT>`. Do not paste it into git, a pull request, or a chat.
+   The [token note](#first-run) above applies to this check too.
 4. After the new key is on the card and the helper has printed a token,
    delete the old key on **Key pairs**. GitHub requires a remaining key, so
    generate the new key before deleting the old one. Never post a key
