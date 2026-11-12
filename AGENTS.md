@@ -83,8 +83,9 @@ or higher-priority instructions.
 - Renovate keeps pins (images, Actions, tool versions) current. Each repository
   must require status checks that exercise real behaviour, not only lint, on its
   branch ruleset, and those checks must be strong enough that a green run shows
-  the update is safe. Test-gated automerge is the target, enabled per repository
-  only with Aaron's approval once its required checks are proven; until then the
+  the update is safe. Test-gated automerge is the target, enabled per
+  repository only with the repository owner's approval once its required
+  checks are proven; until then the
   [dependency update pilot](docs/dependency-updates.md) keeps automerge off.
 - Shared hosts install Docker and Task; repository containers supply language
   runtimes and package managers. Task installs

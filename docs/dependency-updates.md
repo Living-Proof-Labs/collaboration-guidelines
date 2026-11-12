@@ -62,8 +62,8 @@ pinned. This rule sits ahead of the internal schedule rule. That later rule
 does not set `rangeStrategy`, and this rule does not set `schedule`.
 
 Test-gated automerge is the target (see [AGENTS.md](../AGENTS.md)): it is
-enabled per repository only with Aaron's approval once its required checks are
-proven; automerge stays off in this pilot.
+enabled per repository only with the repository owner's approval once its
+required checks are proven; automerge stays off in this pilot.
 
 ## Inventory and boundaries
 

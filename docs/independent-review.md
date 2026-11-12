@@ -108,6 +108,6 @@ labelled `drift`; there is no central tracking issue.
 - The review decision links the evidence and explains why the change can proceed
   or what remains blocked. Existing merge/release rules still apply.
 
-Start by practicing this loop on the top-level Living Proof tool in a separate
+Start by practicing this loop on the top-level product tool in a separate
 product PR. This guide defines the process; it does not claim that product has
 been installed, reviewed, or given scenario coverage by this documentation change.
