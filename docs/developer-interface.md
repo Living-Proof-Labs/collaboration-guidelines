@@ -39,8 +39,9 @@ Renovate keeps pins current: images, Actions, and tool versions. Each
 repository must require status checks that exercise real behaviour, not only
 lint, on its branch ruleset, and those checks must be strong enough that a green
 run shows the update is safe. Test-gated automerge is the target, enabled per
-repository only with Aaron's approval once its required checks are proven. Until
-then the [dependency update pilot](dependency-updates.md) keeps automerge off.
+repository only with the repository owner's approval once its required checks
+are proven. Until then the [dependency update pilot](dependency-updates.md)
+keeps automerge off.
 
 Documentation-only repositories need a tooling environment for linting, links,
 and tests, published as above. They do not need an invented application
