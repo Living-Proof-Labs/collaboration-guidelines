@@ -122,10 +122,13 @@ its custom domain, livingprooflabs.com, is served through Cloudflare.
 GitHub has no certificate for that name and returns HTTP 422 for
 `https_enforced`. The recorded reason is `HTTPS terminated at Cloudflare`.
 
-`.github` `scripts/apply-repo-policy` rejects unknown Pages keys. It must
-first gain `https_enforced_exempt` support (skip `https_enforced` for listed
-repos and report `exempt (<reason>)`). Only then should its pin move to the
-release containing this file. `pagesHttpsEnforced` in
+At commit `89573d88fc82ad79e2696e7cdd642444cdb99699`, `.github`
+`scripts/apply-repo-policy` accepts `https_enforced_exempt`. It skips
+`https_enforced` for a listed repository and reports `exempt (<reason>)`,
+and it still rejects unknown Pages keys. That commit pins
+collaboration-guidelines v7.10.0 (commit
+`122db54d0763dc39f81133ec06e35dab2b24d41b`, policy blob
+`b5f31a288ae719c0f9e632f5ec359f33839f0850`). `pagesHttpsEnforced` in
 `tools/github/repository-settings.mjs` returns that report and
 `enforce: false`, so a caller omits the write. Other Pages settings,
 including `build_type`, still apply.
@@ -213,24 +216,31 @@ tool does not write Enforce HTTPS. For an exempt repository it reports
   existing project Pages site. A repository with no site is left alone.
   `pages.https_enforced_exempt` lists exceptions. `website` is exempt
   because HTTPS for livingprooflabs.com is terminated at Cloudflare.
-  `.github` `scripts/apply-repo-policy` rejects unknown Pages keys. It must
-  first gain `https_enforced_exempt` support (skip `https_enforced` for
-  listed repos and report `exempt (<reason>)`). Only then should its pin
-  move to the release containing this file.
+  At commit `89573d88fc82ad79e2696e7cdd642444cdb99699`, `.github`
+  `scripts/apply-repo-policy` accepts `https_enforced_exempt`. It skips
+  `https_enforced` for a listed repository and reports
+  `exempt (<reason>)`, and it still rejects unknown Pages keys. That
+  commit pins collaboration-guidelines v7.10.0 (commit
+  `122db54d0763dc39f81133ec06e35dab2b24d41b`, policy blob
+  `b5f31a288ae719c0f9e632f5ec359f33839f0850`).
 - `main_ruleset` is the active default-branch ruleset in
   [Recommended main protection](#recommended-main-protection).
 
 ## Apply the pinned policy
 
-Apply this file from a checkout of the
-[Living Proof Labs `.github` repository](https://github.com/Living-Proof-Labs/.github)
-with
-[`scripts/apply-repo-policy`](https://github.com/Living-Proof-Labs/.github/blob/main/scripts/apply-repo-policy).
-That repository pins this file by collaboration-guidelines commit and git
-blob SHA in its `config/github/repository-policy.json`. The command downloads
-the file from that commit over HTTPS, does not send `GH_TOKEN` for the
-download, and stops if the blob SHA differs. The tag recorded in the pin is
-not the fetch ref. `--policy FILE` reads a local file and does not check a
+Apply this file with `scripts/apply-repo-policy` from the organization
+`.github` checkout. Living Proof Labs records that checkout, the default
+organization, and the token procedure at commit
+`89573d88fc82ad79e2696e7cdd642444cdb99699`:
+
+- [Apply repository policy](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/README.md#apply-repository-policy)
+- [Apply the pinned policy with a token](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/docs/repository-operations.md#apply-the-pinned-policy-with-a-token)
+
+The organization repository pins this file by collaboration-guidelines commit
+and git blob SHA in its `config/github/repository-policy.json`. The command
+downloads the file from that commit over HTTPS, does not send `GH_TOKEN` for
+the download, and stops if the blob SHA differs. The tag recorded in the pin
+is not the fetch ref. `--policy FILE` reads a local file and does not check a
 blob SHA, which is how to review an unpinned revision before the pin moves.
 A normal apply uses the pin.
 
@@ -251,7 +261,7 @@ scripts/apply-repo-policy (--dry-run | --apply)
 Help prints that synopsis on one line.
 
 ```sh
-# In Living-Proof-Labs/.github, once: task setup
+# In the organization .github checkout, once: task setup
 # If the task command is missing: bash tools/setup.sh
 # Export GH_TOKEN in the environment first. Do not pass it as an argument.
 scripts/apply-repo-policy --dry-run
@@ -263,8 +273,8 @@ task github:policy:apply -- --apply
 ```
 
 Choose exactly one of `--dry-run` or `--apply`. `--org` sets the organization
-login (default `Living-Proof-Labs`). `--repo` limits the run to one repository
-name, not `owner/name`.
+login. The organization default is in the pinned procedure linked above.
+`--repo` limits the run to one repository name, not `owner/name`.
 
 Run the dry-run first. It prints each difference as
 `setting: current -> desired`, then `outcome: not written (dry-run)`. It
@@ -282,12 +292,15 @@ if any repository failed. Repositories come from
 `pages.https_enforced` is sent with `PUT /repos/{owner}/{repo}/pages` only
 when a Pages site already exists and the live value differs. The request body
 contains only the Pages fields that differ (`https_enforced` and, when the
-source also differs, `build_type`). `.github` `scripts/apply-repo-policy`
-rejects unknown Pages keys. It must first gain `https_enforced_exempt`
-support (skip `https_enforced` for listed repos and report
-`exempt (<reason>)`). Only then should its pin move to the release containing
-this file. The command does not send `cname`, does not create a Pages site,
-and skips a repository with no site.
+source also differs, `build_type`). At commit
+`89573d88fc82ad79e2696e7cdd642444cdb99699`, `.github`
+`scripts/apply-repo-policy` accepts `https_enforced_exempt`. It skips
+`https_enforced` for a listed repository and reports `exempt (<reason>)`,
+and it still rejects unknown Pages keys. That commit pins
+collaboration-guidelines v7.10.0 (commit
+`122db54d0763dc39f81133ec06e35dab2b24d41b`, policy blob
+`b5f31a288ae719c0f9e632f5ec359f33839f0850`). The command does not send
+`cname`, does not create a Pages site, and skips a repository with no site.
 A 404 from Pages when `has_pages` is not `false` is a permission failure,
 not an absent site, and that repository's Pages settings are not written.
 
@@ -327,13 +340,12 @@ task: Failed to run task "github:policy:apply": exit status N
 ```
 
 `N` is the script code from the list above, and the script's own error text
-is printed on the preceding line. A local run of that Task binary against
-Living-Proof-Labs/.github commit `c44c29d98a22ca8f7a69f972bcce4f5f20e0ea5f`
-showed three failures. The `github:policy:apply` command and
-`scripts/apply-repo-policy` at that commit match `main` commit
-`a6b6a5add856640b0f42a7a5811059e20c808421`. None of the runs called GitHub:
-the usage and missing-token runs return before the client is created, and the
-missing-Node run stops in `tools/with-node.sh`.
+is printed on the preceding line. The three failures below do not call
+GitHub: the usage and missing-token runs return before the client is created,
+and the missing-Node run stops in `tools/with-node.sh`. Living Proof Labs
+runs that command from the pinned
+[Apply the pinned policy with a token](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/docs/repository-operations.md#apply-the-pinned-policy-with-a-token)
+procedure, at commit `89573d88fc82ad79e2696e7cdd642444cdb99699`.
 
 - No `--dry-run` or `--apply`: the script prints
   `Choose exactly one of --dry-run or --apply.` and exits 64. Task exits 201
@@ -378,11 +390,13 @@ repositories the installation can access:
 Pages is an additional permission on top of Administration. Metadata read
 alone cannot change settings. GitHub Apps receive Metadata automatically.
 Private repositories still have to be included in the installation. An App
-manifest that requests only Administration and Metadata cannot enforce HTTPS
-until the App that mints `GH_TOKEN` also has Pages: read and write. This
-command does not install an App or mint a token. The organization owner's
-procedure for Rivet, Cody, and Vera's Apps, including Rivet's installation
-token for `GH_TOKEN`, is [Bot GitHub Apps](GITHUB-APPS.md).
+manifest that requests only Administration and Metadata cannot enforce
+HTTPS until the App that mints `GH_TOKEN` also has Pages: read and write.
+This command does not install an App or mint a token. The organization
+owner's procedure for its bot GitHub Apps, including the installation token
+for `GH_TOKEN`, is the
+[Bot GitHub Apps guide](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/docs/GITHUB-APPS.md)
+at commit `89573d88fc82ad79e2696e7cdd642444cdb99699`.
 
 If the main ruleset's bypass actors are unreadable, the ruleset is not
 written.
@@ -392,13 +406,17 @@ written.
 After this change merges and a release is published, the `.github` repository
 updates the pinned `commit` and `policy_blob_sha` in its own
 `config/github/repository-policy.json`. Pin the commit that contains the
-published file, not a moving branch. Until that pin moves, the command keeps
-the previous policy and does not invent `pages.https_enforced`. `.github`
-`scripts/apply-repo-policy` rejects unknown Pages keys. It must first gain
-`https_enforced_exempt` support (skip `https_enforced` for listed repos and
-report `exempt (<reason>)`). Only then should its pin move to the release
-containing this file. Use `--policy FILE` for a dry-run of this revision
-before the pin moves.
+published file, not a moving branch. Use `--policy FILE` for a dry-run of
+this revision before the pin moves. At commit
+`89573d88fc82ad79e2696e7cdd642444cdb99699`, `.github`
+`scripts/apply-repo-policy` already accepts `https_enforced_exempt`. It
+skips `https_enforced` for a listed repository and reports
+`exempt (<reason>)`, and it still rejects unknown Pages keys. That commit
+pins collaboration-guidelines v7.10.0 (commit
+`122db54d0763dc39f81133ec06e35dab2b24d41b`, policy blob
+`b5f31a288ae719c0f9e632f5ec359f33839f0850`), the release that added the
+exemption. A later policy change still waits for its published commit before
+that pin moves.
 
 ## Consumer inventory
 

@@ -96,6 +96,8 @@ The [GitHub settings guide](.github/SETTINGS.md) distinguishes explicit owner
 preferences, observed settings, and inspection gaps. It describes the
 repository policy, including Enforce HTTPS for an existing project Pages site,
 and how to apply that policy from the organization `.github` repository. The
-[bot GitHub App guide](.github/GITHUB-APPS.md) is the organization owner's
-procedure for registering Rivet, Cody, and Vera. The settings guide also
+organization owner's procedure for its bot GitHub Apps is the
+[Bot GitHub Apps guide](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/docs/GITHUB-APPS.md)
+in the Living Proof Labs `.github` repository at commit
+`89573d88fc82ad79e2696e7cdd642444cdb99699`. The settings guide also
 describes equivalent provider concepts without claiming untested integrations.

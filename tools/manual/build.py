@@ -38,8 +38,11 @@ def build():
     source.mkdir(parents=True)
     paths = ['README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'LICENSE.md']
     paths += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'docs').glob('*.md'))]
+    # Bot GitHub Apps is organization-specific and is not copied. The manual
+    # nav points at the pinned guide:
+    # https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/docs/GITHUB-APPS.md
     paths += [f'{provider}/{name}' for provider in ('.github', '.gitlab', '.codex', '.cursor')
-              for name in ('DEVELOPMENT.md', 'GITHUB-APPS.md', 'SETTINGS.md',
+              for name in ('DEVELOPMENT.md', 'SETTINGS.md',
                            'GENERATED-DOCS.md')
               if (ROOT / provider / name).is_file()]
     paths += ['templates/generated-docs/README.md']

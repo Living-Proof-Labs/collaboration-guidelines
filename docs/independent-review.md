@@ -78,10 +78,13 @@ environment. Keep the purpose and outcome visible outside the collapsed output.
 
 A pull request that changes something users run, such as a quickstart, install
 documentation, or a release, needs a verification comment from the verification
-agent (currently Vera) before merge. The verification agent follows the changed
-path as a user would and reports each check as passed, failed, blocked, or not
-run, tied to the full commit SHA it tested. A later commit needs a new comment or
-an explicit assessment that earlier results still apply.
+agent before merge. That agent is named in the
+[agent directory](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/config/github/agents.json)
+at commit `89573d88fc82ad79e2696e7cdd642444cdb99699`. The verification agent
+follows the changed path as a user would and reports each check as passed,
+failed, blocked, or not run, tied to the full commit SHA it tested. A later
+commit needs a new comment or an explicit assessment that earlier results
+still apply.
 
 The verification agent also runs a weekly drift check of those user-run paths,
 following each quickstart and install document against the current releases.

@@ -30,11 +30,15 @@ or higher-priority instructions.
   Keep ordinary regression in continuous integration and findings proportionate.
 - A pull request that changes something users run, such as a quickstart, install
   documentation, or a release, needs a verification comment from the
-  verification agent (currently Vera) before merge; see
+  verification agent before merge. That agent is named in the
+  [agent directory](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/config/github/agents.json)
+  at commit `89573d88fc82ad79e2696e7cdd642444cdb99699`. See
   [verification of user-run paths](docs/independent-review.md#verification-of-user-run-paths).
 - A bot without its own GitHub account signs each GitHub post it writes (pull
-  request descriptions, comments, and reviews) with its name, for example a final
-  `— Vera` line.
+  request descriptions, comments, and reviews) with its name, for example a
+  final line with an em dash and the agent's name. The agents that have
+  GitHub Apps are listed in the same
+  [agent directory](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/config/github/agents.json).
 
 ## Write plainly
 
