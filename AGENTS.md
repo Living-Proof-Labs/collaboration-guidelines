@@ -28,6 +28,10 @@ or higher-priority instructions.
   inspect code and exercise the installed change and adjacent behavior in a fresh
   environment.
   Keep ordinary regression in continuous integration and findings proportionate.
+- Name the verification depth (Light, Standard, or Deep) in each
+  verification request so the check matches the change's risk. If none
+  is named, Light is the default. See
+  [match verification depth to risk](docs/independent-review.md#match-verification-depth-to-risk).
 - A pull request that changes something users run, such as a quickstart, install
   documentation, or a release, needs a verification comment from the
   verification agent before merge. That agent is named in the
