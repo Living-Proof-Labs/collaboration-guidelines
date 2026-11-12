@@ -74,6 +74,37 @@ environment. Keep the purpose and outcome visible outside the collapsed output.
 </details>
 ````
 
+## Match verification depth to risk
+
+Verification goes as deep as the change's risk warrants, so effort and
+cost go where they matter. The organization owner decided this on
+2026-11-12.
+
+The requester, normally the engineering lead, names the depth in each
+verification request. If none is named, use **Light**. The verifier may
+say a higher depth is needed.
+
+- **Light** is the default for documentation, copy, styling, dependency
+  or pin bumps, small fixes, and chores. Confirm CI is green at the
+  exact head SHA, read the diff, and spot-check one or two meaningful
+  things. Do not run probe suites or compatibility harnesses. Keep the
+  report short.
+- **Standard** is for feature work. Confirm the stated acceptance
+  criteria and that CI is green at the exact SHA. Exercise the main path
+  plus one or two edge cases. Include screenshots only when the visual
+  design is the point.
+- **Deep** is for contracts and schemas, security or safety boundaries,
+  releases that users will see, and anything explicitly marked Deep.
+  Run full adversarial probing and compatibility harnesses, and keep
+  exhaustive evidence.
+
+Checks after a merge are Light by default. Confirm the merge commit
+equals the verified SHA and that CI or deployment succeeded. For a live
+page, take a quick look. Re-run suites only if something looks off.
+
+Every report states passed, failed, blocked, and not run separately, and
+names the verified SHA. Merge only that exact SHA.
+
 ## Verification of user-run paths
 
 A pull request that changes something users run, such as a quickstart, install
@@ -103,8 +134,10 @@ labelled `drift`; there is no central tracking issue.
 - Blocking findings are resolved and verified. Nonblocking suggestions and any
   remaining coverage/environment gaps have a clear disposition; unrun or blocked
   checks are never reported as passes. A material verification gap stays open.
-- For a change to something users run, the verification agent's comment covers
-  the merge candidate's commit SHA.
+- Verification reports name the depth used and state passed, failed,
+  blocked, and not run separately, tied to the exact SHA tested. Merge
+  only that SHA. For a change to something users run, the verification
+  agent's comment covers that merge-candidate SHA.
 - The review decision links the evidence and explains why the change can proceed
   or what remains blocked. Existing merge/release rules still apply.
 
