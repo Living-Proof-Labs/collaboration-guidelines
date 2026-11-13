@@ -312,3 +312,77 @@ test('native workflow replacement uses the same proposed release as documentatio
 });
 
 });
+
+// Run the updater's negative contracts in the same pinned runtime and JUnit report.
+import '../docs-brand/test.mjs';
+import {previous as brandPrevious, get as brandGet} from '../docs-brand/test.mjs';
+import {upgrade as brandUpgrade, verify as brandVerify} from '../docs-brand/lock.mjs';
+test('real brand extraction and replacement feeds verified atomic lock regeneration', async () => {
+  const manager = preset.customManagers.find(m => m.depTypeTemplate === 'docs-brand');
+  const input = JSON.stringify(brandPrevious,null,2)+'\n';
+  const extracted = regexExtract(input,'docs-brand.lock.json',manager);
+  assert.equal(extracted.deps.length,1);
+  const dep = extracted.deps[0];
+  assert.equal(dep.currentValue,'v1.0.0');
+  assert.equal(dep.datasource,'github-releases');
+  const rule = await applyPackageRules({...preset,...dep,packageName:dep.depName},'test');
+  assert.equal(rule.enabled,false);
+  assert.equal(rule.automerge,false);
+  assert.equal(rule.platformAutomerge,false);
+  const output = await doAutoReplace({...manager,...dep,manager:'regex',packageFile:'docs-brand.lock.json',depIndex:0,newValue:'v1.1.0',autoReplaceGlobalMatch:true},input,false);
+  assert.equal(output,input.replace('v1.0.0','v1.1.0'));
+  assert.throws(()=>brandVerify(JSON.parse(output),brandGet), /provenance/);
+  const complete = brandUpgrade(brandPrevious,JSON.parse(output),brandGet);
+  assert.deepEqual(brandVerify(complete,brandGet),complete);
+  assert.equal(complete.commit,'b'.repeat(40));
+  assert.notEqual(complete.sha256,brandPrevious.sha256);
+  const optIn = JSON.parse(read('renovate-docs-brand.json'));
+  const enabled = await applyPackageRules({...preset,...dep,packageName:dep.depName,packageRules:[...preset.packageRules,...optIn.packageRules]},'test');
+  assert.equal(enabled.enabled,true);
+  assert.equal(enabled.automerge,false);
+  assert.equal(enabled.postUpgradeTasks.executionMode,'branch');
+  assert.deepEqual(enabled.postUpgradeTasks.fileFilters,['docs-brand.lock.json']);
+  assert.deepEqual(enabled.postUpgradeTasks.commands,['node /opt/docs-brand/lock.mjs --update']);
+  for (const version of ['main','v1','v1.0.0-rc.1']) assert.equal(regexExtract(input.replace('v1.0.0',version),'docs-brand.lock.json',manager),null);
+  assert.equal(regexExtract(input.replace('Living-Proof-Labs','foreign'),'docs-brand.lock.json',manager),null);
+  assert.equal(manager.managerFilePatterns[0],'/^docs-brand\\.lock\\.json$/');
+});
+
+import {writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {initRepo, getRepoStatus} from '/usr/local/renovate/dist/util/git/index.js';
+import {postUpgradeCommandsExecutor} from '/usr/local/renovate/dist/workers/repository/update/branch/execute-post-upgrade-commands.js';
+test('pinned post-upgrade executor collects the complete lock and reports denied commands', async () => {
+  const dir = mkdtempSync(join(tmpdir(),'brand-hook-'));
+  const git = args => execFileSync('git',args,{cwd:dir,stdio:'pipe'});
+  git(['init']);
+  writeFileSync(join(dir,'docs-brand.lock.json'),JSON.stringify(brandPrevious));
+  git(['add','.']);
+  git(['-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-m','baseline']);
+  // Exercise the real executor offline. Only transport is substituted; production
+  // main still reads HEAD, validates provenance, and atomically writes the lock.
+  const wrapper = join(dir,'fixture-helper.mjs');
+  writeFileSync(wrapper,`import {main} from '/repo/tools/docs-brand/lock.mjs';
+const old=${JSON.stringify(brandPrevious)};
+const get=url=>url.includes('/releases/tags/') ? JSON.stringify({tag_name:url.split('/').at(-1),draft:false,prerelease:false}) : url.includes('/commits/') ? JSON.stringify({sha:url.endsWith('v1.0.0')?old.commit:'b'.repeat(40)}) : Buffer.from('body { color: teal; }\\n');
+main(['--update'],get);`);
+  const command = `node ${wrapper}`;
+  const checkout = mkdtempSync(join(tmpdir(),'brand-checkout-'));
+  GlobalConfig.set({localDir:checkout,cacheDir:join(dir,'cache'),allowedCommands:[],binarySource:'global',allowShellExecutorForPostUpgradeCommands:false});
+  await initRepo({url:dir});
+  await getRepoStatus();
+  const postUpgradeTasks = {...JSON.parse(read('renovate-docs-brand.json')).packageRules[0].postUpgradeTasks,commands:[command]};
+  const proposed=JSON.stringify({...brandPrevious,version:'v1.1.0'});
+  const config={updatedPackageFiles:[{type:'addition',path:'docs-brand.lock.json',contents:proposed}],updatedArtifacts:[]};
+  const upgrade={depName:'Living-Proof-Labs/collaboration-guidelines',packageFile:'docs-brand.lock.json',postUpgradeTasks};
+  try {
+    const denied = await postUpgradeCommandsExecutor([upgrade],config);
+    assert.match(denied.artifactErrors[0].stderr,/allowed list/);
+    assert.equal(JSON.parse(read(join(checkout,'docs-brand.lock.json'))).commit,brandPrevious.commit);
+    GlobalConfig.set({localDir:checkout,cacheDir:join(dir,'cache'),binarySource:'global',allowShellExecutorForPostUpgradeCommands:false,allowedCommands:[`^node ${wrapper.replaceAll('.','\\.')}$`]});
+    const success = await postUpgradeCommandsExecutor([upgrade],config);
+    assert.deepEqual(success.artifactErrors,[]);
+    assert.deepEqual(success.updatedArtifacts.map(x=>x.path),['docs-brand.lock.json']);
+    assert.equal(JSON.parse(success.updatedArtifacts[0].contents).commit,'b'.repeat(40));
+  } finally { GlobalConfig.set({localDir:work,cacheDir:join(work,'cache')}); }
+});
