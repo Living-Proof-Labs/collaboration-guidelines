@@ -1,0 +1,5 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Use the released organization preset for this repository's own dependency updates.",
+  "extends": ["github>Living-Proof-Labs/collaboration-guidelines:renovate-preset#v7.10.4"]
+}
