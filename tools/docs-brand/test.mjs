@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert/strict';
-import {test} from 'node:test';
+import {test, describe} from 'node:test';
 import {createHash} from 'node:crypto';
 import {resolve, verify, upgrade, validate} from './lock.mjs';
+import {mkdtempSync, readFileSync, writeFileSync, readdirSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {main} from './lock.mjs';
 const bytes = Buffer.from('body { color: teal; }\n');
 const newBytes = Buffer.from('body { color: aqua; }\n');
 const newHash = createHash('sha256').update(newBytes).digest('hex');
@@ -14,6 +19,7 @@ export function get(url) {
   return url.includes('b'.repeat(40)) ? newBytes : bytes;
 }
 export const previous = {repository:'Living-Proof-Labs/collaboration-guidelines',version:'v1.0.0',commit:commits['v1.0.0'],path:'brand/docs/brand.css',sha256:hash};
+describe('Docs brand provenance', () => {
 test('lock regeneration verifies old provenance and resolves all new fields', () => {
   assert.deepEqual(upgrade(previous,{...previous,version:'v1.1.0'},get), {...previous,version:'v1.1.0',commit:commits['v1.1.0'],sha256:newHash});
   assert.deepEqual(verify(previous,get),previous);
@@ -39,11 +45,6 @@ test('reject network failure, empty CSS and tag movement during download', () =>
   assert.throws(() => resolve('v1.1.0',url=>url.includes('/commits/') && ++reads===2 ? JSON.stringify({sha:'c'.repeat(40)}):get(url)), /moved/);
 });
 
-import {mkdtempSync, readFileSync, writeFileSync, readdirSync} from 'node:fs';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
-import {execFileSync} from 'node:child_process';
-import {main} from './lock.mjs';
 test('command reads committed baseline and writes only a complete lock; failed checks preserve proposal', () => {
   const root = mkdtempSync(join(tmpdir(),'docs-brand-'));
   const cwd = process.cwd();
@@ -73,4 +74,6 @@ test('command reads committed baseline and writes only a complete lock; failed c
     assert.equal(readFileSync(file,'utf8'),complete);
     assert.throws(()=>main([]),/Usage/);
   } finally { process.chdir(cwd); }
+});
+
 });

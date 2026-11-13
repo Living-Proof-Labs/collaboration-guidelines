@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0
-// Exercise the pinned official implementation, not a JavaScript approximation of RE2.
 import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, mkdirSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -14,9 +13,17 @@ import { extractPackageFile as npmExtract } from '/usr/local/renovate/dist/modul
 import { doAutoReplace } from '/usr/local/renovate/dist/workers/repository/update/branch/auto-replace.js';
 import { GlobalConfig } from '/usr/local/renovate/dist/config/global.js';
 import { init } from '/usr/local/renovate/dist/logger/index.js';
-await init();
 import { applyPackageRules } from '/usr/local/renovate/dist/util/package-rules/index.js';
 import { calcLimit, counts, isLimitReached, setCount } from '/usr/local/renovate/dist/workers/global/limits.js';
+import '../docs-brand/test.mjs';
+import {previous as brandPrevious, get as brandGet} from '../docs-brand/test.mjs';
+import {upgrade as brandUpgrade, verify as brandVerify} from '../docs-brand/lock.mjs';
+import {writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {initRepo, getRepoStatus} from '/usr/local/renovate/dist/util/git/index.js';
+import {postUpgradeCommandsExecutor} from '/usr/local/renovate/dist/workers/repository/update/branch/execute-post-upgrade-commands.js';
+// Exercise the pinned official implementation, not a JavaScript approximation of RE2.
+await init();
 const read = (file) => readFileSync(file, 'utf8');
 const preset = JSON.parse(read('renovate-preset.json'));
 const [markdown, task] = preset.customManagers;
@@ -314,9 +321,7 @@ test('native workflow replacement uses the same proposed release as documentatio
 });
 
 // Run the updater's negative contracts in the same pinned runtime and JUnit report.
-import '../docs-brand/test.mjs';
-import {previous as brandPrevious, get as brandGet} from '../docs-brand/test.mjs';
-import {upgrade as brandUpgrade, verify as brandVerify} from '../docs-brand/lock.mjs';
+describe('Renovate docs brand updates', () => {
 test('real brand extraction and replacement feeds verified atomic lock regeneration', async () => {
   const manager = preset.customManagers.find(m => m.depTypeTemplate === 'docs-brand');
   const input = JSON.stringify(brandPrevious,null,2)+'\n';
@@ -348,10 +353,6 @@ test('real brand extraction and replacement feeds verified atomic lock regenerat
   assert.equal(manager.managerFilePatterns[0],'/^docs-brand\\.lock\\.json$/');
 });
 
-import {writeFileSync} from 'node:fs';
-import {execFileSync} from 'node:child_process';
-import {initRepo, getRepoStatus} from '/usr/local/renovate/dist/util/git/index.js';
-import {postUpgradeCommandsExecutor} from '/usr/local/renovate/dist/workers/repository/update/branch/execute-post-upgrade-commands.js';
 test('pinned post-upgrade executor collects the complete lock and reports denied commands', async () => {
   const dir = mkdtempSync(join(tmpdir(),'brand-hook-'));
   const git = args => execFileSync('git',args,{cwd:dir,stdio:'pipe'});
@@ -385,4 +386,6 @@ main(['--update'],get);`);
     assert.deepEqual(success.updatedArtifacts.map(x=>x.path),['docs-brand.lock.json']);
     assert.equal(JSON.parse(success.updatedArtifacts[0].contents).commit,'b'.repeat(40));
   } finally { GlobalConfig.set({localDir:work,cacheDir:join(work,'cache')}); }
+});
+
 });
