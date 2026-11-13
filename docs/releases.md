@@ -9,13 +9,52 @@ new upstream release does not update consumers automatically. Evaluate and
 update pins by PR.
 
 Published tags are never retargeted. Record the resolved SHA in adoption PRs as
-verification evidence; use the tag in the cross-repository reference. A branch
-exception must document its need and exit condition. Same-repository bootstrap
-paths remain tied to the running workflow's revision.
+verification evidence; use the tag in the cross-repository reference.
+Same-repository bootstrap paths remain tied to the running workflow's revision.
+Cross-repository integration is specified in
+[Integration through released tags](#integration-through-released-tags).
 
 Existing third-party Actions retain reviewed full-SHA security pins here. This
 is a deliberate exception for external supply-chain integrity, not the default
 for Living Proof Labs cross-repository dependencies.
+
+## Integration through released tags
+
+A repository depends on another repository through a released tag. The lock
+records that tag and the commit the tag resolves to. Where the dependency is a
+container image, the lock also records the image digest. Pins never point at
+branches, pull requests, or unreleased commits. Artifacts from a branch, a
+pull request, or an unreleased commit are cleaned up, so a run that passes
+today can stop working later.
+
+The component repositories are the robots, the evaluators, the verifier, and
+the reporter. There are no preview runs of unreleased commits, and there are no
+reports on pull requests in those repositories. Each repository's pull request
+tests that repository's own contract. The author, a person or an agent, covers
+every contract the change touches with that repository's tests.
+
+Integration runs in
+[livingproof-verification](https://github.com/Living-Proof-Labs/livingproof-verification)
+only when a pin moves to a tag that already exists. Renovate opens that pull
+request, or a developer opens it on purpose, knowing the downstream effect. A
+breaking change that has merged in an upstream repository reaches a downstream
+repository when the downstream pin moves. A follow-up pin pull request is the
+designed way to bring that release in, and the pull request traces to a tag
+that already exists.
+
+For example, a verifier release reaches the robot reports when a pull request
+in livingproof-verification moves the verifier pin to that released tag. The
+pull request run stores the report as a GitHub Actions artifact. After the pull
+request merges, the report is published on GitHub Pages.
+
+Those component repositories cut releases with the shared
+[semantic-release workflow](../.github/workflows/semantic-release.yml)
+in this repository. Every commit in those repositories starts with `feat:`,
+`fix:`, `test:`, `ci:`, `docs:`, or `chore:`, because the release is cut from
+the commits.
+
+Aaron set this rule on 2026-11-13. The design discussion is
+[livingproof-verification issue 40](https://github.com/Living-Proof-Labs/livingproof-verification/issues/40).
 
 ## Call after verification
 

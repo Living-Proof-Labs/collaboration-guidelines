@@ -81,6 +81,9 @@ ownership, organize manuals, and adopt consistent navigation and evidence labels
 Use the [shared release workflow](docs/releases.md) after the consuming project's
 verification. Pin an explicit version tag and update deliberately; versions signal
 compatibility intent, while tests and review of updates establish suitability.
+Integration between repositories runs when a pin moves to a released tag that
+already exists. See
+[Integration through released tags](docs/releases.md#integration-through-released-tags).
 
 The [license index](LICENSE.md) scopes Apache-2.0 tooling/examples and CC BY 4.0
 prose. The [licensing guide](docs/licensing.md) explains the pattern for future

@@ -140,6 +140,9 @@ or higher-priority instructions.
 
 - Use semantic versioning to communicate compatibility. It protects downstream
   consumers only when they pin a version and deliberately evaluate updates.
+- Cross-repository integration uses a released tag. The lock records the tag
+  and the commit it resolves to. See
+  [Integration through released tags](docs/releases.md#integration-through-released-tags).
 - Prefer the existing semantic-release ecosystem. Deviate only for a demonstrated
   need, explaining the tradeoff in the pull request.
 - Release from `main` after merge and verification. Documentation and maintenance
