@@ -62,11 +62,10 @@ release objects; verify or publish those records separately through the provider
 supported process. A synchronized tag alone is not evidence of a hosted release.
 
 Use explicit published version tags for cross-repository guidance, workflows,
-and components. Before an initial component release, an explicitly documented
-temporary development-branch reference is allowed: record why it is needed and
-replace it with a version tag once the initial release exists. Test a component's
-candidate in its own CI before consumers validate integration. Local tests,
-hosted component CI, and consumer integration are separate evidence.
+and components. A pin between repositories is a released tag. See
+[Integration through released tags](releases.md#integration-through-released-tags).
+Each repository tests its candidate in its own CI. Local tests, hosted
+component CI, and consumer integration are separate evidence.
 
 ## Verified status on 2026-10-24
 

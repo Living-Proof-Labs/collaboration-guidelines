@@ -123,8 +123,10 @@ or higher-priority instructions.
   Update deliberately through a pull request; record the resolved commit hash as
   verification evidence, not as the dependency reference. Never retarget a
   published tag.
-- Branch references are rare, documented exceptions: explain the need and when
-  the exception ends. Do not default to `main`, `latest`, or moving major tags.
+- Use a published tag for every pin. A pin points at that tag, and the lock
+  records the tag and the commit it resolves to. Do not point a pin at a
+  branch, `main`, `latest`, or a moving major tag. See
+  [Integration through released tags](docs/releases.md#integration-through-released-tags).
 - A Markdown link does not load instructions. Read the pinned `AGENTS.md` through
   available authorized tools before relying on it. Read any relevant referenced
   procedure at the same revision; never silently substitute `main` or latest.
@@ -140,6 +142,9 @@ or higher-priority instructions.
 
 - Use semantic versioning to communicate compatibility. It protects downstream
   consumers only when they pin a version and deliberately evaluate updates.
+- Cross-repository integration uses a released tag. The lock records the tag
+  and the commit it resolves to. See
+  [Integration through released tags](docs/releases.md#integration-through-released-tags).
 - Prefer the existing semantic-release ecosystem. Deviate only for a demonstrated
   need, explaining the tradeoff in the pull request.
 - Release from `main` after merge and verification. Documentation and maintenance

@@ -30,8 +30,9 @@ adopt. Assess changes from their perspective:
 
 Explain the intended impact in the PR; do not disguise a behavioral requirement
 as a wording fix. Consumers remain on their selected version tag until they
-update deliberately. Publish a version before normal cross-repository adoption;
-a branch exception needs a documented justification and an exit condition.
+update deliberately. Publish a version before cross-repository adoption. A pin
+is a released tag. See
+[Integration through released tags](docs/releases.md#integration-through-released-tags).
 
 ## Release from main
 

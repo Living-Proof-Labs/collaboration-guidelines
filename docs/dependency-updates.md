@@ -8,7 +8,9 @@ install a bot. Automerge and platform automerge are disabled. Third-party
 updates are limited to two concurrent pull requests and one per hour, before
 06:00 UTC on Mondays. A dependency Living Proof Labs publishes is not on that
 schedule and is not held by those limits. Every update, including majors and
-pre-1.0 versions, needs review.
+pre-1.0 versions, needs review. A pin of a repository Living Proof Labs
+publishes moves to a released tag that already exists. See
+[Integration through released tags](releases.md#integration-through-released-tags).
 
 ## Releases we publish
 
