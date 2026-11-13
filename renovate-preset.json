@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Opt-in strict pins; review every update. No bot installation is implied.",
+  "description": "Shared dependency policy: internal releases on the next bot run; external updates weekly; review every update.",
   "automerge": false,
   "platformAutomerge": false,
   "dependencyDashboard": true,
@@ -10,7 +10,7 @@
   "prHourlyLimit": 1,
   "rangeStrategy": "pin",
   "ignoreUnstable": true,
-  "enabledManagers": ["github-actions", "dockerfile", "docker-compose", "npm", "pip-compile", "custom.regex"],
+  "enabledManagers": ["renovate-config", "github-actions", "dockerfile", "docker-compose", "npm", "pip-compile", "custom.regex"],
   "ignorePaths": ["**/node_modules/**", "tools/renovate/fixtures/**", "docs/adr/**", "docs/issues/**"],
   "pip-compile": {"managerFilePatterns": ["/requirements\\.lock$/"]},
   "packageRules": [

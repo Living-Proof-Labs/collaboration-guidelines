@@ -1,16 +1,62 @@
 <!-- SPDX-License-Identifier: CC-BY-4.0 -->
 
-# Dependency update pilot
+# Shared dependency updates
 
-Issue [#19](https://github.com/Living-Proof-Labs/collaboration-guidelines/issues/19)
-starts with a reusable, inactive `renovate-preset.json`. This change does not
-install a bot. Automerge and platform automerge are disabled. Third-party
-updates are limited to two concurrent pull requests and one per hour, before
-06:00 UTC on Mondays. A dependency Living Proof Labs publishes is not on that
-schedule and is not held by those limits. Every update, including majors and
-pre-1.0 versions, needs review. A pin of a repository Living Proof Labs
-publishes moves to a released tag that already exists. See
+`renovate-preset.json` is the single source of our dependency update policy.
+Consumers extend a published version rather than copy its rules. Mend-hosted
+Renovate is operating across the organization; rollout and remaining coverage
+are tracked in [#19](https://github.com/Living-Proof-Labs/collaboration-guidelines/issues/19).
+A configuration file alone does not install the bot or prove hosted acceptance.
+
+- **Our releases:** eligible on the next hosted bot run, without a weekly window
+  or pull request rate caps.
+- **External dependencies:** new updates are eligible before 06:00 UTC on Mondays,
+  limited to two concurrent pull requests and one new pull request per hour.
+- **Every update:** review and applicable passing tests are required. Automerge
+  and platform automerge remain disabled.
+
+This controls when updates are eligible, not how often Mend scans a repository.
+It does not promise immediate or hourly polling. Existing branches may be
+maintained outside the window, and urgent vulnerability handling has Renovate's
+own behavior. A dashboard entry awaiting its schedule is not a failed check.
+A pin of a repository Living Proof Labs publishes moves to a released tag that
+already exists. See
 [Integration through released tags](releases.md#integration-through-released-tags).
+
+## One policy, versioned adoption
+
+Keep schedules, internal publisher matching, rate caps and shared grouping here.
+A repository's `renovate.json` should extend the released preset and contain only
+necessary local additions: supported managers, historical fixture exclusions or
+compatibility constraints. Name the reason for an exception. Do not duplicate
+the shared schedule in local package rules: later rules can override it.
+
+The native `renovate-config` manager detects tagged preset references in
+`renovate.json` and proposes their updates. The shared guidelines package rule
+groups that pin with other guidelines references and treats it as an internal
+release. The new policy takes effect only after the consumer's update is reviewed
+and merged. This is one source with traceable adoption, not an instant global
+settings switch. Never replace a release pin with `main` or a moving tag.
+
+Repositories pinned to older presets need one bootstrap update to the first
+published release containing this manager. The old preset cannot update itself
+while its manager is disabled. Local `enabledManagers` lists replace the shared
+list: they must also include `renovate-config`. Preserve their other managers and
+exceptions when adopting. Do not invent the next release tag before publication.
+
+For each repository in the canonical organization inventory:
+
+1. Check bot installation and a merged configuration using the shared preset.
+2. Update the preset tag and local manager list through a reviewed pull request.
+3. Confirm hosted extraction lists the preset reference under `renovate-config`.
+4. Confirm a subsequent released preset produces an update proposal, then verify
+   the effective internal and external schedules after its merge.
+
+The current migration is not complete merely because this source changed.
+Pending onboarding, repositories with no dependency manifests, unreadable logs,
+and deliberate exceptions must be reported separately. Preserve existing
+repository tests and merge requirements; a passing config validator is not a
+passing dependency update.
 
 ## Releases we publish
 
@@ -65,7 +111,7 @@ does not set `rangeStrategy`, and this rule does not set `schedule`.
 
 Test-gated automerge is the target (see [AGENTS.md](../AGENTS.md)): it is
 enabled per repository only with the repository owner's approval once its
-required checks are proven; automerge stays off in this pilot.
+required checks are proven; automerge stays off in the shared preset.
 
 ## Inventory and boundaries
 
@@ -141,7 +187,8 @@ or Python installation is required. Reports go to `artifacts/renovate/`.
 The local platform supports extraction and lookup, not branch creation. Fixtures
 and validator success are not evidence of a hosted bot pull request, refreshed
 lockfiles, successful installation of proposed dependencies, or a merge gate.
-A later pilot must build/test the actual proposed releases and regenerated locks.
+Consumer update pull requests must test actual proposed releases and
+regenerated locks.
 
 After review and publication, consumers may extend this preset using Renovate's
 `github>Living-Proof-Labs/collaboration-guidelines:renovate-preset#TAG` syntax,
@@ -150,13 +197,12 @@ does not contain it. Do not adopt a branch or guessed future release. The preset
 is deliberately not named `renovate.json`, so merging it does not activate
 repository onboarding. Test downstream annotations in a separate reviewed PR.
 
-Hosting and ownership remain undecided. Renovate OSS requires an operator,
-compute, scheduling and approved credentials; Mend-hosted Renovate is a separate
-service requiring review of current terms and repository access. Dependabot's
-native managers cover several code formats but not this annotation contract.
-No hosted service, App, credentials, permissions or branch protection is changed.
+Mend-hosted Renovate runs the installed service. Repository owners and agents
+review its proposals using the normal contribution process. This preset does
+not install Apps, change permissions or configure branch protection. Do not run
+a second updater over the same references.
 
-Pause a future installation through its approved owner, or disable the consumer
+Pause the installation through its approved owner, or disable the consumer
 configuration in a PR. Revert a bad update/configuration through a PR, restore
 known-good readable tags and locks, and rerun tests. Never move an old tag.
 
@@ -164,6 +210,7 @@ References: [regex managers](https://docs.renovatebot.com/modules/manager/regex/
 [validator](https://docs.renovatebot.com/config-validation/),
 [local dry runs](https://docs.renovatebot.com/modules/platform/local/),
 [versioned presets](https://docs.renovatebot.com/config-presets/),
+[native preset updates](https://docs.renovatebot.com/modules/manager/renovate-config/),
 [pip-compile](https://docs.renovatebot.com/modules/manager/pip-compile/).
 
 The generated-docs lock header records this regeneration command, because
