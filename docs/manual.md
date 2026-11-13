@@ -31,13 +31,36 @@ separate `artifacts/manual-previous.*` directory; failed generation cannot silen
 reuse it as the current manual. Hosted review downloads include only current output.
 
 In an already prepared environment with the locked Python tools and Task, run
-`bash tools/manual/verify.sh` directly. Do not invoke Docker wrappers inside that
+`python tools/manual/brand.py` once to fetch the locked stylesheet, then
+`bash tools/manual/verify.sh`. Do not invoke Docker wrappers inside that
 environment. The container uses the same script and project sources.
 
 The generated Task reference comes from native `task --list --json` and
 `task --summary`; it does not execute task bodies. Only this repository's reviewed
 Taskfile is included. Source pages and the version page identify the exact build
 commit and dirty state. A current manual is not a guarantee about older pins.
+
+## Released brand and recipe
+
+The manual adopts the documentation recipe and shared docs brand from
+[v7.10.9](https://github.com/Living-Proof-Labs/collaboration-guidelines/tree/v7.10.9),
+resolved to `c5fa9d9794d0ebd289f51b247fe7872de0db9c27`.
+Existing authored pages, navigation labels, URLs and fragment anchors remain
+canonical. Current manual and documentation-home links are navigation exceptions
+to release pinning, as allowed by that recipe; they do not select build inputs.
+
+`docs-brand.lock.json` records the released tag, resolved commit and stylesheet
+SHA-256. Image preparation downloads the stylesheet from that exact commit and
+rejects a checksum mismatch. Offline generation verifies the prepared bytes again
+and stages them at `assets/brand.css`; it never reads the working-tree brand CSS.
+Update all lock fields together after resolving a published release. The Version
+and source page and `build.json` retain this provenance separately from the
+manual's development commit. This adoption does not enable Renovate or automerge.
+
+The shared stylesheet selects teal in both themes and Instrument Serif headings.
+Its Google Fonts import needs network access; offline visitors retain the declared
+Georgia/serif fallback. Offline browser checks verify computed styling and local
+assets, not external font delivery.
 
 ## Scope and evidence
 

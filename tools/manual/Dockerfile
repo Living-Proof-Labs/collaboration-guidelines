@@ -7,11 +7,18 @@ COPY tools/manual/requirements.lock /tmp/requirements.lock
 RUN --mount=type=secret,id=ca,required=false \
     if [ -f /run/secrets/ca ]; then export SSL_CERT_FILE=/run/secrets/ca; fi; \
     uv pip sync --system --require-hashes /tmp/requirements.lock
-RUN python -m playwright install --with-deps chromium
+RUN --mount=type=secret,id=ca,required=false \
+    if [ -f /run/secrets/ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/ca; fi; \
+    python -m playwright install --with-deps chromium
 COPY templates/generated-docs/install-task.py /tmp/install-task.py
 RUN --mount=type=secret,id=ca,required=false \
     if [ -f /run/secrets/ca ]; then export SSL_CERT_FILE=/run/secrets/ca; fi; \
     python /tmp/install-task.py
+COPY docs-brand.lock.json ./docs-brand.lock.json
+COPY tools/manual/brand.py ./tools/manual/brand.py
+RUN --mount=type=secret,id=ca,required=false \
+    if [ -f /run/secrets/ca ]; then export SSL_CERT_FILE=/run/secrets/ca; fi; \
+    python tools/manual/brand.py
 COPY . .
 ARG SOURCE_COMMIT
 ARG SOURCE_DIRTY
