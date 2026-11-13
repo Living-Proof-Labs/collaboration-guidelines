@@ -84,6 +84,7 @@ repository additionally adopts `v4.1.0`.
 | Both: Dockerfile Node `24.19.0-bookworm-slim` plus digest; guidance documentation image uses Python `3.12.12-slim` and uv `0.12.23` plus digests; host image uses Ubuntu `24.04` plus digest | Native `dockerfile`; native `docker-compose` for image references |
 | Guidance `.github/actions/semantic-release/package.json` and lock: semantic-release `25.0.9`, plugins, lint tooling; robot root package and lock: Gherkin `42.0.1`, messages `34.2.1`, YAML `2.8.1` | Native `npm`, exact ranges, existing locks |
 | Guidance `templates/generated-docs/requirements.in` and hash-locked `requirements.lock`: Click `8.3.1`, Sphinx `8.2.3`, sphinx-click `6.2.0`, coverage `7.17.0`, pytest `8.4.2` | Native `pip-compile`, explicit `.lock` file pattern; uv header identifies input and output |
+| Guidance `tools/manual/requirements.in` and hash-locked `requirements.lock`: zensical `0.0.73`, pytest `8.4.2`, Playwright `1.64.1` | Native `pip-compile`; regenerate from the repository root with `--output-file=tools/manual/requirements.lock` |
 | Robot `AGENTS.md` guidance `v4.1.0`; README guidance/release links `v2.0.3`; Taskfile provenance comment `v4.1.0` | Opt-in annotated fixtures only; no downstream edits or silent reconciliation of different pins |
 | Robot README verifier `v1.0.1`, clone command, catalog `v1.1.0`; guidance reporter script and docs `v1.4.0` | Deferred coupled repositories; not in custom allowlist |
 | Task `3.54.0` in setup Action inputs, installers, README; robot Dockerfile installer URL, checksum and command | Deferred checksum/input coupling; never update only one member |
@@ -165,8 +166,21 @@ References: [regex managers](https://docs.renovatebot.com/modules/manager/regex/
 [versioned presets](https://docs.renovatebot.com/config-presets/),
 [pip-compile](https://docs.renovatebot.com/modules/manager/pip-compile/).
 
-The Python lock header uses `--output-file=requirements.lock` because Renovate
-44.181.7 rejects the equivalent space-separated argument in the original header.
+The generated-docs lock header records this regeneration command, because
+Renovate 44.181.7 rejects a space-separated `--output-file` argument:
+
+<!-- markdownlint-disable MD013 -->
+`uv pip compile requirements.in --generate-hashes --output-file=requirements.lock`
+<!-- markdownlint-enable MD013 -->
+
+The manual lock is regenerated from the repository root with the same equals
+form. Renovate 44.236.5 rejects the short `-o` option (`Option -o not supported
+(yet)`):
+
+<!-- markdownlint-disable MD013 -->
+`uv pip compile tools/manual/requirements.in --generate-hashes --output-file=tools/manual/requirements.lock`
+<!-- markdownlint-enable MD013 -->
+
 Only that command comment changes; locked package versions and hashes do not.
 The fixture tests import the official image's extraction/replacement APIs. These
 are internal APIs, deliberately tied to the pinned image; an image upgrade must

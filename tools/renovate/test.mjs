@@ -110,6 +110,23 @@ test('native pip-compile links uv hash lock to its five exact input pins', async
   assert.match(read(`${path}/requirements.lock`), /--hash=sha256:/);
 });
 
+test('native pip-compile resolves the repository manual lock header to its input', async () => {
+  const path = 'tools/manual';
+  const header = read(`${path}/requirements.lock`);
+  assert.match(header, /^# {4}uv pip compile tools\/manual\/requirements\.in --generate-hashes --output-file=tools\/manual\/requirements\.lock$/m);
+  assert.doesNotMatch(header, /(^|\s)-o(\s|=)/);
+  mkdirSync(join(work,path), {recursive:true});
+  for (const file of ['requirements.in','requirements.lock']) cpSync(`${path}/${file}`, join(work,path,file));
+  const result = await pipExtract({}, [`${path}/requirements.lock`]);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].packageFile, `${path}/requirements.in`);
+  assert.deepEqual(result[0].lockFiles, [`${path}/requirements.lock`]);
+  assert.equal(result[0].deps.filter(d => d.depType !== 'indirect').length, 3);
+  for (const [name, version] of [['zensical', '==0.0.73'], ['pytest', '==8.4.2'], ['playwright', '==1.64.1']]) {
+    assert.ok(result[0].deps.some(d => d.depName.toLowerCase() === name && d.currentValue === version), name);
+  }
+});
+
 test('file allowlist excludes history, nested Taskfiles and the fixtures themselves', () => {
   const matches = (patterns, path) => patterns.some(p => new RegExp(p.slice(1,-1)).test(path));
   for (const path of ['AGENTS.md', 'README.md', 'docs/dependency-pins.md']) assert.ok(matches(markdown.managerFilePatterns,path));
