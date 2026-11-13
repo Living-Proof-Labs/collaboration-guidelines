@@ -97,8 +97,11 @@ test('native configuration manager keeps the shared preset current through revie
   assert.equal(rule.prConcurrentLimit, 0);
   const output = await doAutoReplace({...rule, packageFile: 'renovate.json', depIndex: result.deps.indexOf(dep), newValue: 'v7.10.4', autoReplaceGlobalMatch: true}, input, false);
   assert.equal(output, input.replace('v7.8.2', 'v7.10.4'));
-  const actual = configExtract(read('renovate.json'), 'renovate.json');
-  assert.ok(actual.deps.some(d => d.depName === dep.depName && d.currentValue === 'v7.10.4'));
+  const actualConfig = read('renovate.json');
+  const actual = configExtract(actualConfig, 'renovate.json');
+  const actualTag = JSON.parse(actualConfig).extends.find(ref => ref.startsWith('github>Living-Proof-Labs/collaboration-guidelines:renovate-preset#')).split('#')[1];
+  assert.match(actualTag, /^v[0-9]+\.[0-9]+\.[0-9]+$/);
+  assert.ok(actual.deps.some(d => d.depName === dep.depName && d.currentValue === actualTag));
 });
 
 test('native Docker extraction retains readable tag and existing digest', async () => {
