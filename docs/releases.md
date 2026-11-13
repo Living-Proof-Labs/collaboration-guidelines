@@ -33,9 +33,11 @@ reports on pull requests in those repositories. Each repository's pull request
 tests that repository's own contract. The author, a person or an agent, covers
 every contract the change touches with that repository's tests.
 
-Integration runs in
-[livingproof-verification](https://github.com/Living-Proof-Labs/livingproof-verification)
-only when a pin moves to a tag that already exists. Renovate opens that pull
+Integration runs in the downstream repository's pin pull request when the pin
+moves to a tag that already exists. For robot reports, that pull request is in
+[livingproof-verification](https://github.com/Living-Proof-Labs/livingproof-verification).
+capability-verifier's pin of livingproof-evaluator-scenario is another
+downstream pin, and it moves in capability-verifier. Renovate opens the pull
 request, or a developer opens it on purpose, knowing the downstream effect. A
 breaking change that has merged in an upstream repository reaches a downstream
 repository when the downstream pin moves. A follow-up pin pull request is the
@@ -49,9 +51,8 @@ request merges, the report is published on GitHub Pages.
 
 Those component repositories cut releases with the shared
 [semantic-release workflow](../.github/workflows/semantic-release.yml)
-in this repository. Every commit in those repositories starts with `feat:`,
-`fix:`, `test:`, `ci:`, `docs:`, or `chore:`, because the release is cut from
-the commits.
+in this repository. Every commit uses a type from the [Policy](#policy)
+list, because the release is cut from the commits.
 
 Aaron set this rule on 2026-11-13. The design discussion is
 [livingproof-verification issue 40](https://github.com/Living-Proof-Labs/livingproof-verification/issues/40).

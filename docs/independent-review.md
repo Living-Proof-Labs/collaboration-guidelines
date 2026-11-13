@@ -99,8 +99,8 @@ say a higher depth is needed.
   exhaustive evidence.
 
 Checks after a merge are Light by default. Confirm the merge commit's
-tree matches the verified SHA, or that the merge is a fast-forward to
-that SHA, and that CI or deployment succeeded. For a live page, take a
+tree matches the verified SHA's tree, or that the merge is a fast-forward
+to that SHA, and that CI or deployment succeeded. For a live page, take a
 quick look. Re-run suites only if something looks off.
 
 Every report states passed, failed, blocked, and not run separately, and
