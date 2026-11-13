@@ -5,6 +5,7 @@ cd /repo
 if [[ $1 == verify ]]; then
   rm -f /reports/tests.xml /reports/tests.log /reports/validator.log
   renovate-config-validator --strict --no-global renovate-preset.json renovate-docs-brand.json 2>&1 | tee /reports/validator.log
+  DOCS_BRAND_REPOSITORY=Living-Proof-Labs/fixture renovate-config-validator --strict tools/docs-brand/runner.cjs 2>&1 | tee /reports/runner-validator.log
   node --test --test-reporter=spec --test-reporter=junit \
     --test-reporter-destination=stdout --test-reporter-destination=/reports/tests.xml \
     tools/renovate/test.mjs 2>&1 | tee /reports/tests.log

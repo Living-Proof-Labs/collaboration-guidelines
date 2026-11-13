@@ -62,8 +62,10 @@ any page lacks `assets/brand.css` or carries `data-md-color-primary="indigo"`.
 2. In each docs repository, update `version`, `commit` and `sha256` together in
    one pull request, and let its render check pass.
 
-The shared preset includes a disabled-by-default docs brand manager. After the
-runner and consumer checks are bootstrapped, the opt-in preset regenerates all
-three fields in the same Renovate pull request. Follow the
-[Renovate brand update procedure](../../tools/docs-brand/README.md); do not enable
-a version-only updater or edit checksums merely to make a failed build pass.
+The shared preset includes a disabled-by-default docs brand manager. Free
+Mend-hosted Renovate cannot execute its checksum-regeneration command. Use the
+customer-controlled GitHub Actions runner, or an existing trusted self-hosted
+Renovate runner, from the [brand update procedure](../../tools/docs-brand/README.md).
+Both paths regenerate the complete lock in one reviewed pull request after
+bootstrap. Do not enable a version-only updater or edit checksums merely to
+make a failed build pass.

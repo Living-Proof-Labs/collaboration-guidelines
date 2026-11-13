@@ -389,3 +389,66 @@ main(['--update'],get);`);
 });
 
 });
+
+import {createRequire} from 'node:module';
+import {mergeRenovateConfig} from '/usr/local/renovate/dist/workers/repository/init/merge.js';
+const require = createRequire(import.meta.url);
+describe('Customer-controlled brand runner', () => {
+  test('production config merge ignores hostile settings; local CLI extracts only the brand lock', async () => {
+    const dir = mkdtempSync(join(tmpdir(),'brand-runner-'));
+    writeFileSync(join(dir,'docs-brand.lock.json'),JSON.stringify(brandPrevious));
+    writeFileSync(join(dir,'package.json'),JSON.stringify({dependencies:{lodash:'1.0.0'}}));
+    writeFileSync(join(dir,'renovate.json'),JSON.stringify({
+      enabledManagers:['npm'],automerge:true,platformAutomerge:true,
+      extends:['github>untrusted/config'],
+      postUpgradeTasks:{commands:['touch /tmp/brand-untrusted-command'],fileFilters:['**/*']},
+    }));
+    const oldTarget = process.env.DOCS_BRAND_REPOSITORY;
+    process.env.DOCS_BRAND_REPOSITORY='Living-Proof-Labs/fixture';
+    const policy = require('../docs-brand/runner.cjs');
+    if (oldTarget === undefined) delete process.env.DOCS_BRAND_REPOSITORY; else process.env.DOCS_BRAND_REPOSITORY=oldTarget;
+    GlobalConfig.set({...policy,localDir:dir});
+    try {
+      const merged = await mergeRenovateConfig({...policy,repository:'Living-Proof-Labs/fixture'});
+      assert.deepEqual(merged.enabledManagers,['custom.regex']);
+      assert.equal(merged.automerge,false);
+      assert.equal(merged.platformAutomerge,false);
+      assert.equal(merged.extends,undefined);
+      assert.equal(merged.postUpgradeTasks,undefined);
+    } finally {GlobalConfig.set({localDir:work,cacheDir:join(work,'cache')});}
+    // platform=local forcibly sets requireConfig=optional in 44.181.7. Verify
+    // production merging above, then exercise CLI extraction with empty repo config.
+    writeFileSync(join(dir,'renovate.json'),'{}');
+    const log = join(dir,'extraction.jsonl');
+    const localConfig = join(dir,'runner-fixture.cjs');
+    // Local platform has no repository list; production policy is otherwise intact.
+    writeFileSync(localConfig,"module.exports={...require('/repo/tools/docs-brand/runner.cjs'),repositories:[]};\n");
+    let output;
+    try { output = execFileSync('renovate',['--platform=local','--dry-run=extract'], {
+      cwd:dir,
+      env:{...process.env,RENOVATE_CONFIG_FILE:localConfig,DOCS_BRAND_REPOSITORY:'Living-Proof-Labs/fixture',LOG_LEVEL:'debug',LOG_FORMAT:'json'},
+      stdio:'pipe',maxBuffer:4*1024*1024,
+    }); } catch(error) {
+      writeFileSync('/reports/brand-runner-extract.jsonl',error.stdout ?? '');
+      throw error;
+    }
+    writeFileSync(log,output);
+    writeFileSync('/reports/brand-runner-extract.jsonl',output);
+    const entries = read(log).trim().split('\n').map(line=>JSON.parse(line));
+    const extracted = entries.find(entry=>entry.packageFiles);
+    assert.ok(extracted,'CLI reports actual extracted package files');
+    assert.deepEqual(Object.keys(extracted.packageFiles),['regex']);
+    const files = extracted.packageFiles.regex;
+    assert.equal(files.length,1);
+    assert.equal(files[0].packageFile,'docs-brand.lock.json');
+    assert.equal(files[0].deps[0].currentValue,'v1.0.0');
+    assert.equal(read(log).includes('untrusted/config'),false);
+  });
+  test('runner rejects foreign and injected repository targets before starting', () => {
+    for (const repository of ['other/repo','Living-Proof-Labs/repo;echo bad','Living-Proof-Labs/repo/extra','']) {
+      assert.throws(()=>execFileSync('node',['-e',"require('./tools/docs-brand/runner.cjs')"],{
+        env:{...process.env,DOCS_BRAND_REPOSITORY:repository},stdio:'pipe',
+      }));
+    }
+  });
+});

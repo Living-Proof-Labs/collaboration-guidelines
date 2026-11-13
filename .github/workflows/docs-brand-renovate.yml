@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Update docs brand with Renovate
+on:
+  workflow_call:
+    inputs:
+      app-client-id:
+        description: Client ID of the owner-approved updater GitHub App
+        required: true
+        type: string
+    secrets:
+      app-private-key:
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: docs-brand-renovate-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  update:
+    # Original caller event and ref: PRs, workflow_run and branch dispatches never
+    # enter this secret-bearing job, regardless of author/actor identity.
+    if: >-
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      github.repository_owner == 'Living-Proof-Labs'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # GitHub.com resolves the sibling action at this workflow's exact commit.
+      # No caller/PR checkout and no independently drifting helper-version input.
+      - uses: $/.github/actions/docs-brand-renovate
+        with:
+          app-client-id: ${{ inputs.app-client-id }}
+          app-private-key: ${{ secrets.app-private-key }}
