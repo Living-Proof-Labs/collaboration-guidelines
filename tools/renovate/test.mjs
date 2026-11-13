@@ -5,6 +5,7 @@ import { readFileSync, mkdtempSync, mkdirSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, describe } from 'node:test';
+import { extractPackageFile as configExtract } from '/usr/local/renovate/dist/modules/manager/renovate-config/extract.js';
 import { extractPackageFile as regexExtract } from '/usr/local/renovate/dist/modules/manager/custom/regex/index.js';
 import { extractPackageFile as actionsExtract } from '/usr/local/renovate/dist/modules/manager/github-actions/extract.js';
 import { extractPackageFile as dockerExtract } from '/usr/local/renovate/dist/modules/manager/dockerfile/extract.js';
@@ -76,6 +77,31 @@ test('native workflow and custom documentation receive the same group; no autome
     assert.equal(new RegExp(rule.allowedVersions.slice(1,-1)).test('v4.2.2'), true);
     assert.equal(new RegExp(rule.allowedVersions.slice(1,-1)).test('v4.2.2-rc.1'), false);
   }
+});
+
+test('native configuration manager keeps the shared preset current through reviewed tag updates', async () => {
+  assert.ok(preset.enabledManagers.includes('renovate-config'));
+  const input = JSON.stringify({
+    extends: ['config:recommended', 'github>Living-Proof-Labs/collaboration-guidelines:renovate-preset#v7.8.2'],
+    enabledManagers: ['renovate-config', 'pep621'],
+    ignorePaths: ['tests/fixtures/**'],
+  }, null, 2) + '\n';
+  const result = configExtract(input, 'renovate.json');
+  const dep = result.deps.find(d => d.depName === 'Living-Proof-Labs/collaboration-guidelines');
+  assert.equal(dep.currentValue, 'v7.8.2');
+  assert.equal(dep.datasource, 'github-tags');
+  const rule = await applyPackageRules({...preset, ...dep, packageName: dep.depName, manager: 'renovate-config'}, 'test');
+  assert.deepEqual(rule.schedule, ['at any time']);
+  assert.equal(rule.groupName, 'collaboration guidelines');
+  assert.equal(rule.automerge, false);
+  assert.equal(rule.prConcurrentLimit, 0);
+  const output = await doAutoReplace({...rule, packageFile: 'renovate.json', depIndex: result.deps.indexOf(dep), newValue: 'v7.10.4', autoReplaceGlobalMatch: true}, input, false);
+  assert.equal(output, input.replace('v7.8.2', 'v7.10.4'));
+  const actualConfig = read('renovate.json');
+  const actual = configExtract(actualConfig, 'renovate.json');
+  const actualTag = JSON.parse(actualConfig).extends.find(ref => ref.startsWith('github>Living-Proof-Labs/collaboration-guidelines:renovate-preset#')).split('#')[1];
+  assert.match(actualTag, /^v[0-9]+\.[0-9]+\.[0-9]+$/);
+  assert.ok(actual.deps.some(d => d.depName === dep.depName && d.currentValue === actualTag));
 });
 
 test('native Docker extraction retains readable tag and existing digest', async () => {

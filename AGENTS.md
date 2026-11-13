@@ -90,7 +90,7 @@ or higher-priority instructions.
   the update is safe. Test-gated automerge is the target, enabled per
   repository only with the repository owner's approval once its required
   checks are proven; until then the
-  [dependency update pilot](docs/dependency-updates.md) keeps automerge off.
+  [shared dependency policy](docs/dependency-updates.md) keeps automerge off.
 - Shared hosts install Docker and Task; repository containers supply language
   runtimes and package managers. Task installs
   project tooling and dependencies using pinned versions and committed locks.
