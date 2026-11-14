@@ -13,7 +13,8 @@ A small, versioned baseline for ordinary project work. Start with
 Track organization delivery work on the
 [Living Proof Labs Delivery](https://github.com/orgs/Living-Proof-Labs/projects/2)
 board. The [delivery board guide](docs/delivery-board.md) describes statuses,
-ownership, and the Ready To Merge handoff.
+ownership, the Ready To Merge handoff, and that done means verified
+after integration.
 
 ## Adopt in a repository
 

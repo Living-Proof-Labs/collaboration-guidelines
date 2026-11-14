@@ -18,8 +18,13 @@ or higher-priority instructions.
   [Living Proof Labs Delivery](https://github.com/orgs/Living-Proof-Labs/projects/2)
   board. Every piece of work has an issue or draft item there; pull requests
   link that issue. Write the definition of done before moving an item to Ready
-  to Start, keep Status and Owner current, and state blockers in a comment.
-  See the [delivery board guide](docs/delivery-board.md).
+  to Start, and keep Status and Owner current. After a merge, move the item
+  to Verifying after Merge until Vera verifies it on the integrated main
+  branch; Done means that verification is complete. Docs-only or chore
+  changes with nothing to verify may go straight to Done. To get the
+  engineering lead's attention, move the item to Blocked and leave a
+  one-line comment on the issue or pull request saying what is blocking
+  it and what is needed. See the [delivery board guide](docs/delivery-board.md).
 - The engineering lead (Rivet) may merge a pull request once required checks
   pass on the exact head revision and verification evidence is recorded.
   Required checks and branch rulesets, configured as code in the organization
