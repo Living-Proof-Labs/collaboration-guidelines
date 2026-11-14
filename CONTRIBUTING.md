@@ -21,7 +21,12 @@ Track that work on the organization
 [Living Proof Labs Delivery](https://github.com/orgs/Living-Proof-Labs/projects/2)
 board: give it an issue or draft item, link the pull request, and keep Status
 and Owner current. Aaron or Keel move a ready pull request to Ready To Merge;
-the engineering lead then merges it under the rule above. See the
+the engineering lead then merges it under the rule above. After merge, the
+item moves to Verifying after Merge until Vera verifies it on the integrated
+main branch; only then is it Done. Docs-only or chore changes with nothing to
+verify may go straight to Done. To get the engineering lead's attention, move
+the item to Blocked and leave a one-line comment saying what is blocking it
+and what is needed. See the
 [delivery board guide](docs/delivery-board.md).
 
 For documentation changes, check relative links, Markdown structure, and adoption
