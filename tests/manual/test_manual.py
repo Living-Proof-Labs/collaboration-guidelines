@@ -6,6 +6,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 import threading
+import importlib.util
 from urllib.parse import unquote, urlsplit
 
 import pytest
@@ -63,7 +64,7 @@ def test_source_identity_and_actual_tasks():
         assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == digest
     tasks = (SITE / 'tasks.html').read_text()
     assert 'manual:verify' in tasks and 'tools/manual/container.sh verify' in tasks
-    assert record['guidelines_baseline'] == 'v6.0.0'
+    assert record['guidelines_baseline'] == 'v7.10.9'
     home = (SITE / 'index.html').read_text()
     assert f"/tree/{record['source_commit']}" in home
     assert 'Docs: development' in home
@@ -129,4 +130,48 @@ def test_browser_mobile_navigation_and_theme(browser, base_url):
     page.locator('label[title="Switch to dark mode"]').click()
     page.reload()
     assert page.locator('body').get_attribute('data-md-color-scheme') == 'slate'
+    page.close()
+
+
+def test_brand_provenance_and_every_page():
+    lock = json.loads((ROOT / 'docs-brand.lock.json').read_text())
+    record = json.loads((SITE / 'build.json').read_text())
+    assert record['docs_brand'] == lock
+    assert hashlib.sha256((SITE / 'assets/brand.css').read_bytes()).hexdigest() == lock['sha256']
+    for path in SITE.rglob('*.html'):
+        html = path.read_text()
+        assert 'assets/brand.css' in html, path
+        assert 'data-md-color-primary="indigo"' not in html, path
+        assert 'data-md-color-primary="custom"' in html, path
+        assert 'data-md-color-accent="custom"' in html, path
+
+
+def test_brand_rejects_tampered_stylesheet():
+    spec = importlib.util.spec_from_file_location('manual_brand', ROOT / 'tools/manual/brand.py')
+    brand = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(brand)
+    with pytest.raises(ValueError, match='Docs brand checksum mismatch'):
+        brand.verify(b'tampered stylesheet', brand.lock())
+
+
+@pytest.mark.parametrize('width', [1280, 390])
+@pytest.mark.parametrize('scheme,accent,background', [
+    ('light', '#0f766e', 'rgb(248, 250, 252)'),
+    ('dark', '#2dd4bf', 'rgb(11, 17, 32)'),
+])
+def test_browser_brand_styles(browser, base_url, width, scheme, accent, background):
+    page = browser.new_page(viewport={'width': width, 'height': 844}, color_scheme=scheme)
+    # CI has no network: exercise the font fallback deterministically.
+    page.route('https://fonts.googleapis.com/**', lambda route: route.abort())
+    page.goto(base_url + 'docs/documentation-recipe.html')
+    assert page.locator('body').get_attribute('data-md-color-primary') == 'custom'
+    styles = page.locator('body').evaluate("""element => {
+        const style = getComputedStyle(element);
+        return {accent: style.getPropertyValue('--md-primary-fg-color').trim(),
+                background: style.backgroundColor};
+    }""")
+    assert styles == {'accent': accent, 'background': background}
+    assert 'Instrument Serif' in page.locator('h1').evaluate('e => getComputedStyle(e).fontFamily')
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    page.screenshot(path=str(ROOT / f'artifacts/manual/brand-{scheme}-{width}.png'), full_page=True)
     page.close()
