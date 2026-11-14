@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0
-// Exercise the pinned official implementation, not a JavaScript approximation of RE2.
 import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, mkdirSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -14,9 +13,17 @@ import { extractPackageFile as npmExtract } from '/usr/local/renovate/dist/modul
 import { doAutoReplace } from '/usr/local/renovate/dist/workers/repository/update/branch/auto-replace.js';
 import { GlobalConfig } from '/usr/local/renovate/dist/config/global.js';
 import { init } from '/usr/local/renovate/dist/logger/index.js';
-await init();
 import { applyPackageRules } from '/usr/local/renovate/dist/util/package-rules/index.js';
 import { calcLimit, counts, isLimitReached, setCount } from '/usr/local/renovate/dist/workers/global/limits.js';
+import '../docs-brand/test.mjs';
+import {previous as brandPrevious, get as brandGet} from '../docs-brand/test.mjs';
+import {upgrade as brandUpgrade, verify as brandVerify} from '../docs-brand/lock.mjs';
+import {writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {initRepo, getRepoStatus} from '/usr/local/renovate/dist/util/git/index.js';
+import {postUpgradeCommandsExecutor} from '/usr/local/renovate/dist/workers/repository/update/branch/execute-post-upgrade-commands.js';
+// Exercise the pinned official implementation, not a JavaScript approximation of RE2.
+await init();
 const read = (file) => readFileSync(file, 'utf8');
 const preset = JSON.parse(read('renovate-preset.json'));
 const [markdown, task] = preset.customManagers;
@@ -311,4 +318,137 @@ test('native workflow replacement uses the same proposed release as documentatio
   assert.equal(output, input.replace('v4.1.0', 'v4.2.2'));
 });
 
+});
+
+// Run the updater's negative contracts in the same pinned runtime and JUnit report.
+describe('Renovate docs brand updates', () => {
+test('real brand extraction and replacement feeds verified atomic lock regeneration', async () => {
+  const manager = preset.customManagers.find(m => m.depTypeTemplate === 'docs-brand');
+  const input = JSON.stringify(brandPrevious,null,2)+'\n';
+  const extracted = regexExtract(input,'docs-brand.lock.json',manager);
+  assert.equal(extracted.deps.length,1);
+  const dep = extracted.deps[0];
+  assert.equal(dep.currentValue,'v1.0.0');
+  assert.equal(dep.datasource,'github-releases');
+  const rule = await applyPackageRules({...preset,...dep,packageName:dep.depName},'test');
+  assert.equal(rule.enabled,false);
+  assert.equal(rule.automerge,false);
+  assert.equal(rule.platformAutomerge,false);
+  const output = await doAutoReplace({...manager,...dep,manager:'regex',packageFile:'docs-brand.lock.json',depIndex:0,newValue:'v1.1.0',autoReplaceGlobalMatch:true},input,false);
+  assert.equal(output,input.replace('v1.0.0','v1.1.0'));
+  assert.throws(()=>brandVerify(JSON.parse(output),brandGet), /provenance/);
+  const complete = brandUpgrade(brandPrevious,JSON.parse(output),brandGet);
+  assert.deepEqual(brandVerify(complete,brandGet),complete);
+  assert.equal(complete.commit,'b'.repeat(40));
+  assert.notEqual(complete.sha256,brandPrevious.sha256);
+  const optIn = JSON.parse(read('renovate-docs-brand.json'));
+  const enabled = await applyPackageRules({...preset,...dep,packageName:dep.depName,packageRules:[...preset.packageRules,...optIn.packageRules]},'test');
+  assert.equal(enabled.enabled,true);
+  assert.equal(enabled.automerge,false);
+  assert.equal(enabled.postUpgradeTasks.executionMode,'branch');
+  assert.deepEqual(enabled.postUpgradeTasks.fileFilters,['docs-brand.lock.json']);
+  assert.deepEqual(enabled.postUpgradeTasks.commands,['node /opt/docs-brand/lock.mjs --update']);
+  for (const version of ['main','v1','v1.0.0-rc.1']) assert.equal(regexExtract(input.replace('v1.0.0',version),'docs-brand.lock.json',manager),null);
+  assert.equal(regexExtract(input.replace('Living-Proof-Labs','foreign'),'docs-brand.lock.json',manager),null);
+  assert.equal(manager.managerFilePatterns[0],'/^docs-brand\\.lock\\.json$/');
+});
+
+test('pinned post-upgrade executor collects the complete lock and reports denied commands', async () => {
+  const dir = mkdtempSync(join(tmpdir(),'brand-hook-'));
+  const git = args => execFileSync('git',args,{cwd:dir,stdio:'pipe'});
+  git(['init']);
+  writeFileSync(join(dir,'docs-brand.lock.json'),JSON.stringify(brandPrevious));
+  git(['add','.']);
+  git(['-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-m','baseline']);
+  // Exercise the real executor offline. Only transport is substituted; production
+  // main still reads HEAD, validates provenance, and atomically writes the lock.
+  const wrapper = join(dir,'fixture-helper.mjs');
+  writeFileSync(wrapper,`import {main} from '/repo/tools/docs-brand/lock.mjs';
+const old=${JSON.stringify(brandPrevious)};
+const get=url=>url.includes('/releases/tags/') ? JSON.stringify({tag_name:url.split('/').at(-1),draft:false,prerelease:false}) : url.includes('/commits/') ? JSON.stringify({sha:url.endsWith('v1.0.0')?old.commit:'b'.repeat(40)}) : Buffer.from('body { color: teal; }\\n');
+main(['--update'],get);`);
+  const command = `node ${wrapper}`;
+  const checkout = mkdtempSync(join(tmpdir(),'brand-checkout-'));
+  GlobalConfig.set({localDir:checkout,cacheDir:join(dir,'cache'),allowedCommands:[],binarySource:'global',allowShellExecutorForPostUpgradeCommands:false});
+  await initRepo({url:dir});
+  await getRepoStatus();
+  const postUpgradeTasks = {...JSON.parse(read('renovate-docs-brand.json')).packageRules[0].postUpgradeTasks,commands:[command]};
+  const proposed=JSON.stringify({...brandPrevious,version:'v1.1.0'});
+  const config={updatedPackageFiles:[{type:'addition',path:'docs-brand.lock.json',contents:proposed}],updatedArtifacts:[]};
+  const upgrade={depName:'Living-Proof-Labs/collaboration-guidelines',packageFile:'docs-brand.lock.json',postUpgradeTasks};
+  try {
+    const denied = await postUpgradeCommandsExecutor([upgrade],config);
+    assert.match(denied.artifactErrors[0].stderr,/allowed list/);
+    assert.equal(JSON.parse(read(join(checkout,'docs-brand.lock.json'))).commit,brandPrevious.commit);
+    GlobalConfig.set({localDir:checkout,cacheDir:join(dir,'cache'),binarySource:'global',allowShellExecutorForPostUpgradeCommands:false,allowedCommands:[`^node ${wrapper.replaceAll('.','\\.')}$`]});
+    const success = await postUpgradeCommandsExecutor([upgrade],config);
+    assert.deepEqual(success.artifactErrors,[]);
+    assert.deepEqual(success.updatedArtifacts.map(x=>x.path),['docs-brand.lock.json']);
+    assert.equal(JSON.parse(success.updatedArtifacts[0].contents).commit,'b'.repeat(40));
+  } finally { GlobalConfig.set({localDir:work,cacheDir:join(work,'cache')}); }
+});
+
+});
+
+import {createRequire} from 'node:module';
+import {mergeRenovateConfig} from '/usr/local/renovate/dist/workers/repository/init/merge.js';
+const require = createRequire(import.meta.url);
+describe('Customer-controlled brand runner', () => {
+  test('production config merge ignores hostile settings; local CLI extracts only the brand lock', async () => {
+    const dir = mkdtempSync(join(tmpdir(),'brand-runner-'));
+    writeFileSync(join(dir,'docs-brand.lock.json'),JSON.stringify(brandPrevious));
+    writeFileSync(join(dir,'package.json'),JSON.stringify({dependencies:{lodash:'1.0.0'}}));
+    writeFileSync(join(dir,'renovate.json'),JSON.stringify({
+      enabledManagers:['npm'],automerge:true,platformAutomerge:true,
+      extends:['github>untrusted/config'],
+      postUpgradeTasks:{commands:['touch /tmp/brand-untrusted-command'],fileFilters:['**/*']},
+    }));
+    const oldTarget = process.env.DOCS_BRAND_REPOSITORY;
+    process.env.DOCS_BRAND_REPOSITORY='Living-Proof-Labs/fixture';
+    const policy = require('../docs-brand/runner.cjs');
+    if (oldTarget === undefined) delete process.env.DOCS_BRAND_REPOSITORY; else process.env.DOCS_BRAND_REPOSITORY=oldTarget;
+    GlobalConfig.set({...policy,localDir:dir});
+    try {
+      const merged = await mergeRenovateConfig({...policy,repository:'Living-Proof-Labs/fixture'});
+      assert.deepEqual(merged.enabledManagers,['custom.regex']);
+      assert.equal(merged.automerge,false);
+      assert.equal(merged.platformAutomerge,false);
+      assert.equal(merged.extends,undefined);
+      assert.equal(merged.postUpgradeTasks,undefined);
+    } finally {GlobalConfig.set({localDir:work,cacheDir:join(work,'cache')});}
+    // platform=local forcibly sets requireConfig=optional in 44.181.7. Verify
+    // production merging above, then exercise CLI extraction with empty repo config.
+    writeFileSync(join(dir,'renovate.json'),'{}');
+    const log = join(dir,'extraction.jsonl');
+    const localConfig = join(dir,'runner-fixture.cjs');
+    // Local platform has no repository list; production policy is otherwise intact.
+    writeFileSync(localConfig,"module.exports={...require('/repo/tools/docs-brand/runner.cjs'),repositories:[]};\n");
+    let output;
+    try { output = execFileSync('renovate',['--platform=local','--dry-run=extract'], {
+      cwd:dir,
+      env:{...process.env,RENOVATE_CONFIG_FILE:localConfig,DOCS_BRAND_REPOSITORY:'Living-Proof-Labs/fixture',LOG_LEVEL:'debug',LOG_FORMAT:'json'},
+      stdio:'pipe',maxBuffer:4*1024*1024,
+    }); } catch(error) {
+      writeFileSync('/reports/brand-runner-extract.jsonl',error.stdout ?? '');
+      throw error;
+    }
+    writeFileSync(log,output);
+    writeFileSync('/reports/brand-runner-extract.jsonl',output);
+    const entries = read(log).trim().split('\n').map(line=>JSON.parse(line));
+    const extracted = entries.find(entry=>entry.packageFiles);
+    assert.ok(extracted,'CLI reports actual extracted package files');
+    assert.deepEqual(Object.keys(extracted.packageFiles),['regex']);
+    const files = extracted.packageFiles.regex;
+    assert.equal(files.length,1);
+    assert.equal(files[0].packageFile,'docs-brand.lock.json');
+    assert.equal(files[0].deps[0].currentValue,'v1.0.0');
+    assert.equal(read(log).includes('untrusted/config'),false);
+  });
+  test('runner rejects foreign and injected repository targets before starting', () => {
+    for (const repository of ['other/repo','Living-Proof-Labs/repo;echo bad','Living-Proof-Labs/repo/extra','']) {
+      assert.throws(()=>execFileSync('node',['-e',"require('./tools/docs-brand/runner.cjs')"],{
+        env:{...process.env,DOCS_BRAND_REPOSITORY:repository},stdio:'pipe',
+      }));
+    }
+  });
 });
