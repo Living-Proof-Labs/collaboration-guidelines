@@ -17,6 +17,13 @@ automated tests protect a merge; a human approval is not a merge gate. Test
 before merge, keep the PR's description accurate, and honor any explicit scope
 or merge hold.
 
+Track that work on the organization
+[Living Proof Labs Delivery](https://github.com/orgs/Living-Proof-Labs/projects/2)
+board: give it an issue or draft item, link the pull request, and keep Status
+and Owner current. Aaron or Keel move a ready pull request to Ready To Merge;
+the engineering lead then merges it under the rule above. See the
+[delivery board guide](docs/delivery-board.md).
+
 For documentation changes, check relative links, Markdown structure, and adoption
 examples. Verify that pins resolve to content containing the guidance and that
 examples never imply links auto-load instructions. Record what was actually

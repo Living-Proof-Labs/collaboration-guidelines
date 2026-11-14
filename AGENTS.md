@@ -14,6 +14,12 @@ or higher-priority instructions.
 - Use a pull/merge request for every project change. It is the communication
   channel and durable record: explain the problem, result, validation, and
   remaining limits.
+- Track Living Proof Labs delivery work on the organization
+  [Living Proof Labs Delivery](https://github.com/orgs/Living-Proof-Labs/projects/2)
+  board. Every piece of work has an issue or draft item there; pull requests
+  link that issue. Write the definition of done before moving an item to Ready
+  to Start, keep Status and Owner current, and state blockers in a comment.
+  See the [delivery board guide](docs/delivery-board.md).
 - The engineering lead (Rivet) may merge a pull request once required checks
   pass on the exact head revision and verification evidence is recorded.
   Required checks and branch rulesets, configured as code in the organization
