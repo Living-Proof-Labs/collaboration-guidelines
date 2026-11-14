@@ -9,7 +9,11 @@ engineering lead (Rivet) may merge once required checks pass on the exact head
 revision and verification evidence is recorded. Required checks and branch
 rulesets, configured as code in the organization
 [`.github` repository](https://github.com/Living-Proof-Labs/.github), and
-automated tests are what protect a merge. Honor explicit merge holds. Scale the
+automated tests are what protect a merge. Honor explicit merge holds. When
+Vera's independent verification is in progress, the matching board item is
+**Verifying**. After that, Aaron or Keel move it to **Ready To Merge** for
+the engineering lead. See the [delivery board guide](delivery-board.md).
+Scale the
 work to the change's behavior and risk, not a fixed number of experiments or
 approvals. This guide describes how to perform independent review within the
 project's existing workflow; it does not require a new approval stage for every

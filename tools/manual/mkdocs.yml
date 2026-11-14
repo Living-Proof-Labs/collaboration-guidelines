@@ -32,6 +32,7 @@ nav:
       - Developer interface: docs/developer-interface.md
       - Generated documentation: docs/tool-usability.md
       - Independent review: docs/independent-review.md
+      - Delivery board: docs/delivery-board.md
       - Collaboration and providers: docs/collaboration.md
       - Shared host: docs/shared-host.md
       - Dependency updates: docs/dependency-updates.md

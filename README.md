@@ -10,6 +10,11 @@ A small, versioned baseline for ordinary project work. Start with
 [AGENTS.md](AGENTS.md); propose improvements using
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
+Track organization delivery work on the
+[Living Proof Labs Delivery](https://github.com/orgs/Living-Proof-Labs/projects/2)
+board. The [delivery board guide](docs/delivery-board.md) describes statuses,
+ownership, and the Ready To Merge handoff.
+
 ## Adopt in a repository
 
 1. Choose an explicit published version tag, such as `v1.0.0`. Do not adopt an
