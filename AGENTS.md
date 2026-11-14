@@ -14,9 +14,16 @@ or higher-priority instructions.
 - Use a pull/merge request for every project change. It is the communication
   channel and durable record: explain the problem, result, validation, and
   remaining limits.
-- Human review is by exception, not a routine blocking gate. Seek it when a real
-  ambiguity, material risk, or explicit requirement needs human judgment. Honor
-  repository requirements and any specific hold on merging or release.
+- The engineering lead (Rivet) may merge a pull request once required checks
+  pass on the exact head revision and verification evidence is recorded.
+  Required checks and branch rulesets, configured as code in the organization
+  [`.github` repository](https://github.com/Living-Proof-Labs/.github), and
+  automated tests are what protect a merge. A human approval is not a merge
+  gate. Seek human judgment when a real ambiguity, material risk, or explicit
+  requirement needs it. Honor any specific hold on merging or release.
+- Direction, priorities, commercial commitments, signing, purchasing, granting
+  access, and unreviewed external communications stay with the organization
+  owner. Those decisions are not a merge gate.
 - Test and verify before merge using checks appropriate to the change. Report
   failures, skipped checks, and uncertainty truthfully; never call unrun checks
   passing. Resolve relevant failures or document the unresolved blocker. Include
