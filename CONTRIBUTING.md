@@ -9,9 +9,13 @@ improvement. Explain the problem, affected consumers, intended behavior, and
 compatibility impact. Keep local exceptions in the consuming repository unless
 they demonstrate a common need.
 
-Every change goes through a PR. Human review is by exception; it is not an
-automatic gate for routine authorized work. Test before merge, keep the PR's
-description accurate, and honor any explicit scope or merge hold.
+Every change goes through a PR. The engineering lead (Rivet) may merge once
+required checks pass on the exact head revision and verification evidence is
+recorded. Required checks, branch rulesets in the organization
+[`.github` repository](https://github.com/Living-Proof-Labs/.github), and
+automated tests protect a merge; a human approval is not a merge gate. Test
+before merge, keep the PR's description accurate, and honor any explicit scope
+or merge hold.
 
 For documentation changes, check relative links, Markdown structure, and adoption
 examples. Verify that pins resolve to content containing the guidance and that
