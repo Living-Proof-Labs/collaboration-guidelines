@@ -22,6 +22,15 @@
       "separateMajorMinor": false
     },
     {
+      "description": "Opt in only after installing the trusted docs brand post-upgrade command and provenance CI check.",
+      "matchDepTypes": [
+        "docs-brand"
+      ],
+      "enabled": false,
+      "automerge": false,
+      "platformAutomerge": false
+    },
+    {
       "description": "Keep requires-python as a range. Pin would rewrite >=3.11 to an exact interpreter and drop older supported versions.",
       "matchManagers": ["pep621"],
       "matchDepTypes": ["requires-python"],
@@ -55,6 +64,19 @@
       "managerFilePatterns": ["/^Taskfile\\.yml$/"],
       "matchStrings": ["# renovate: guidelines\\r?\\n[ \\t]+GUIDELINES_VERSION: '(?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)'"],
       "depNameTemplate": "Living-Proof-Labs/collaboration-guidelines",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^docs-brand\\.lock\\.json$/"
+      ],
+      "matchStrings": [
+        "\"repository\"\\s*:\\s*\"Living-Proof-Labs/collaboration-guidelines\"\\s*,\\s*\"version\"\\s*:\\s*\"(?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ],
+      "depNameTemplate": "Living-Proof-Labs/collaboration-guidelines",
+      "depTypeTemplate": "docs-brand",
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver"
     }

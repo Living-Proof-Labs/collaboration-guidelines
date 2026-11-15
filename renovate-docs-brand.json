@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Opt-in docs brand lock regeneration; requires the trusted runner helper and consumer provenance check.",
+  "packageRules": [
+    {
+      "matchDepTypes": ["docs-brand"],
+      "enabled": true,
+      "automerge": false,
+      "platformAutomerge": false,
+      "postUpgradeTasks": {
+        "commands": ["node /opt/docs-brand/lock.mjs --update"],
+        "fileFilters": ["docs-brand.lock.json"],
+        "executionMode": "branch"
+      }
+    }
+  ]
+}
