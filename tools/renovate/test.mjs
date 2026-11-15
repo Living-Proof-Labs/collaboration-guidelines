@@ -40,6 +40,14 @@ async function update(content, file, config) {
   return content;
 }
 
+describe('Shared preset policy', () => {
+test('rebases only when a branch conflicts and does not automerge', () => {
+  assert.equal(preset.rebaseWhen, 'conflicted');
+  assert.equal(preset.automerge, false);
+  assert.equal(preset.platformAutomerge, false);
+});
+});
+
 describe('Renovate extraction contracts', () => {
 test('official regex manager extracts repeated full tags and preserves fragment', () => {
   const result = regexExtract(fixture, 'AGENTS.md', markdown);

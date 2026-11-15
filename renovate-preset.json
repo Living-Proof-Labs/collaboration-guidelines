@@ -3,6 +3,7 @@
   "description": "Shared dependency policy: internal releases on the next bot run; external updates weekly; review every update.",
   "automerge": false,
   "platformAutomerge": false,
+  "rebaseWhen": "conflicted",
   "dependencyDashboard": true,
   "timezone": "Etc/UTC",
   "schedule": ["before 6am on monday"],
