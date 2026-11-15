@@ -9,9 +9,25 @@ improvement. Explain the problem, affected consumers, intended behavior, and
 compatibility impact. Keep local exceptions in the consuming repository unless
 they demonstrate a common need.
 
-Every change goes through a PR. Human review is by exception; it is not an
-automatic gate for routine authorized work. Test before merge, keep the PR's
-description accurate, and honor any explicit scope or merge hold.
+Every change goes through a PR. The engineering lead (Rivet) may merge once
+required checks pass on the exact head revision and verification evidence is
+recorded. Required checks, branch rulesets in the organization
+[`.github` repository](https://github.com/Living-Proof-Labs/.github), and
+automated tests protect a merge; a human approval is not a merge gate. Test
+before merge, keep the PR's description accurate, and honor any explicit scope
+or merge hold.
+
+Track that work on the organization
+[Living Proof Labs Delivery](https://github.com/orgs/Living-Proof-Labs/projects/2)
+board: give it an issue or draft item, link the pull request, and keep Status
+and Owner current. Aaron or Keel move a ready pull request to Ready To Merge;
+the engineering lead then merges it under the rule above. After merge, the
+item moves to Verifying after Merge until Vera verifies it on the integrated
+main branch; only then is it Done. Docs-only or chore changes with nothing to
+verify may go straight to Done. To get the engineering lead's attention, move
+the item to Blocked and leave a one-line comment saying what is blocking it
+and what is needed. See the
+[delivery board guide](docs/delivery-board.md).
 
 For documentation changes, check relative links, Markdown structure, and adoption
 examples. Verify that pins resolve to content containing the guidance and that

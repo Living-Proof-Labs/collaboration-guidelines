@@ -16,6 +16,7 @@ import { init } from '/usr/local/renovate/dist/logger/index.js';
 import { applyPackageRules } from '/usr/local/renovate/dist/util/package-rules/index.js';
 import { calcLimit, counts, isLimitReached, setCount } from '/usr/local/renovate/dist/workers/global/limits.js';
 import '../docs-brand/test.mjs';
+import './docs-brand-review.test.mjs';
 import {previous as brandPrevious, get as brandGet} from '../docs-brand/test.mjs';
 import {upgrade as brandUpgrade, verify as brandVerify} from '../docs-brand/lock.mjs';
 import {writeFileSync} from 'node:fs';

@@ -4,11 +4,23 @@
 
 Review helps a change move forward with evidence and useful improvements. An
 independent reviewer (person or agent other than the implementer) checks the code
-and tries the delivered product. This does not add a routine human approval gate;
-honor repository requirements and explicit merge holds. Scale the work to the
-change's behavior and risk, not a fixed number of experiments or approvals. This
-guide describes how to perform independent review within the project's existing
-workflow; it does not require a new approval stage for every consuming repository.
+and tries the delivered product. This does not add a human approval gate. The
+engineering lead (Rivet) may merge once required checks pass on the exact head
+revision and verification evidence is recorded. Required checks and branch
+rulesets, configured as code in the organization
+[`.github` repository](https://github.com/Living-Proof-Labs/.github), and
+automated tests are what protect a merge. Honor explicit merge holds. When
+Vera's independent verification is in progress, the matching board item is
+**Verifying**. After that, Aaron or Keel move it to **Ready To Merge** for
+the engineering lead. After the merge, the item moves to **Verifying after
+Merge** while Vera verifies the change on the integrated `main` branch; only
+then is it **Done**. Docs-only or chore changes with nothing to verify may
+go straight to **Done**. See the [delivery board guide](delivery-board.md).
+Scale the
+work to the change's behavior and risk, not a fixed number of experiments or
+approvals. This guide describes how to perform independent review within the
+project's existing workflow; it does not require a new approval stage for every
+consuming repository.
 
 ## A small review loop
 
@@ -101,7 +113,8 @@ say a higher depth is needed.
 Checks after a merge are Light by default. Confirm the merge commit's
 tree matches the verified SHA's tree, or that the merge is a fast-forward
 to that SHA, and that CI or deployment succeeded. For a live page, take a
-quick look. Re-run suites only if something looks off.
+quick look. Re-run suites only if something looks off. While those checks
+are in progress, the board item is **Verifying after Merge**.
 
 Every report states passed, failed, blocked, and not run separately, and
 names the verified SHA. Merge only that exact SHA.
@@ -140,7 +153,10 @@ labelled `drift`; there is no central tracking issue.
   only that SHA. For a change to something users run, the verification
   agent's comment covers that merge-candidate SHA.
 - The review decision links the evidence and explains why the change can proceed
-  or what remains blocked. Existing merge/release rules still apply.
+  or what remains blocked. The engineering lead may merge that exact SHA when
+  required checks pass and this evidence is recorded. Existing merge and
+  release rules still apply, including verification-agent comments for changes
+  to user-run paths.
 
 Start by practicing this loop on the top-level product tool in a separate
 product PR. This guide defines the process; it does not claim that product has

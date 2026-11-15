@@ -10,6 +10,12 @@ A small, versioned baseline for ordinary project work. Start with
 [AGENTS.md](AGENTS.md); propose improvements using
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
+Track organization delivery work on the
+[Living Proof Labs Delivery](https://github.com/orgs/Living-Proof-Labs/projects/2)
+board. The [delivery board guide](docs/delivery-board.md) describes statuses,
+ownership, the Ready To Merge handoff, and that done means verified
+after integration.
+
 ## Adopt in a repository
 
 1. Choose an explicit published version tag, such as `v1.0.0`. Do not adopt an
@@ -94,12 +100,9 @@ See [Fork em all!](docs/collaboration.md) for origins, mirrors, intentional fork
 contribution paths, tag identity, and the dated provider verification status.
 GitHub is the canonical product origin; provider CI support is verified separately.
 Keep provider-specific configuration separate from the shared working agreement.
-The [GitHub settings guide](.github/SETTINGS.md) distinguishes explicit owner
-preferences, observed settings, and inspection gaps. It describes the
-repository policy, including Enforce HTTPS for an existing project Pages site,
-and how to apply that policy from the organization `.github` repository. The
-organization owner's procedure for its bot GitHub Apps is the
+Repository settings, including the policy, audit and apply tools, are owned by
+the organization `.github` repository; the [GitHub settings note](.github/SETTINGS.md)
+points there. The organization owner's procedure for its bot GitHub Apps is the
 [Bot GitHub Apps guide](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/docs/GITHUB-APPS.md)
 in the Living Proof Labs `.github` repository at commit
-`89573d88fc82ad79e2696e7cdd642444cdb99699`. The settings guide also
-describes equivalent provider concepts without claiming untested integrations.
+`89573d88fc82ad79e2696e7cdd642444cdb99699`.

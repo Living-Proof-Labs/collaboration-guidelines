@@ -13,11 +13,13 @@ from urllib.parse import urlsplit, urlunsplit
 
 import yaml
 
+import brand
+
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'artifacts/manual'
 REPO = 'https://github.com/Living-Proof-Labs/collaboration-guidelines'
-BASELINE = 'v6.0.0'
-BASELINE_SHA = '52a2f274576dab20e96ee1152b6c8d187cfbf377'
+BASELINE = 'v7.10.9'
+BASELINE_SHA = 'c5fa9d9794d0ebd289f51b247fe7872de0db9c27'
 
 
 def run(*args):
@@ -36,6 +38,8 @@ def build():
     if source.exists():
         shutil.rmtree(source)
     source.mkdir(parents=True)
+    (source / 'assets').mkdir()
+    (source / 'assets/brand.css').write_bytes(brand.stylesheet())
     paths = ['README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'LICENSE.md']
     paths += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'docs').glob('*.md'))]
     # Bot GitHub Apps is organization-specific and is not copied. The manual
@@ -52,9 +56,11 @@ def build():
         if p.startswith('.'):
             mapping[p] = 'providers/' + p[1:]
     record = {'source_commit': commit, 'source_dirty': dirty, 'guidelines_baseline': BASELINE,
-              'guidelines_baseline_commit': BASELINE_SHA, 'generator': 'zensical==0.0.73',
+              'guidelines_baseline_commit': BASELINE_SHA, 'docs_brand': brand.lock(), 'generator': 'zensical==0.0.73',
               'workflow_run': (REPO + '/actions/runs/' + os.environ['GITHUB_RUN_ID']
                                if os.environ.get('GITHUB_RUN_ID') else None), 'sources': {}}
+    record['sources']['docs-brand.lock.json'] = hashlib.sha256(
+        (ROOT / 'docs-brand.lock.json').read_bytes()).hexdigest()
     source_link = REPO + '/tree/' + commit
     for path, destination in mapping.items():
         text = (ROOT / path).read_text()
@@ -99,6 +105,8 @@ def build():
         f'Recipe baseline: [{BASELINE}]({REPO}/tree/{BASELINE}), resolved to `{BASELINE_SHA}`. '
         'This is a released guidance dependency, not the version of this development manual. '
         f'[Published guidelines releases]({REPO}/releases) are separate.\n\n'
+        f"Docs brand: [{record['docs_brand']['version']}]({REPO}/tree/{record['docs_brand']['version']}/brand/docs), "
+        'with the resolved commit and stylesheet SHA-256 recorded below.\n\n'
         '```json\n' + json.dumps(record, indent=2) + '\n```\n\n[Build record](build.json)\n')
     config = yaml.safe_load((ROOT / 'tools/manual/mkdocs.yml').read_text())
     config.update(docs_dir='source', site_dir='html', repo_url=source_link,

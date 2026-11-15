@@ -14,9 +14,27 @@ or higher-priority instructions.
 - Use a pull/merge request for every project change. It is the communication
   channel and durable record: explain the problem, result, validation, and
   remaining limits.
-- Human review is by exception, not a routine blocking gate. Seek it when a real
-  ambiguity, material risk, or explicit requirement needs human judgment. Honor
-  repository requirements and any specific hold on merging or release.
+- Track Living Proof Labs delivery work on the organization
+  [Living Proof Labs Delivery](https://github.com/orgs/Living-Proof-Labs/projects/2)
+  board. Every piece of work has an issue or draft item there; pull requests
+  link that issue. Write the definition of done before moving an item to Ready
+  to Start, and keep Status and Owner current. After a merge, move the item
+  to Verifying after Merge until Vera verifies it on the integrated main
+  branch; Done means that verification is complete. Docs-only or chore
+  changes with nothing to verify may go straight to Done. To get the
+  engineering lead's attention, move the item to Blocked and leave a
+  one-line comment on the issue or pull request saying what is blocking
+  it and what is needed. See the [delivery board guide](docs/delivery-board.md).
+- The engineering lead (Rivet) may merge a pull request once required checks
+  pass on the exact head revision and verification evidence is recorded.
+  Required checks and branch rulesets, configured as code in the organization
+  [`.github` repository](https://github.com/Living-Proof-Labs/.github), and
+  automated tests are what protect a merge. A human approval is not a merge
+  gate. Seek human judgment when a real ambiguity, material risk, or explicit
+  requirement needs it. Honor any specific hold on merging or release.
+- Direction, priorities, commercial commitments, signing, purchasing, granting
+  access, and unreviewed external communications stay with the organization
+  owner. Those decisions are not a merge gate.
 - Test and verify before merge using checks appropriate to the change. Report
   failures, skipped checks, and uncertainty truthfully; never call unrun checks
   passing. Resolve relevant failures or document the unresolved blocker. Include
