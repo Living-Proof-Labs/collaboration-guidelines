@@ -12,8 +12,11 @@ A configuration file alone does not install the bot or prove hosted acceptance.
   or pull request rate caps.
 - **External dependencies:** new updates are eligible before 06:00 UTC on Mondays,
   limited to two concurrent pull requests and one new pull request per hour.
-- **Every update:** review and applicable passing tests are required. Automerge
-  and platform automerge remain disabled.
+- **Non-major updates:** automerge under GitHub's configured merge rules, using
+  a merge queue where required. `automerge` and `platformAutomerge` are enabled
+  in the shared preset.
+- **Major updates:** wait for human review. A package rule matching
+  `matchUpdateTypes: ["major"]` turns automerge off for those pull requests.
 
 This controls when updates are eligible, not how often Mend scans a repository.
 It does not promise immediate or hourly polling. Existing branches may be
@@ -119,9 +122,13 @@ proposes no update. Other npm dependencies stay pinned. This rule sits ahead
 of the requires-python rule and the internal schedule rule. The later rule
 does not set `rangeStrategy`, and this rule does not set `schedule`.
 
-Test-gated automerge is the target (see [AGENTS.md](../AGENTS.md)): it is
-enabled per repository only with the repository owner's approval once its
-required checks are proven; automerge stays off in the shared preset.
+Automerge is on in the shared preset for non-major updates (see
+[AGENTS.md](../AGENTS.md)). GitHub enforces the repository's configured merge
+rules, including required checks and a merge queue where required. The preset
+does not create a queue or make informational checks required. Major updates
+still wait for review. Repositories inherit this when
+they adopt a release that contains the change. A merge to `main` alone does
+not update repositories that pin an older release.
 
 ## Inventory and boundaries
 

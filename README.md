@@ -68,9 +68,10 @@ explaining the impact. An upstream merge or release does not update consumers.
 Propose common improvements upstream through an issue or PR; retain local needs
 in the consuming repository.
 
-The [dependency update pilot](docs/dependency-updates.md) provides an inactive
+The [shared dependency policy](docs/dependency-updates.md) provides the
 Renovate preset and containerized extraction tests. Hosting and bot access remain
-separate owner decisions; automerge is disabled.
+separate owner decisions. Non-major updates automerge under GitHub's configured
+merge rules, using a merge queue where required; major updates wait for review.
 
 ## Developer interface
 

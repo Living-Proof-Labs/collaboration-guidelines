@@ -41,10 +41,21 @@ async function update(content, file, config) {
 }
 
 describe('Shared preset policy', () => {
-test('rebases only when a branch conflicts and does not automerge', () => {
+test('rebases only when a branch conflicts and automerges non-major updates through the platform', () => {
   assert.equal(preset.rebaseWhen, 'conflicted');
-  assert.equal(preset.automerge, false);
-  assert.equal(preset.platformAutomerge, false);
+  assert.equal(preset.automerge, true);
+  assert.equal(preset.platformAutomerge, true);
+  const major = preset.packageRules.find(rule => (rule.matchUpdateTypes ?? []).includes('major'));
+  assert.ok(major, 'expected a major-update package rule');
+  assert.deepEqual(major.matchUpdateTypes, ['major']);
+  assert.equal(major.automerge, false);
+  assert.equal(major.platformAutomerge, false);
+  assert.equal(major.schedule, undefined);
+  const brand = preset.packageRules.find(rule => (rule.matchDepTypes ?? []).includes('docs-brand'));
+  assert.equal(brand.automerge, false);
+  assert.equal(brand.platformAutomerge, false);
+  assert.equal(brand.enabled, false);
+  assert.equal(preset.packageRules.at(-1).description.startsWith('Living Proof Labs releases'), true);
 });
 test('no package rule re-enables behind-base or automatic rebasing', () => {
   assert.equal(Object.prototype.hasOwnProperty.call(preset, 'rebaseWhen'), true);
@@ -88,21 +99,36 @@ test('CRLF input updates without changing line endings', async () => {
   assert.equal(await update(input, 'AGENTS.md', markdown), input.replaceAll('v4.1.0', 'v4.2.2'));
 });
 
-test('native workflow and custom documentation receive the same group; no automerge', async () => {
+test('native workflow and custom documentation receive the same group and automerge non-major updates', async () => {
   const content = 'jobs:\n  release:\n    uses: Living-Proof-Labs/collaboration-guidelines/.github/workflows/semantic-release.yml@v4.1.0\n';
   const native = await actionsExtract(content, '.github/workflows/release.yml', {});
   const custom = regexExtract(fixture, 'AGENTS.md', markdown);
   for (const dep of [native.deps[0], custom.deps[0]]) {
-    const rule = await applyPackageRules({...preset, ...dep, packageName: dep.packageName ?? dep.depName}, 'test');
+    const rule = await applyPackageRules({...preset, ...dep, packageName: dep.packageName ?? dep.depName, updateType: 'patch'}, 'test');
     assert.equal(rule.groupName, 'collaboration guidelines');
-    assert.equal(rule.automerge, false);
-    assert.equal(rule.platformAutomerge, false);
+    assert.equal(rule.automerge, true);
+    assert.equal(rule.platformAutomerge, true);
     assert.equal(new RegExp(rule.allowedVersions.slice(1,-1)).test('v4.2.2'), true);
     assert.equal(new RegExp(rule.allowedVersions.slice(1,-1)).test('v4.2.2-rc.1'), false);
   }
 });
 
-test('native configuration manager keeps the shared preset current through reviewed tag updates', async () => {
+test('major updates do not automerge, including collaboration-guidelines', async () => {
+  const content = 'jobs:\n  release:\n    uses: Living-Proof-Labs/collaboration-guidelines/.github/workflows/semantic-release.yml@v4.1.0\n';
+  const native = await actionsExtract(content, '.github/workflows/release.yml', {});
+  const dep = { ...preset, ...native.deps[0], packageName: native.deps[0].packageName ?? native.deps[0].depName };
+  const major = await applyPackageRules({ ...dep, updateType: 'major' }, 'test');
+  assert.equal(major.groupName, 'collaboration guidelines');
+  assert.equal(major.automerge, false);
+  assert.equal(major.platformAutomerge, false);
+  for (const updateType of ['minor', 'pin', 'digest']) {
+    const allowed = await applyPackageRules({ ...dep, updateType }, 'test');
+    assert.equal(allowed.automerge, true, updateType);
+    assert.equal(allowed.platformAutomerge, true, updateType);
+  }
+});
+
+test('native configuration manager keeps the shared preset current through tag updates', async () => {
   assert.ok(preset.enabledManagers.includes('renovate-config'));
   const input = JSON.stringify({
     extends: ['config:recommended', 'github>Living-Proof-Labs/collaboration-guidelines:renovate-preset#v7.8.2'],
@@ -116,8 +142,13 @@ test('native configuration manager keeps the shared preset current through revie
   const rule = await applyPackageRules({...preset, ...dep, packageName: dep.depName, manager: 'renovate-config'}, 'test');
   assert.deepEqual(rule.schedule, ['at any time']);
   assert.equal(rule.groupName, 'collaboration guidelines');
-  assert.equal(rule.automerge, false);
+  assert.equal(rule.automerge, true);
+  assert.equal(rule.platformAutomerge, true);
   assert.equal(rule.prConcurrentLimit, 0);
+  const major = await applyPackageRules({...preset, ...dep, packageName: dep.depName, manager: 'renovate-config', updateType: 'major'}, 'test');
+  assert.equal(major.automerge, false);
+  assert.equal(major.platformAutomerge, false);
+  assert.deepEqual(major.schedule, ['at any time']);
   const output = await doAutoReplace({...rule, packageFile: 'renovate.json', depIndex: result.deps.indexOf(dep), newValue: 'v7.10.4', autoReplaceGlobalMatch: true}, input, false);
   assert.equal(output, input.replace('v7.8.2', 'v7.10.4'));
   const actualConfig = read('renovate.json');
@@ -289,10 +320,12 @@ test('published Living Proof Labs dependencies are unscheduled; third parties ke
 });
 
 test('requires-python stays a range and other pep621 dependencies stay pinned', async () => {
-  const pythonRule = preset.packageRules.at(-2);
+  const pythonRule = preset.packageRules.find(rule => rule.matchDepTypes?.includes('requires-python'));
+  assert.ok(pythonRule, 'requires-python needs a rangeStrategy exception');
   assert.equal(pythonRule.rangeStrategy, 'auto');
   assert.deepEqual(pythonRule.matchManagers, ['pep621']);
   assert.deepEqual(pythonRule.matchDepTypes, ['requires-python']);
+  assert.ok(preset.packageRules.indexOf(pythonRule) < preset.packageRules.length - 1);
   assert.equal(preset.packageRules.at(-1).schedule[0], 'at any time');
   assert.equal(preset.packageRules.at(-1).rangeStrategy, undefined);
   const resolved = (dep) => applyPackageRules({...preset, ...dep, packageName: dep.packageName ?? dep.depName}, 'test');
