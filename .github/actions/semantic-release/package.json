@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": "v26.13.1"
+    "node": ">=24.10.0"
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
