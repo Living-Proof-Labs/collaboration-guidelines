@@ -46,6 +46,13 @@ test('rebases only when a branch conflicts and does not automerge', () => {
   assert.equal(preset.automerge, false);
   assert.equal(preset.platformAutomerge, false);
 });
+test('no package rule re-enables behind-base or automatic rebasing', () => {
+  assert.equal(Object.prototype.hasOwnProperty.call(preset, 'rebaseWhen'), true);
+  assert.equal(preset.rebaseWhen, 'conflicted');
+  for (const rule of preset.packageRules) {
+    assert.equal(rule.rebaseWhen, undefined, rule.description);
+  }
+});
 });
 
 describe('Renovate extraction contracts', () => {
