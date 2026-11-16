@@ -14,7 +14,7 @@ tasks:
     desc: Test release policy, engine, and contracts
     cmds:
       - npm test --prefix .github/actions/semantic-release
-      - node --test tests/guidelines-pins.test.mjs tests/docs-brand-lock.test.mjs
+      - node --test tests/guidelines-pins.test.mjs tests/docs-brand-lock.test.mjs tests/action-sha-pins.test.mjs
   verify:
     desc: Run checks and tests
     cmds:
