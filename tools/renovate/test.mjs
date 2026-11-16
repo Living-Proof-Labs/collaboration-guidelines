@@ -186,10 +186,18 @@ test('file allowlist excludes history, nested Taskfiles and the fixtures themsel
 });
 
 test('third-party Actions retain SHA integrity pins', async () => {
-  const result = await actionsExtract(read('.github/workflows/generated-docs.yml'), '.github/workflows/generated-docs.yml', {});
-  const dep = result.deps.find(d => d.depName === 'dorny/test-reporter');
-  assert.equal(dep.currentDigest, '8861569aa5348397e7a26b6dda744c17c9265478');
-  assert.equal(dep.currentValue, 'v2.1.1');
+  // Validate the pin shape rather than a frozen digest, so Renovate digest updates keep passing.
+  const pinned = (dep) => /^[0-9a-f]{40}$/.test(dep.currentDigest ?? '') && /^v\d+(\.\d+){0,2}$/.test(dep.currentValue ?? '');
+  for (const file of ['.github/workflows/generated-docs.yml', '.github/workflows/host.yml', '.github/workflows/renovate.yml']) {
+    const result = await actionsExtract(read(file), file, {});
+    const thirdParty = result.deps.filter(d => d.datasource === 'github-tags' && !/^living-proof-labs\//i.test(d.depName));
+    assert.ok(thirdParty.some(d => d.depName === 'dorny/test-reporter'), file);
+    for (const dep of thirdParty) assert.ok(pinned(dep), `${file}: ${dep.depName}@${dep.currentDigest ?? dep.currentValue}`);
+  }
+  const unpinned = await actionsExtract('jobs:\n  t:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: dorny/test-reporter@v2.1.1\n      - uses: actions/checkout@1234abcd # v4\n', 'fixture.yml', {});
+  const actions = unpinned.deps.filter(d => d.datasource === 'github-tags');
+  assert.equal(actions.length, 2);
+  for (const dep of actions) assert.ok(!pinned(dep), dep.depName);
 });
 
 test('replacement reconciles stale display tag while preserving version-like path fragments', async () => {
