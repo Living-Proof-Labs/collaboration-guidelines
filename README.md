@@ -70,8 +70,8 @@ in the consuming repository.
 
 The [shared dependency policy](docs/dependency-updates.md) provides the
 Renovate preset and containerized extraction tests. Hosting and bot access remain
-separate owner decisions. Non-major updates automerge through the merge queue
-once required checks pass; major updates wait for review.
+separate owner decisions. Non-major updates automerge under GitHub's configured
+merge rules, using a merge queue where required; major updates wait for review.
 
 ## Developer interface
 

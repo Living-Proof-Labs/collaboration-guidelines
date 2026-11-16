@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Shared dependency policy: internal releases on the next bot run; external updates weekly; non-major updates automerge through the merge queue; major updates wait for review.",
+  "description": "Shared dependency policy: internal releases on the next bot run; external updates weekly; non-major updates automerge under GitHub's configured merge rules, using a merge queue where required; major updates wait for review.",
   "automerge": true,
   "platformAutomerge": true,
   "rebaseWhen": "conflicted",

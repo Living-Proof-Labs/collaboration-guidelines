@@ -12,8 +12,8 @@ A configuration file alone does not install the bot or prove hosted acceptance.
   or pull request rate caps.
 - **External dependencies:** new updates are eligible before 06:00 UTC on Mondays,
   limited to two concurrent pull requests and one new pull request per hour.
-- **Non-major updates:** automerge through GitHub's merge queue once required
-  checks pass on that head. `automerge` and `platformAutomerge` are enabled
+- **Non-major updates:** automerge under GitHub's configured merge rules, using
+  a merge queue where required. `automerge` and `platformAutomerge` are enabled
   in the shared preset.
 - **Major updates:** wait for human review. A package rule matching
   `matchUpdateTypes: ["major"]` turns automerge off for those pull requests.
@@ -123,9 +123,10 @@ of the requires-python rule and the internal schedule rule. The later rule
 does not set `rangeStrategy`, and this rule does not set `schedule`.
 
 Automerge is on in the shared preset for non-major updates (see
-[AGENTS.md](../AGENTS.md)). Required checks on the branch ruleset are the
-gate: a green run on that head is what allows GitHub to merge through the
-queue. Major updates still wait for review. Repositories inherit this when
+[AGENTS.md](../AGENTS.md)). GitHub enforces the repository's configured merge
+rules, including required checks and a merge queue where required. The preset
+does not create a queue or make informational checks required. Major updates
+still wait for review. Repositories inherit this when
 they adopt a release that contains the change. A merge to `main` alone does
 not update repositories that pin an older release.
 
