@@ -109,6 +109,16 @@ range, and lookup then proposes no update. Other pep621 dependencies stay
 pinned. This rule sits ahead of the internal schedule rule. That later rule
 does not set `rangeStrategy`, and this rule does not set `schedule`.
 
+## Node engine constraint
+
+`rangeStrategy` is `pin` for the repository. An npm `engines` constraint,
+including `engines.node`, uses `auto` instead. Pin would rewrite `>=24.10.0`
+to an exact Node release such as `v26.13.1` and drop the Node 24 runtime the
+semantic-release action installs. `auto` leaves the range, and lookup then
+proposes no update. Other npm dependencies stay pinned. This rule sits ahead
+of the requires-python rule and the internal schedule rule. The later rule
+does not set `rangeStrategy`, and this rule does not set `schedule`.
+
 Test-gated automerge is the target (see [AGENTS.md](../AGENTS.md)): it is
 enabled per repository only with the repository owner's approval once its
 required checks are proven; automerge stays off in the shared preset.

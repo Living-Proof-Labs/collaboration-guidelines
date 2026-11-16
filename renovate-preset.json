@@ -32,6 +32,12 @@
       "platformAutomerge": false
     },
     {
+      "description": "Keep npm engines as a range. Pin would rewrite >=24.10.0 to an exact Node release and drop the Node 24 runtime this action installs.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["engines"],
+      "rangeStrategy": "auto"
+    },
+    {
       "description": "Keep requires-python as a range. Pin would rewrite >=3.11 to an exact interpreter and drop older supported versions.",
       "matchManagers": ["pep621"],
       "matchDepTypes": ["requires-python"],

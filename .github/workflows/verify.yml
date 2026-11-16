@@ -12,11 +12,11 @@ jobs:
     # https://github.com/Living-Proof-Labs/collaboration-guidelines/issues/47
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: '24'
-      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2
+          node-version: '24.22.3'
+      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
         with:
           version: '3.54.0'
       - run: task setup

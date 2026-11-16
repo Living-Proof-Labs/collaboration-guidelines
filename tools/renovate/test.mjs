@@ -327,6 +327,49 @@ test('requires-python stays a range and other pep621 dependencies stay pinned', 
   assert.deepEqual(internalPackage.schedule, ['at any time']);
 });
 
+test('npm engines stay a range and other npm dependencies stay pinned', async () => {
+  const enginesRule = preset.packageRules.find(rule => rule.matchDepTypes?.includes('engines'));
+  assert.ok(enginesRule, 'npm engines need a rangeStrategy exception');
+  assert.equal(enginesRule.rangeStrategy, 'auto');
+  assert.deepEqual(enginesRule.matchManagers, ['npm']);
+  assert.deepEqual(enginesRule.matchDepTypes, ['engines']);
+  assert.ok(preset.packageRules.indexOf(enginesRule) < preset.packageRules.length - 1);
+  assert.equal(preset.packageRules.at(-1).rangeStrategy, undefined);
+  const resolved = (dep) => applyPackageRules({...preset, ...dep, packageName: dep.packageName ?? dep.depName}, 'test');
+  const path = '.github/actions/semantic-release';
+  mkdirSync(join(work, path), {recursive: true});
+  for (const file of ['package.json', 'package-lock.json']) cpSync(`${path}/${file}`, join(work, path, file));
+  const result = await npmExtract(read(`${path}/package.json`), `${path}/package.json`, {});
+  const engine = result.deps.find(dep => dep.depName === 'node');
+  assert.equal(engine.depType, 'engines');
+  assert.equal(engine.datasource, 'node-version');
+  const node = await resolved({manager: 'npm', depType: engine.depType, depName: engine.depName, currentValue: '>=24.10.0'});
+  assert.equal(node.rangeStrategy, 'auto');
+  assert.notEqual(node.rangeStrategy, 'pin');
+  assert.deepEqual(node.schedule, ['before 6am on monday']);
+  for (const dep of result.deps.filter(dep => dep.depType !== 'engines')) {
+    const rule = await resolved({manager: 'npm', depType: dep.depType, depName: dep.depName, currentValue: dep.currentValue});
+    assert.equal(rule.rangeStrategy, 'pin', `${dep.depType}:${dep.depName}`);
+  }
+  const internalRuntime = await resolved({
+    manager: 'npm',
+    depType: 'engines',
+    depName: 'node',
+    currentValue: '>=24.10.0',
+    sourceUrl: 'https://github.com/Living-Proof-Labs/livingproof-common',
+  });
+  assert.equal(internalRuntime.rangeStrategy, 'auto');
+  assert.deepEqual(internalRuntime.schedule, ['at any time']);
+  const internalPackage = await resolved({
+    manager: 'npm',
+    depType: 'dependencies',
+    depName: 'livingproof-common',
+    sourceUrl: 'https://github.com/Living-Proof-Labs/livingproof-common',
+  });
+  assert.equal(internalPackage.rangeStrategy, 'pin');
+  assert.deepEqual(internalPackage.schedule, ['at any time']);
+});
+
 test('replacement preserves blob-like segments in paths and fragments', async () => {
   for (const suffix of ['/docs/blob/v1.2.3/guide.md', '/AGENTS.md#example/blob/v1.2.3']) {
     const input = `<!-- renovate: guidelines -->\n[Guide v4.1.0](https://github.com/Living-Proof-Labs/collaboration-guidelines/blob/v4.1.0${suffix})\n`;
