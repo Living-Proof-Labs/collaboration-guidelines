@@ -51,12 +51,62 @@ with these boundaries when adapting the repository's existing pipeline:
   checking out or executing project code. Use the `github-pages` environment,
   scoped to `main`, and expose the deployment's `page_url` as its environment URL.
 - Pin reviewed Action revisions, following the existing repository convention.
-  Serialize deployments so an older run cannot overwrite a newer manual. Keep
-  ordinary review downloads at the 14-day default; the Pages transfer artifact
-  is deployment transport, not the durable manual or a user download promise.
+  Keep ordinary review downloads at the 14-day default; the Pages transfer
+  artifact is deployment transport, not the durable manual or a user download
+  promise.
+- Serialize deployments so an older run cannot overwrite a newer manual. Inside
+  the deployment lock, before `actions/deploy-pages`, read
+  `repos/<owner>/<repo>/git/ref/heads/main` and publish only when that object
+  SHA is still the candidate. Send the workflow token with the read.
+  `contents: read` is enough; do not grant `contents: write` for this check.
+  An anonymous call shares the runner rate limit, returns HTTP 403, and leaves
+  the site on the previous release. Pass the token through the step
+  environment, then use either form below. Keep a test that fails when a
+  workflow calls that URL without one of those forms.
 - Verify the actual public URL and live navigation/search after deployment, then
   add the prominent README link. Record the deployed source revision and run;
   settings or a successful upload alone do not establish a working site.
+
+`gh api` reads `GH_TOKEN` from the environment:
+
+```yaml
+permissions:
+  contents: read
+jobs:
+  deploy:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Require current main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ref="repos/${GITHUB_REPOSITORY}/git/ref/heads/main"
+          current=$(gh api "$ref" --jq .object.sha)
+          test "$current" = "$GITHUB_SHA"
+```
+
+`urllib` must send `Authorization: Bearer` and open that request:
+
+```python
+import json
+import os
+import urllib.request
+
+token = os.environ["GITHUB_TOKEN"]
+repo = os.environ["GITHUB_REPOSITORY"]
+url = f"https://api.github.com/repos/{repo}/git/ref/heads/main"
+request = urllib.request.Request(
+    url,
+    headers={"Authorization": f"Bearer {token}"},
+)
+with urllib.request.urlopen(request, timeout=30) as response:
+    current = json.load(response)["object"]["sha"]
+```
+
+Pass `GITHUB_TOKEN` the same way (`GITHUB_TOKEN: ${{ github.token }}`).
 
 The existing artifact workflow above remains unchanged. A consumer must implement
 and verify its Pages deployment; this guide neither enables Pages nor installs a
