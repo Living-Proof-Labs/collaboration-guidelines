@@ -50,6 +50,26 @@ test('the shared preset keeps docs-brand updates disabled and the brand lock sta
   assert.match(lock.sha256, /^[0-9a-f]{64}$/);
 });
 
+test('the working-tree preset automerges non-major updates and holds majors and docs-brand for review', () => {
+  assert.equal(preset.automerge, true);
+  assert.equal(preset.platformAutomerge, true);
+  const major = preset.packageRules.filter(rule => (rule.matchUpdateTypes ?? []).includes('major'));
+  assert.equal(major.length, 1);
+  assert.deepEqual(major[0].matchUpdateTypes, ['major']);
+  assert.equal(major[0].automerge, false);
+  assert.equal(major[0].platformAutomerge, false);
+  assert.equal(Object.prototype.hasOwnProperty.call(major[0], 'schedule'), false);
+  const brand = preset.packageRules.filter(rule => (rule.matchDepTypes ?? []).includes('docs-brand'));
+  assert.equal(brand.length, 1);
+  assert.equal(brand[0].enabled, false);
+  assert.equal(brand[0].automerge, false);
+  assert.equal(brand[0].platformAutomerge, false);
+  const internal = preset.packageRules.at(-1);
+  assert.match(internal.description, /Living Proof Labs releases/);
+  assert.deepEqual(internal.schedule, ['at any time']);
+  assert.equal(Object.prototype.hasOwnProperty.call(internal, 'automerge'), false);
+});
+
 test('the pinned release is published and its preset rebases only on conflict', { skip: skipNetwork }, async () => {
   const tag = `v${pinnedVersion().join('.')}`;
   const headers = { Accept: 'application/vnd.github+json' };
@@ -64,6 +84,9 @@ test('the pinned release is published and its preset rebases only on conflict', 
   assert.equal(raw.status, 200);
   const pinned = await raw.json();
   assert.equal(pinned.rebaseWhen, 'conflicted');
+  // This is the already-published pin, not the working tree. v9.5.0 first
+  // shipped rebaseWhen: "conflicted" with automerge off; keep that floor
+  // until a later pin bump adopts the automerge policy.
   assert.equal(pinned.automerge, false);
   assert.equal(pinned.platformAutomerge, false);
 });
