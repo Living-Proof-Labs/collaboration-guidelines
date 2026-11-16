@@ -87,7 +87,11 @@ to public issues.
 
 The main-only manual workflow uses a separate Pages deployment job after verified
 generation. Build and PR jobs remain read-only; deployment has no checkout or
-project execution. Publication requires repository Pages configured for GitHub
+project execution. Inside the deployment lock the job reads current main with
+`gh api` and `GH_TOKEN` (`contents: read` is enough) and publishes only when
+that SHA is still the candidate. An anonymous read can hit the shared rate
+limit and leave the site on the previous release. Publication requires
+repository Pages configured for GitHub
 Actions and the `github-pages` environment restricted to main. No project CNAME,
 DNS, mail, or organization change is needed. The repository is configured for
 this publication path.
