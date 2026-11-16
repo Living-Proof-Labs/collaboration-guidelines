@@ -320,10 +320,12 @@ test('published Living Proof Labs dependencies are unscheduled; third parties ke
 });
 
 test('requires-python stays a range and other pep621 dependencies stay pinned', async () => {
-  const pythonRule = preset.packageRules.at(-2);
+  const pythonRule = preset.packageRules.find(rule => rule.matchDepTypes?.includes('requires-python'));
+  assert.ok(pythonRule, 'requires-python needs a rangeStrategy exception');
   assert.equal(pythonRule.rangeStrategy, 'auto');
   assert.deepEqual(pythonRule.matchManagers, ['pep621']);
   assert.deepEqual(pythonRule.matchDepTypes, ['requires-python']);
+  assert.ok(preset.packageRules.indexOf(pythonRule) < preset.packageRules.length - 1);
   assert.equal(preset.packageRules.at(-1).schedule[0], 'at any time');
   assert.equal(preset.packageRules.at(-1).rangeStrategy, undefined);
   const resolved = (dep) => applyPackageRules({...preset, ...dep, packageName: dep.packageName ?? dep.depName}, 'test');
