@@ -70,7 +70,7 @@ test('the working-tree preset automerges non-major updates and holds majors and 
   assert.equal(Object.prototype.hasOwnProperty.call(internal, 'automerge'), false);
 });
 
-test('the pinned release is published and its preset rebases only on conflict', { skip: skipNetwork }, async () => {
+test('the pinned release is published and its preset matches the adopted automerge policy', { skip: skipNetwork }, async () => {
   const tag = `v${pinnedVersion().join('.')}`;
   const headers = { Accept: 'application/vnd.github+json' };
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -84,9 +84,20 @@ test('the pinned release is published and its preset rebases only on conflict', 
   assert.equal(raw.status, 200);
   const pinned = await raw.json();
   assert.equal(pinned.rebaseWhen, 'conflicted');
-  // This is the already-published pin, not the working tree. v9.5.0 first
-  // shipped rebaseWhen: "conflicted" with automerge off; keep that floor
-  // until a later pin bump adopts the automerge policy.
-  assert.equal(pinned.automerge, false);
-  assert.equal(pinned.platformAutomerge, false);
+  // v9.6.0 first enables non-major automerge. Earlier supported pins
+  // retain their published policy until the consumer deliberately adopts it.
+  const automerge = atLeast(pinnedVersion(), [9, 6, 0]);
+  assert.equal(pinned.automerge, automerge);
+  assert.equal(pinned.platformAutomerge, automerge);
+  if (automerge) {
+    const major = pinned.packageRules.filter(rule => (rule.matchUpdateTypes ?? []).includes('major'));
+    assert.equal(major.length, 1);
+    assert.equal(major[0].automerge, false);
+    assert.equal(major[0].platformAutomerge, false);
+    const brand = pinned.packageRules.filter(rule => (rule.matchDepTypes ?? []).includes('docs-brand'));
+    assert.equal(brand.length, 1);
+    assert.equal(brand[0].enabled, false);
+    assert.equal(brand[0].automerge, false);
+    assert.equal(brand[0].platformAutomerge, false);
+  }
 });
