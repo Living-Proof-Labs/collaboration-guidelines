@@ -60,4 +60,6 @@ if [ -d "$SPECS_DIR" ]; then
   if command -v playwright >/dev/null 2>&1; then
     playwright install chromium
   fi
+else
+  printf 'Warning: robot-capability-specs checkout not found at %s; documentation dependency setup and Playwright Chromium installation were skipped. The docs environment may be incomplete. Set GEMINI_SPECS_DIR to an existing checkout and rerun this script.\n' "$SPECS_DIR" >&2
 fi

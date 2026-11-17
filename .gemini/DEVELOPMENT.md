@@ -84,6 +84,12 @@ trust unchanged. It performs four user-space steps:
    `task -t Taskfile.runtime.yml setup` plus `playwright install chromium` in
    `robot-capability-specs` when those checkouts are present.
 
+If the specs checkout is absent, setup warns that documentation dependencies
+and Chromium installation were skipped. The docs environment may be incomplete
+even when setup exits successfully: `collaboration-guidelines` setup installs
+Node tooling, not the Python documentation dependencies. Set `GEMINI_SPECS_DIR`
+to an existing `robot-capability-specs` checkout and rerun the bootstrap.
+
 ## GitHub plugin and delivery board access
 
 When the GitHub plugin is connected, the local proxy authenticates `git` and
