@@ -106,6 +106,8 @@ Reuse this recipe and image definition across projects. Each provider still has
 its own saved environment record and lifecycle; this is not a cross-provider
 saved-environment service. Follow [Codex setup](../.codex/DEVELOPMENT.md) or
 [Cursor setup](../.cursor/DEVELOPMENT.md), preserving existing configuration.
+For the non-Docker user-space environment in Google Gemini Antigravity, see
+[Gemini Antigravity setup](../.gemini/DEVELOPMENT.md).
 No script creates a saved environment, changes access, or embeds credentials.
 
 Use published tag `v4.2.1` for this recipe on Ubuntu 24.04 or Debian 13. It resolves

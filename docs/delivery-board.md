@@ -131,9 +131,9 @@ Post-merge checks are Light by default; see
 ## Owner and Priority
 
 The Owner field is one accountable owner per item. The live options are Aaron,
-Rivet, Cody, Vera, Art, and Keel. Assignee can still record helpers; it does
-not replace Owner. For a Renovate update, Vera's queue and a return to Rivet
-are set by Owner alone. See [Renovate updates](#renovate-updates).
+Rivet, Cody, Vera, Art, Keel, and Gemini. Assignee can still record helpers; it
+does not replace Owner. For a Renovate update, Vera's queue and a return to
+Rivet are set by Owner alone. See [Renovate updates](#renovate-updates).
 
 Priority is **P0**, **P1**, or **P2**. Aaron or Keel set it, except when the
 hourly check first adds a Renovate pull request. See
