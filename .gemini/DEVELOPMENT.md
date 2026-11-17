@@ -30,6 +30,27 @@ and plugin traffic through a local credential-injecting proxy.
   `task -t Taskfile.runtime.yml verify` in repositories that use the two-file
   Task layout, or `task setup` and `task verify` in single-Taskfile
   repositories.
+- **Observed simulation and rendering limits:**
+  - **No Docker daemon:** Containerized `task verify` wrappers, release-image
+    builds, and `livingproof-verification` devcontainer runs cannot execute
+    here.
+  - **No `libosmesa6`:** `libEGL.so.1` is installed on the virtual machine (so
+    `MUJOCO_GL=egl` tests pass), but `libosmesa6` is absent and cannot be
+    installed without root. Any command that imports `mujoco` with
+    `MUJOCO_GL=osmesa` (such as `livingproof-sim-mujoco`
+    `tests/test_world_parity.py` or `livingproof-verification`
+    `livingproof capability verify run`) fails with
+    `AttributeError: 'NoneType' object has no attribute 'glGetError'` and must
+    be reported as blocked rather than worked around.
+  - **Direct `uv` release-wheel `HEAD` limit:** When a lockfile references a
+    direct GitHub Release `.whl` URL, `uv sync --locked` issues an HTTP `HEAD`
+    request that GitHub redirects (`302`) to a pre-signed `GET`-only storage
+    URL, returning `401 Unauthorized`. Report that failure clearly if
+    encountered rather than fabricating cache entries.
+  - **Verification scope:** Direct unit, contract, lint, and Playwright
+    documentation checks run in this environment establish user-space test
+    behavior only; they do not substitute for container or end-to-end
+    verification.
 
 ## Bootstrap the user-space environment
 
@@ -40,32 +61,28 @@ Run the [bootstrap script](../environments/gemini/setup.sh) from the
 bash /home/antigravity/Living-Proof-Labs/collaboration-guidelines/environments/gemini/setup.sh
 ```
 
-You can also save a copy at `/home/antigravity/env-setup.sh` for project-scoped
-re-execution. The script is idempotent and performs seven user-space steps:
+The script is idempotent and leaves `~/.bashrc` and browser NSS certificate
+trust unchanged. It performs four user-space steps:
 
-1. Removes the non-interactive early-return guard from `~/.bashrc` and appends
-   `~/.local/opt/docs/bin` and `~/.local/bin` to `PATH` along with
-   `PLAYWRIGHT_BROWSERS_PATH="$HOME/.local/opt/browsers"`.
+1. Writes a scoped environment file at
+   `~/.local/share/living-proof/gemini-env.sh` setting `PATH`
+   (`~/.local/opt/docs/bin` and `~/.local/bin`) and
+   `PLAYWRIGHT_BROWSERS_PATH` (`~/.local/opt/browsers`) so tasks can source it
+   explicitly:
+
+   ```sh
+   . "$HOME/.local/share/living-proof/gemini-env.sh"
+   ```
+
 2. Installs Task `3.54.0` into `~/.local/bin` after verifying the installer
    against its SHA-256 checksum.
 3. Installs Python `3.10` and `3.12` through `uv python install 3.10 3.12` so
    repositories that set `UV_PYTHON_DOWNLOADS=never` or
    `--no-python-downloads` find the required interpreters locally.
-4. Pre-warms the `uv` wheel cache for direct GitHub Release wheel URLs
-   (`livingproof-common` and `livingproof-capability-report`). Without this
-   cache entry, `uv sync --locked` sends an HTTP `HEAD` request that GitHub
-   redirects (`302`) to a pre-signed `GET`-only storage URL, resulting in
-   `401 Unauthorized`.
-5. Creates the `~/.local/opt/docs` Python virtual environment for manual
-   generation and browser tests.
-6. Runs `task setup` in `collaboration-guidelines` and
+4. Creates the `~/.local/opt/docs` Python virtual environment and runs
+   `task setup` in `collaboration-guidelines` and
    `task -t Taskfile.runtime.yml setup` plus `playwright install chromium` in
    `robot-capability-specs` when those checkouts are present.
-7. Registers the preconfigured local proxy certificate authorities from
-   `/etc/ssl/certs/ca-certificates.crt` and
-   `/usr/local/share/ca-certificates/*.crt` into `sql:$HOME/.pki/nssdb` so
-   headless Chromium trusts HTTPS requests during Playwright documentation
-   tests.
 
 ## GitHub plugin and delivery board access
 
@@ -86,12 +103,29 @@ When the GitHub plugin is connected, the local proxy authenticates `git` and
   - GraphQL mutations on Organization Projects V2 (`addProjectV2ItemById`,
     `updateProjectV2ItemFieldValue`, `gh project item-add`, and
     `gh project item-edit`) fail with
-    `Resource not accessible by integration` unless the Google Antigravity
-    GitHub App holds organization project write permissions. When that
-    permission is unavailable, report the exact GraphQL error on the issue or
-    pull request so a human or authorized board agent can update the board
-    fields.
-  - Because Gemini shares the connected GitHub account rather than posting
-    from a dedicated GitHub App, sign every issue description, pull request
-    body, and comment with `— Gemini` as required by
-    [AGENTS.md](../AGENTS.md).
+    `Resource not accessible by integration` because the integration token has
+    read-only access to Organization Projects V2.
+
+## Fresh-session-per-issue workflow
+
+Because each Antigravity conversation starts in a fresh session without a
+background timer, follow this sequence on every task:
+
+1. **Read the issue and current PR/branch first:** Inspect the target issue,
+   any linked pull request, and the repository's pinned `AGENTS.md` before
+   editing files.
+2. **Verify `Owner` on Project #2:** Query `Project #2` via `gh api graphql`
+   and confirm the item is assigned to `Owner: Gemini` before starting work.
+   Preserve any existing owner; do not reassign another agent's item.
+3. **Coordinate collisions and blockers through Rivet:** If an item is
+   blocked (for example by missing `libosmesa6`, Docker, or a board-write
+   permission limit), leave a concise one-line blocker comment on the issue or
+   pull request for Rivet.
+4. **Sign every GitHub post:** Because Gemini shares the connected GitHub
+   account rather than posting from a dedicated GitHub App, sign every issue
+   description, pull request body, review reply, and comment with `— Gemini` as
+   required by [AGENTS.md](../AGENTS.md).
+5. **Report board-write limits honestly:** Never claim Project #2 status or
+   owner fields were updated when `addProjectV2ItemById` or
+   `updateProjectV2ItemFieldValue` fails; record the exact GraphQL error so
+   Rivet or an authorized owner can update the board.
