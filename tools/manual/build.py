@@ -45,7 +45,7 @@ def build():
     # Bot GitHub Apps is organization-specific and is not copied. The manual
     # nav points at the pinned guide:
     # https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/docs/GITHUB-APPS.md
-    paths += [f'{provider}/{name}' for provider in ('.github', '.gitlab', '.codex', '.cursor')
+    paths += [f'{provider}/{name}' for provider in ('.github', '.gitlab', '.codex', '.cursor', '.gemini')
               for name in ('DEVELOPMENT.md', 'SETTINGS.md',
                            'GENERATED-DOCS.md')
               if (ROOT / provider / name).is_file()]

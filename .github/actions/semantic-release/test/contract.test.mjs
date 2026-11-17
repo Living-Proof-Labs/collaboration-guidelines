@@ -34,6 +34,7 @@ test('relative documentation links and adoption pin examples resolve structurall
     'docs/tool-usability.md', 'templates/generated-docs/README.md', '.github/GENERATED-DOCS.md',
     'docs/documentation-recipe.md', 'docs/documentation-ownership.md', 'docs/manual.md',
     'docs/shared-host.md', '.codex/DEVELOPMENT.md', '.cursor/DEVELOPMENT.md',
+    '.gemini/DEVELOPMENT.md',
     'docs/releases.md', 'docs/licensing.md', 'docs/developer-interface.md',
     'docs/delivery-board.md',
     '.github/SETTINGS.md', '.github/DEVELOPMENT.md',

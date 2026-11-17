@@ -55,3 +55,4 @@ nav:
       - GitLab development: providers/gitlab/DEVELOPMENT.md
       - Codex development: providers/codex/DEVELOPMENT.md
       - Cursor development: providers/cursor/DEVELOPMENT.md
+      - Gemini development: providers/gemini/DEVELOPMENT.md
