@@ -234,6 +234,39 @@ inventory of specified behavior and its execution, distinct from line coverage.
 State the inventory's scope and gaps; if reporting a percentage, name the
 denominator. Passing every listed scenario does not prove all behavior is covered.
 
+### Reusable, simple worlds
+
+Prefer reusing an existing, small, granular versioned world across multiple
+capability scenarios when its geometry and conditions satisfy their
+requirements. Create a different world only when a scenario genuinely requires
+different geometry or conditions, and document why.
+
+Express scenario-specific traversal, start, and destination choices separately
+from shared geometry by referencing neutral, declared world places rather than
+duplicating coordinates or building a universal scene language. For example,
+left-corner and right-corner scenarios can traverse the same corner world in
+opposite directions, with their verification manifests selecting the same
+immutable world identity, version, and digest once supported.
+
+Reusing one simple world also reduces physical fixture construction: a single
+physical fixture built to match the simulated world can serve multiple
+scenarios. However, simulation does not certify physical behavior, and
+directional or sensor asymmetries on a robot can produce different outcomes
+between forward and reverse traversals.
+
+Preserve released world content and historical run provenance: never edit
+existing released world directories in place. Note that the current
+[world contract](https://github.com/Living-Proof-Labs/robot-capability-specs/blob/main/specs/worlds/README.md)
+and
+[world authoring instructions](https://github.com/Living-Proof-Labs/livingproof-worlds/blob/main/README.md#add-a-world)
+fix entrance, exit, and forward route roles, so reverse traversal is proposed
+guidance rather than delivered behavior. Implementation is tracked separately in
+[worlds #24](https://github.com/Living-Proof-Labs/livingproof-worlds/issues/24),
+[left scenario #62](https://github.com/Living-Proof-Labs/robot-capability-specs/issues/62),
+[right scenario #63](https://github.com/Living-Proof-Labs/robot-capability-specs/issues/63),
+and
+[manifest proof #103](https://github.com/Living-Proof-Labs/livingproof-verification/issues/103).
+
 ## Definition of done
 
 For the development and release paths above, record evidence for each applicable
