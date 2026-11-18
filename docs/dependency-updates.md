@@ -256,3 +256,14 @@ The fixture transition uses real published tags: `v4.1.0` resolves to
 record were read through GitHub on 2026-10-26. This is dated provenance, not a
 claim that the bot detects future tag mutation. The offline tests prove the
 transition mechanically; they do not contact GitHub to rediscover these tags.
+
+## Docs brand lock updates
+
+The docs brand lock is intentionally excluded from Mend-hosted updates. Its
+version, resolved commit and CSS checksum must change together. The dormant
+[dedicated runner](../tools/docs-brand/README.md) is a second, narrowly scoped
+writer with a `renovate-docs-brand/` branch prefix and `prConcurrentLimit: 1`.
+It handles only the brand lock; Mend retains the other dependency updates.
+Do not enable a consumer caller or schedule until the reusable provenance check
+and rendered-manual checks are adopted and proven. A failed regeneration can
+still produce a version-only proposal, which the provenance check must reject.

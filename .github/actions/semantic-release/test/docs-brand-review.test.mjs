@@ -70,7 +70,8 @@ test('guard script fails closed for every untrusted event and accepts only the t
 });
 
 test('workflow GITHUB_TOKEN is read-only and no job widens it', () => {
-  assert.deepEqual(workflow.permissions, {contents: 'read'});
+  assert.deepEqual(workflow.permissions, {});
+  assert.deepEqual(workflow.jobs.update.permissions, {contents: 'read'});
   for (const job of Object.values(workflow.jobs)) assert.ok(job.permissions === undefined || !JSON.stringify(job.permissions).includes('write'));
   assert.doesNotMatch(read(workflowFile), /write-all|read-all/);
 });
@@ -91,11 +92,12 @@ test('installation token is scoped to the caller repository with the reviewed pe
   assert.deepEqual(permissions, {'permission-contents': 'write', 'permission-pull-requests': 'write', 'permission-checks': 'read', 'permission-statuses': 'read'});
   for (const key of ['owner', 'repositories', 'skip-token-revoke', 'app-id', 'enterprise', 'github-api-url']) assert.equal(key in tokenStep.with, false, key);
 });
-test('the private key reaches only the token action; Renovate gets only the installation token', () => {
+test('the private key reaches only the token action; Renovate gets scoped writer and read-only helper tokens', () => {
   const keyRefs = steps.filter(step => JSON.stringify(step).includes('inputs.app-private-key'));
   assert.deepEqual(keyRefs, [tokenStep]);
   const writer = steps.at(-1);
   assert.equal(writer.env.RENOVATE_TOKEN, '${{ steps.token.outputs.token }}');
+  assert.equal(writer.env.GITHUB_TOKEN, '${{ github.token }}');
   assert.equal(steps.filter(step => JSON.stringify(step).includes('steps.token.outputs.token')).length, 1);
   assert.equal(workflow.on.workflow_call.secrets['app-private-key'].required, true);
   assert.deepEqual(Object.keys(workflow.on.workflow_call.secrets), ['app-private-key']);
@@ -111,7 +113,7 @@ test('Renovate image is pinned once by digest and every launcher reads that file
 });
 test('container launch passes no secret value, socket, writable mount or privileged flag', () => {
   const script = read('tools/docs-brand/run.sh');
-  assert.doesNotMatch(script, /--privileged|--cap-add|docker\.sock|--network[ =]host|-e [A-Z_]+=\$|PRIVATE_KEY|GITHUB_TOKEN|--env-file/);
+  assert.doesNotMatch(script, /--privileged|--cap-add|docker\.sock|--network[ =]host|-e [A-Z_]+=\$|PRIVATE_KEY|--env-file/);
   const mounts = [...script.matchAll(/-v "([^"]+)"/g)].map(m => m[1]);
   assert.equal(mounts.length, 2);
   assert.ok(mounts.every(m => m.endsWith(':ro')), mounts.join());
@@ -140,10 +142,11 @@ test('no automerge, scripts, plugins, shell, env exposure or dashboard; one bot 
   for (const key of ['automerge', 'platformAutomerge', 'allowScripts', 'allowPlugins', 'exposeAllEnv', 'allowShellExecutorForPostUpgradeCommands', 'dependencyDashboard', 'cloneSubmodules'])
     assert.equal(policy[key], false, key);
   assert.deepEqual(policy.allowedEnv, []);
+  assert.deepEqual(policy.customEnvVariables, {GITHUB_TOKEN: process.env.GITHUB_TOKEN ?? ''});
   assert.equal(policy.vulnerabilityAlerts.enabled, false);
   assert.equal(policy.branchPrefix, 'renovate-docs-brand/');
   assert.equal(policy.prConcurrentLimit, 1);
-  assert.equal('hostRules' in policy || 'npmrc' in policy || 'customEnvVariables' in policy || 'env' in policy, false);
+  assert.equal('hostRules' in policy || 'npmrc' in policy || 'env' in policy, false);
   for (const rule of policy.packageRules) {
     assert.deepEqual(rule.matchDepTypes, ['docs-brand']);
     assert.notEqual(rule.automerge, true);

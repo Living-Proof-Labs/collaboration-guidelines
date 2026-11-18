@@ -10,13 +10,14 @@ on:
     secrets:
       app-private-key:
         required: true
-permissions:
-  contents: read
+permissions: {}
 concurrency:
   group: docs-brand-renovate-${{ github.repository }}
   cancel-in-progress: false
 jobs:
   update:
+    permissions:
+      contents: read
     # Original caller event and ref: PRs, workflow_run and branch dispatches never
     # enter this secret-bearing job, regardless of author/actor identity.
     if: >-

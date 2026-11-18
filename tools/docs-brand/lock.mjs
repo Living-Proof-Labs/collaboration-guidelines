@@ -17,10 +17,22 @@ export function validate(lock) {
     throw new Error('Expected the five-field docs brand lock with a full release tag, commit and sha256');
   }
 }
-export function download(url) {
-  // Public source only: no consumer token, shell interpolation, or redirects.
-  const response = execFileSync('curl', ['--disable', '--fail', '--silent', '--show-error', '--proto', '=https',
-    '--max-time', '60', '--max-filesize', '1048576', '--write-out', '\n%{http_code}', url], {maxBuffer: 1048580});
+export function download(url, token = process.env.GITHUB_TOKEN, run = execFileSync) {
+  const api = url.startsWith(`https://api.github.com/repos/${repository}/`);
+  if (api && (!token || /[\r\n"\\]/.test(token))) {
+    throw new Error('Set GITHUB_TOKEN to a read-only GitHub token for docs brand provenance checks');
+  }
+  // Authenticate only the fixed GitHub API origin, never raw CSS. Pass the
+  // header over stdin rather than argv; do not expose curl's credential-bearing
+  // subprocess details on errors. No shell interpolation or redirects.
+  const auth = api ? ['--config', '-'] : [];
+  let response;
+  try { response = run('curl', ['--disable', '--fail', '--silent', '--show-error', '--proto', '=https',
+    '--max-time', '60', '--max-filesize', '1048576', '--write-out', '\n%{http_code}', ...auth, url], {
+      maxBuffer: 1048580,
+      input: api ? `header = "Authorization: Bearer ${token}"\nheader = "Accept: application/vnd.github+json"\n` : undefined,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }); } catch { throw new Error('Docs brand download failed; check network access, token and GitHub rate limits'); }
   if (response.subarray(-4).toString() !== '\n200') throw new Error('Expected HTTP 200 without redirects');
   return response.subarray(0, -4);
 }

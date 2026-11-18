@@ -18,6 +18,7 @@ import { calcLimit, counts, isLimitReached, setCount } from '/usr/local/renovate
 import '../docs-brand/test.mjs';
 import './docs-brand-review.test.mjs';
 import {previous as brandPrevious, get as brandGet} from '../docs-brand/test.mjs';
+import {getCustomEnv, setCustomEnv} from '/usr/local/renovate/dist/util/env.js';
 import {upgrade as brandUpgrade, verify as brandVerify} from '../docs-brand/lock.mjs';
 import {writeFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
@@ -468,6 +469,8 @@ const old=${JSON.stringify(brandPrevious)};
 const get=url=>url.includes('/releases/tags/') ? JSON.stringify({tag_name:url.split('/').at(-1),draft:false,prerelease:false}) : url.includes('/commits/') ? JSON.stringify({sha:url.endsWith('v1.0.0')?old.commit:'b'.repeat(40)}) : Buffer.from('body { color: teal; }\\n');
 main(['--update'],get);`);
   const command = `node ${wrapper}`;
+  // The real executor must forward only the trusted read-only helper token.
+  writeFileSync(wrapper, `if (process.env.GITHUB_TOKEN !== 'fixture-read-only') throw Error('missing helper token'); if (process.env.RENOVATE_TOKEN) throw Error('writer token exposed');\n` + readFileSync(wrapper, 'utf8'));
   const checkout = mkdtempSync(join(tmpdir(),'brand-checkout-'));
   GlobalConfig.set({localDir:checkout,cacheDir:join(dir,'cache'),allowedCommands:[],binarySource:'global',allowShellExecutorForPostUpgradeCommands:false});
   await initRepo({url:dir});
@@ -480,8 +483,20 @@ main(['--update'],get);`);
     const denied = await postUpgradeCommandsExecutor([upgrade],config);
     assert.match(denied.artifactErrors[0].stderr,/allowed list/);
     assert.equal(JSON.parse(read(join(checkout,'docs-brand.lock.json'))).commit,brandPrevious.commit);
-    GlobalConfig.set({localDir:checkout,cacheDir:join(dir,'cache'),binarySource:'global',allowShellExecutorForPostUpgradeCommands:false,allowedCommands:[`^node ${wrapper.replaceAll('.','\\.')}$`]});
-    const success = await postUpgradeCommandsExecutor([upgrade],config);
+    GlobalConfig.set({localDir:checkout,cacheDir:join(dir,'cache'),binarySource:'global',allowShellExecutorForPostUpgradeCommands:false,customEnvVariables:{GITHUB_TOKEN:'fixture-read-only'},allowedCommands:[`^node ${wrapper.replaceAll('.','\\.')}$`]});
+    const savedWriter = process.env.RENOVATE_TOKEN;
+    const savedCustomEnv = getCustomEnv();
+    let success;
+    try {
+      process.env.RENOVATE_TOKEN = 'fixture-writer-token-must-not-leak';
+      // Production CLI initializes this from trusted customEnvVariables.
+      setCustomEnv({GITHUB_TOKEN: 'fixture-read-only'});
+      success = await postUpgradeCommandsExecutor([upgrade],config);
+    } finally {
+      setCustomEnv(savedCustomEnv);
+      if (savedWriter === undefined) delete process.env.RENOVATE_TOKEN;
+      else process.env.RENOVATE_TOKEN = savedWriter;
+    }
     assert.deepEqual(success.artifactErrors,[]);
     assert.deepEqual(success.updatedArtifacts.map(x=>x.path),['docs-brand.lock.json']);
     assert.equal(JSON.parse(success.updatedArtifacts[0].contents).commit,'b'.repeat(40));

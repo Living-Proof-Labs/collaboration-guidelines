@@ -14,7 +14,8 @@ test('brand writer is callable only and denies PR events and nondefault refs bef
   assert.deepEqual(Object.keys(workflow.on),['workflow_call']);
   const job=workflow.jobs.update;
   assert.equal(job.if,"(github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.repository_owner == 'Living-Proof-Labs'");
-  assert.deepEqual(workflow.permissions,{contents:'read'});
+  assert.deepEqual(workflow.permissions,{});
+  assert.deepEqual(job.permissions,{contents:'read'});
   assert.equal(workflow.concurrency['cancel-in-progress'],false);
   assert.equal(job['timeout-minutes'],20);
   assert.equal(job.steps.length,1);
@@ -43,13 +44,15 @@ test('executable invocation guard rejects PRs, workflow_run, foreign repos and b
     execFileSync('bash',['-e','-c',script],{env:{...base,CALLER_EVENT},stdio:'pipe'});
   }
 });
-test('runner passes only installation token and single target with read-only policy and helper mounts',()=>{
+test('runner passes scoped tokens by name and single target with read-only policy and helper mounts',()=>{
   const dir=mkdtempSync(join(tmpdir(),'brand-docker-'));
   writeFileSync(join(dir,'docker'),'#!/usr/bin/env node\nconsole.log(JSON.stringify(process.argv.slice(2)));\n',{mode:0o755});
-  const env={...process.env,PATH:`${dir}:${process.env.PATH}`,RENOVATE_TOKEN:'fixture-not-a-credential',DOCS_BRAND_REPOSITORY:'Living-Proof-Labs/fixture'};
+  const env={...process.env,PATH:`${dir}:${process.env.PATH}`,RENOVATE_TOKEN:'fixture-not-a-credential',GITHUB_TOKEN:'fixture-read-only',DOCS_BRAND_REPOSITORY:'Living-Proof-Labs/fixture'};
   const args=JSON.parse(execFileSync('bash',[join(root,'tools/docs-brand/run.sh')],{env,encoding:'utf8'}));
   assert.equal(args.includes(env.RENOVATE_TOKEN),false);
   assert.ok(args.includes('RENOVATE_TOKEN'));
+  assert.ok(args.includes('GITHUB_TOKEN'));
+  assert.equal(args.includes(env.GITHUB_TOKEN),false);
   assert.ok(args.includes('DOCS_BRAND_REPOSITORY'));
   assert.equal(args.some(a=>a.includes('docker.sock')),false);
   assert.equal(args.some(a=>a.includes('PRIVATE_KEY')),false);
@@ -59,7 +62,7 @@ test('runner passes only installation token and single target with read-only pol
   assert.ok(mounts.some(m=>m.endsWith(':/opt/docs-brand/lock.mjs:ro')));
   assert.equal(args.at(-1),readFileSync(join(root,'tools/renovate/image.txt'),'utf8').trim());
   assert.match(args.at(-1),/^renovate\/renovate:[0-9]+\.[0-9]+\.[0-9]+@sha256:[a-f0-9]{64}$/);
-  for(const override of [{RENOVATE_TOKEN:''},{DOCS_BRAND_REPOSITORY:'other/repo'},{DOCS_BRAND_REPOSITORY:'Living-Proof-Labs/repo;echo bad'}]){
+  for(const override of [{RENOVATE_TOKEN:''},{GITHUB_TOKEN:''},{DOCS_BRAND_REPOSITORY:'other/repo'},{DOCS_BRAND_REPOSITORY:'Living-Proof-Labs/repo;echo bad'}]){
     assert.throws(()=>execFileSync('bash',[join(root,'tools/docs-brand/run.sh')],{env:{...env,...override},stdio:'pipe'}));
   }
 });

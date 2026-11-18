@@ -21,6 +21,8 @@ jobs:
           version: '3.54.0'
       - run: task setup
       - run: task verify
+      - name: Verify the proposed docs brand lock
+        uses: ./.github/actions/docs-brand-check
   shared-host:
     uses: ./.github/workflows/host.yml
     permissions:

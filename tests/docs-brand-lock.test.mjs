@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { verify } from "../tools/docs-brand/lock.mjs";
 
 function root() {
   let dir = dirname(fileURLToPath(import.meta.url));
@@ -124,25 +125,6 @@ test("a short tag is refused before any request", () => {
   ]);
 });
 
-test("committed lock matches the real release", { skip: process.env.LIVINGPROOF_NETWORK ? false : "set LIVINGPROOF_NETWORK=1" }, async () => {
-  const token = process.env.GITHUB_TOKEN;
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
-  const get = async (url) => {
-    const response = await fetch(url, { headers });
-    assert.ok(response.ok, `${url} -> ${response.status}`);
-    return Buffer.from(await response.arrayBuffer());
-  };
-  // problems() is synchronous; wrap the async get.
-  const cache = {};
-  const syncGet = (url) => {
-    if (!(url in cache)) throw new Error(`missing prefetched ${url}`);
-    return cache[url];
-  };
-  const pin = lock();
-  cache[`${API}/releases/tags/${pin.version}`] = await get(`${API}/releases/tags/${pin.version}`);
-  cache[`${API}/commits/${pin.version}`] = await get(`${API}/commits/${pin.version}`);
-  const commit = JSON.parse(cache[`${API}/commits/${pin.version}`].toString()).sha;
-  const raw = `https://raw.githubusercontent.com/${REPO}/${commit}/${PATH}`;
-  cache[raw] = await get(raw);
-  assert.deepEqual(problems(pin, syncGet), []);
+test("committed lock matches the real release", { skip: process.env.LIVINGPROOF_NETWORK ? false : "set LIVINGPROOF_NETWORK=1" }, () => {
+  assert.deepEqual(verify(lock()), lock());
 });

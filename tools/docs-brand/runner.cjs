@@ -35,6 +35,9 @@ module.exports = {
   allowPlugins: false,
   exposeAllEnv: false,
   allowedEnv: [],
+  // Trusted global configuration only: do not expose the writer token to the
+  // helper. This separately supplied ephemeral token has read-only permissions.
+  customEnvVariables: {GITHUB_TOKEN: process.env.GITHUB_TOKEN ?? ''},
   allowShellExecutorForPostUpgradeCommands: false,
   allowedCommands: ['^node /opt/docs-brand/lock\\.mjs --update$'],
   binarySource: 'global',
