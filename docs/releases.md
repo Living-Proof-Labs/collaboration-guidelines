@@ -14,9 +14,11 @@ verification evidence; use the tag in the cross-repository reference.
 A version tag is the preferred way to identify a commit. Published tags are
 never retargeted, so a tag alone names one commit. Wherever a release is named
 or checked (pins, contract results, run manifests, reports, and docs), use the
-tag. A recorded commit hash is evidence, not a second identity that consumers
-compare. Use a commit hash only for a commit that has no tag, such as a pull
-request head under verification.
+tag. A recorded commit hash is evidence that can still show that a tag was
+retargeted, not a second identity that consumers compare. For Living Proof Labs
+releases, use a commit hash only for a commit that has no tag, such as a pull
+request head under verification (see the third-party Actions exception below).
+
 Same-repository bootstrap paths remain tied to the running workflow's revision.
 Cross-repository integration is specified in
 [Integration through released tags](#integration-through-released-tags).
