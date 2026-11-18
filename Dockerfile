@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # This repository's tooling, not the shared host image or an application runtime.
 FROM node:24.19.0-bookworm-slim@sha256:a9f5f7c91a432850b2a8a7797adf5eadb6c733ceed61167806cee7ea7fbc29df AS tooling
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates curl && rm -rf /var/lib/apt/lists/*
+COPY tools/tooling/install-task.sh /tmp/install-task.sh
+RUN bash /tmp/install-task.sh && rm /tmp/install-task.sh
 WORKDIR /work
 COPY .github/actions/semantic-release/package*.json .github/actions/semantic-release/
 RUN --mount=type=secret,id=ca,required=false \

@@ -19,3 +19,28 @@ jobs:
     permissions:
       contents: write
     uses: ./.github/workflows/semantic-release.yml
+  publish-tooling:
+    needs: [verify, release]
+    if: needs.release.outputs.published == 'true'
+    runs-on: ubuntu-24.04
+    # Existing Actions token only; no App key or persistent credential.
+    permissions:
+      contents: write
+      packages: write
+    concurrency:
+      group: publish-guidelines-tooling
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: tooling-${{ github.sha }}-*
+          merge-multiple: true
+          path: tooling-candidate
+      - name: Publish tested images and immutable index
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.release.outputs.git-tag }}
+        run: bash tools/tooling/publish.sh
