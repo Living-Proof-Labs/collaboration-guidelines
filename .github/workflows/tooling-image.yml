@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Tooling image candidates
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Build and test the exact native candidate
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          image="collaboration-tooling:${GITHUB_SHA}-${ARCH}"
+          docker build --target tooling --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" -t "$image" .
+          test "$(docker image inspect --format '{{.Architecture}}' "$image")" = "$ARCH"
+          docker run --rm "$image" task verify
+          mkdir -p tooling-candidate
+          docker image inspect "$image" > "tooling-candidate/${ARCH}.json"
+          docker save "$image" | gzip > "tooling-candidate/${ARCH}.tar.gz"
+          (cd tooling-candidate && sha256sum "${ARCH}.tar.gz" > "${ARCH}.sha256")
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tooling-${{ github.sha }}-${{ matrix.arch }}
+          path: tooling-candidate/
+          if-no-files-found: error
+          retention-days: 7
