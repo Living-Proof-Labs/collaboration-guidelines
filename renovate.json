@@ -3,5 +3,18 @@
   "description": "Use the released organization preset for this repository's own dependency updates.",
   "extends": [
     "github>Living-Proof-Labs/collaboration-guidelines:renovate-preset#v9.6.15"
+  ],
+  "packageRules": [
+    {
+      "description": "Self pin. Each guidelines release is pinned here, and an automerged pin is a chore commit that cuts another release, publishes the tooling image and fans out downstream pin releases (v9.6.9 to v9.7.0 on 2026-11-18 and 19, .github#136). Keep the pin at a reviewed release: no automerge, and at most one proposal a month, merged deliberately.",
+      "matchPackageNames": [
+        "Living-Proof-Labs/collaboration-guidelines"
+      ],
+      "automerge": false,
+      "platformAutomerge": false,
+      "schedule": [
+        "* * 1 * *"
+      ]
+    }
   ]
 }

@@ -101,3 +101,17 @@ test('the pinned release is published and its preset matches the adopted automer
     assert.equal(brand[0].platformAutomerge, false);
   }
 });
+
+test('the repository holds its own guidelines pin for review, monthly, so a self-pin cannot cut a release loop', () => {
+  // .github#136: v9.6.9, .10, .13, .14, .15 and v9.7.0 were each cut at an automerged self-pin.
+  const rules = (config.packageRules ?? []).filter(rule => (rule.matchPackageNames ?? []).includes(REPO));
+  assert.equal(rules.length, 1, `expected one local rule for ${REPO}`);
+  const [rule] = rules;
+  assert.equal(config.packageRules.at(-1), rule, 'the self-pin rule must be last so no later rule restores automerge or the schedule');
+  assert.deepEqual(rule.matchPackageNames, [REPO]);
+  assert.equal(rule.automerge, false);
+  assert.equal(rule.platformAutomerge, false);
+  assert.deepEqual(rule.schedule, ['* * 1 * *']);
+  // Local rules apply after the extended preset, whose last rule opens internal releases at any time.
+  assert.deepEqual(preset.packageRules.at(-1).schedule, ['at any time']);
+});
