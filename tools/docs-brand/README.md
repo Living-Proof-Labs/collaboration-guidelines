@@ -28,10 +28,11 @@ on:
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
-permissions:
-  contents: read
+permissions: {}
 jobs:
   brand:
+    permissions:
+      contents: read
     uses: Living-Proof-Labs/collaboration-guidelines/.github/workflows/docs-brand-renovate.yml@vX.Y.Z
     with:
       app-client-id: ${{ vars.DOCS_BRAND_APP_CLIENT_ID }}
@@ -64,6 +65,8 @@ Bootstrap requirements:
    The token action narrows each installation token to the caller repository
    and these permissions, then revokes it at job completion. The private key
    is available only to that trusted token action, not the Renovate container.
+   The helper receives the separate ephemeral read-only `GITHUB_TOKEN`, never
+   the installation token, through trusted global `customEnvVariables`.
 3. Keep provenance (`lock.mjs --check`) and rendered-manual checks in ordinary
    **read-only** PR CI with the helper independently pinned from the trusted
    tooling release. Preserve the checksum build check. Require these before
@@ -105,6 +108,43 @@ distinguishes this from `GITHUB_TOKEN`, whose automation-created PR runs require
 approval. We deliberately do not use that token as the writer or silently
 broaden permissions to fix unavailable CI.
 
+## Read-only consumer check
+
+After a release containing this action exists, consumers can use:
+
+```yaml
+permissions:
+  contents: read
+jobs:
+  provenance:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.22.3'
+      - uses: Living-Proof-Labs/collaboration-guidelines/.github/actions/docs-brand-check@vX.Y.Z
+```
+
+Replace the placeholder with a reviewed published tooling release. The action
+checks `docs-brand.lock.json` in the proposed checkout using its **own** released
+helper, not code from that checkout or the proposed CSS release. It requires
+Node 24 and curl on the runner. GitHub supplies the ephemeral read-only token;
+no App key or new credential is needed. It checks published stable release
+metadata, tag-to-commit identity, CSS bytes and tag movement during resolution.
+A version-only proposal fails even if its old CSS checksum is internally valid.
+Keep the manual checksum and rendered-browser checks as separate requirements.
+This repository dogfoods the local action in its existing verification job on
+pull requests and on main before release. Consumer adoption and writer activation
+remain separate reviewed work; this does not enable a schedule or updater.
+
+Every guidelines release remains a candidate brand update, even when CSS is
+unchanged. The lock records release identity as well as content; the dedicated
+runner's `prConcurrentLimit: 1` bounds concurrent proposals. A CSS-only release
+channel is not introduced here.
+
 ## Alternatives considered
 
 - **Ephemeral Actions Renovate runner:** reuses Renovate's release lookup, PR
@@ -139,7 +179,9 @@ Before opting in:
    released tag at `/opt/docs-brand/lock.mjs`, outside all consumer checkouts,
    read-only to Renovate. Record the resolved source commit and file checksum.
    It needs Node 24, Git, curl and public HTTPS access to `api.github.com` and
-   `raw.githubusercontent.com`. No new credential is needed. Upgrade this
+   `raw.githubusercontent.com`. Provide an existing read-only `GITHUB_TOKEN`
+   through the trusted runner
+   configuration (`customEnvVariables`), not consumer configuration. Upgrade this
    trusted helper deliberately; do not execute code downloaded from a proposed
    dependency or from the consumer branch.
 2. In the **global runner configuration**, narrowly allow the exact command:
@@ -170,8 +212,9 @@ It then resolves the new published release through GitHub's commits API (which
 peels annotated tags), downloads CSS by full commit, computes sha256, and checks
 the tag again. Only after all checks pass does it atomically replace the lock.
 Renovate includes only `docs-brand.lock.json` from this task in its commit.
-The existing guidelines group keeps related workflow and documentation updates
-together. The helper is idempotent when the version is unchanged.
+Only the advanced unified runner can keep workflow and documentation updates
+in the existing guidelines group; the dedicated runner creates brand-only PRs.
+The helper is idempotent when the version is unchanged.
 
 Missing/draft/prerelease releases, moved tags, changed old checksums, malformed
 locks and network failures stop regeneration. It never blesses a changed old
@@ -186,7 +229,10 @@ attestation of publisher identity. The new checksum is computed, not compared
 with an independently signed digest. Upstream compromise remains a review risk.
 The unchanged build checksum check still protects exact downloaded bytes.
 There is a tag-movement race after verification; immutable releases plus the
-consumer's later check reduce it. Public API rate limits fail closed. Private
+consumer's later check reduce it. Authenticated API rate limits fail closed.
+A missing read-only token fails before
+any API request, with no unauthenticated fallback. The token is sent only to the
+fixed GitHub API origin, never to the raw CSS host. Private
 repositories, non-root locks, arbitrary repositories/paths and prereleases are
 intentionally unsupported. CSS is bounded to 1 MiB and curl does not follow
 redirects. The exact five-field schema rejects extensions until reviewed.

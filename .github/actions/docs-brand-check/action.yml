@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Check docs brand provenance
+description: Verify the proposed lock's release tag, resolved commit and CSS digest
+runs:
+  using: composite
+  steps:
+    - name: Check release identity and content
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: node "$ACTION_PATH/../../../tools/docs-brand/lock.mjs" --check

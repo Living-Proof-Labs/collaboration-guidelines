@@ -37,6 +37,7 @@ runs:
       shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
+        GITHUB_TOKEN: ${{ github.token }}
         RENOVATE_TOKEN: ${{ steps.token.outputs.token }}
         DOCS_BRAND_REPOSITORY: ${{ github.repository }}
       run: bash "$ACTION_PATH/../../../tools/docs-brand/run.sh"
