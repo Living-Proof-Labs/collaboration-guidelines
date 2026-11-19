@@ -25,8 +25,12 @@ test('tooling uses native architectures and tests exact archives before release 
   assert.equal(verify.jobs['tooling-image'].uses, './.github/workflows/tooling-image.yml');
   const release = YAML.parse(read('.github/workflows/release.yml')).jobs;
   assert.deepEqual(release['publish-tooling'].needs, ['verify', 'release']);
-  assert.equal(release['publish-tooling'].if, "needs.release.outputs.published == 'true'");
-  assert.equal(release['publish-tooling'].permissions.packages, 'write');
+  assert.equal(release['publish-tooling'].if, "needs.release.outputs.draft-created == 'true'");
+  assert.equal(release.release.with['draft-release'], true);
+  assert.deepEqual(release.release.permissions, { contents: 'write' });
+  assert.deepEqual(release['publish-tooling'].permissions, { contents: 'write', packages: 'write' });
+  assert.equal(release['publish-tooling'].steps.at(-1).run, 'bash tools/tooling/publish.sh');
+  assert.equal(release['publish-tooling'].steps.at(-1).env.RELEASE_TAG, '${{ needs.release.outputs.git-tag }}');
   assert.equal(release['publish-tooling'].concurrency['cancel-in-progress'], false);
   assert.match(read('Dockerfile'), /COPY tools\/tooling\/install-task.sh/);
 });
@@ -66,7 +70,30 @@ case "$1 \${2:-}" in
     fi ;;
 esac
 `, { mode: 0o755 });
-  writeFileSync(join(dir, 'bin/gh'), '#!/usr/bin/env bash\nprintf "gh %s\\n" "$*" >> "$CALL_LOG"\n', { mode: 0o755 });
+  writeFileSync(join(dir, 'bin/gh'), `#!/usr/bin/env bash
+set -eu
+printf 'gh %s\\n' "$*" >> "$CALL_LOG"
+case "$1 $2" in
+  'release view')
+    if [[ "$MODE" == lookupfail ]]; then echo true; exit 1; fi
+    if [[ "$MODE" == published ]]; then echo false;
+    elif [[ "$MODE" == invalidstate ]]; then echo null;
+    else echo true; fi ;;
+  'release upload')
+    test ! -f finalized
+    test "$4" = artifacts/tooling-index.json
+    test "$5" = artifacts/tooling-image.json
+    test -s "$4" && test -s "$5"
+    if [[ "$MODE" == uploadfail ]]; then exit 1; fi
+    touch uploaded ;;
+  'release edit')
+    test -f uploaded
+    test "$6" = --draft=false
+    if [[ "$MODE" == finalizefail ]]; then exit 1; fi
+    touch finalized ;;
+  *) exit 1 ;;
+esac
+`, { mode: 0o755 });
   for (const arch of ['amd64', 'arm64']) {
     const bytes = gzipSync('exact-tested-image');
     writeFileSync(join(dir, 'tooling-candidate', `${arch}.tar.gz`), bytes);
@@ -96,9 +123,12 @@ test('publishes tested images, records multiarch index digest, uploads immutable
   assert.deepEqual(result.evidence.platforms, ['linux/amd64', 'linux/arm64']);
   assert.equal((result.calls.match(/^push /gm) || []).length, 2);
   assert.match(result.calls, /gh release upload v1.2.3/);
+  assert.ok(result.calls.indexOf('gh release view') < result.calls.indexOf('login ghcr.io'));
+  assert.ok(result.calls.indexOf('gh release upload') < result.calls.indexOf('gh release edit'));
+  assert.match(result.calls, /gh release edit v1.2.3 --repo Living-Proof-Labs\/collaboration-guidelines --draft=false/);
   assert.doesNotMatch(result.calls, /--clobber|latest/);
 });
-for (const mode of ['existing', 'auth', 'corrupt', 'wrongarch', 'wrongrevision', 'badtag']) {
+for (const mode of ['existing', 'auth', 'corrupt', 'wrongarch', 'wrongrevision', 'badtag', 'published', 'lookupfail', 'invalidstate']) {
   test(`refuses publication before writes: ${mode}`, () => {
     const result = publish(mode);
     assert.notEqual(result.status, 0);
@@ -124,4 +154,20 @@ test('index child digests must agree with the published architecture tags', () =
   assert.notEqual(result.status, 0);
   assert.equal(result.evidence, undefined);
   assert.doesNotMatch(result.calls, /gh release upload/);
+});
+
+for (const mode of ['existing', 'auth', 'corrupt', 'wrongarch', 'wrongrevision', 'badtag',
+  'published', 'lookupfail', 'invalidstate', 'badindex', 'partial', 'wrongchild', 'uploadfail']) {
+  test(`failure cannot finalize the release: ${mode}`, () => {
+    const result = publish(mode);
+    assert.notEqual(result.status, 0);
+    assert.doesNotMatch(result.calls, /gh release edit/);
+  });
+}
+test('finalization failure is reported after evidence upload without retry or mutation', () => {
+  const result = publish('finalizefail');
+  assert.notEqual(result.status, 0);
+  assert.match(result.calls, /gh release upload/);
+  assert.equal((result.calls.match(/gh release edit/g) || []).length, 1);
+  assert.doesNotMatch(result.calls, /--clobber|release delete/);
 });
