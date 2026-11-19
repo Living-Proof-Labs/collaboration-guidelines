@@ -13,9 +13,10 @@ automated tests are what protect a merge. Honor explicit merge holds. When
 Vera's independent verification is in progress, the matching board item is
 **Verifying Pull Request**. After that, Aaron or Keel move it to
 **Ready To Merge** for the engineering lead. After the merge, the item moves
-to **Verifying after Merge** while Vera verifies the change on the integrated `main` branch; only
-then is it **Done**. Docs-only or chore changes with nothing to verify may
-go straight to **Done**. See the [delivery board guide](delivery-board.md).
+to **Verifying after Merge** while Vera verifies the change on the
+integrated `main` branch; only then is it **Done**. Docs-only or chore
+changes with nothing to verify may go straight to **Done**. See the
+[delivery board guide](delivery-board.md).
 Scale the
 work to the change's behavior and risk, not a fixed number of experiments or
 approvals. This guide describes how to perform independent review within the
