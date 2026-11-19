@@ -77,11 +77,12 @@ The live options, in the board's current order, are:
 - **In Progress:** Someone is actively doing the work.
 - **In Review:** A pull request is open.
 - **Verifying Pull Request:** Vera is performing independent verification.
-- **Blocked:** The work cannot proceed. This is also how contributors
-  (Cody, Vera, or anyone else) get the engineering lead's attention.
-  Move the item to **Blocked** and leave a one-line comment on the
-  issue or pull request saying what is blocking it and what is needed.
-  Rivet checks **Blocked** every hour. Keep that comment current.
+- **Blocked:** The work cannot proceed. Set Owner to whoever can
+  unblock it, and leave a one-line comment on the issue or pull request
+  saying what is blocking it and what is needed. Contributors (Cody,
+  Vera, or anyone else) get the engineering lead's attention this way.
+  Anything waiting on Aaron is **Blocked** with Owner Aaron. See
+  [Decisions for Aaron](#decisions-for-aaron). Keep that comment current.
 - **Ready To Merge:** Aaron or Keel have placed the item here as a
   handoff to the engineering lead.
 - **Verifying after Merge:** The change is on `main`. Vera is
@@ -152,3 +153,51 @@ and items whose status no longer matches the work. That check also adds open
 Renovate pull requests that are missing from the board, and messages Vera when
 an item in **Verifying Pull Request** has Owner Vera. See
 [Renovate updates](#renovate-updates).
+
+## Roles and queues
+
+Each agent works a queue. Its queue is the set of open items where it is the
+Owner and the Status isn't **Backlog**, **Blocked**, or **Done**, worked in
+Priority order.
+
+| Role | Current holder | Queue and handoff |
+| --- | --- | --- |
+| Engineering lead | Rivet | Sets Owner and Priority to steer work, fills the other queues, merges, and acts on items that are **Blocked** with the lead as Owner. Doesn't send ordered task lists. The board is the order. |
+| Developer | Cody | Works items in **Ready to Start** (Owner Cody). Opens a pull request with evidence, then hands off by setting **Verifying Pull Request** with Owner Vera. |
+| Verifier | Vera | Works items in **Verifying Pull Request** and **Verifying after Merge** (Owner Vera), and chooses her own verification depth. Hands off a pass by setting **Ready To Merge**, or **Done** after a post-merge pass. On a failure, she returns the item to its developer with a comment. |
+| Design and experience | Art | Works design items (Owner Art). Hands off by commenting with the spec and setting the Owner of the next step. |
+| Independent contributor | Keel | Takes its own items through the full lifecycle, including its own merges. Never reviews its own pull requests. The lead steps in only on blockers. |
+| First-draft contributor | Gemini | Takes easy, bounded tasks when Owner is Gemini. Aaron hands these off himself. Its pull request is a first draft that gets reviewed against the same definition of done. |
+
+Some agents have no schedule of their own. They work only when someone wakes
+them, and changing a board field doesn't wake anyone. The engineering lead
+keeps those agents working:
+
+- **On every handoff,** tell the agent that the item is done, and ask it to
+  continue with the next item in its queue until the queue is empty.
+- **On each regular board check,** fill any empty queue with the next ready
+  item (for example, the next evaluator issue that has a definition of done).
+  Then wake every agent whose queue isn't empty and whose top item has no
+  recent activity. List the queue in order, with links.
+- **An agent with an empty queue** is left alone.
+
+An agent that finishes an item doesn't stop. It updates the board for the
+handoff and starts the next item in its queue.
+
+## Decisions for Aaron
+
+Aaron works from the board when he has time, not on a fixed schedule. Anything
+that needs him has to be visible there:
+
+1. Set the item to **Blocked** with Owner **Aaron**. If there's no issue yet,
+   file one and add it to the board.
+2. Comment on the issue or pull request with exactly what he needs to decide
+   or do, ideally as short options he can answer in a reply.
+3. Read his issue comments before asking again. He often answers there.
+   Once he has answered, move the item back into the flow with the right
+   Owner.
+
+A chat message to Aaron is fine as well, but the board is the record. These
+decisions always need Aaron's own words: access and permissions, repository
+settings and rulesets, DNS, hosting, spending, signing, external
+communications, repository creation, and deploys outside the pipeline.
