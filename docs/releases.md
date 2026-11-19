@@ -182,6 +182,15 @@ the final publication dependent on all package and consumption checks. A failed
 build leaves a draft; do not claim it is publicly released. Recovery must reuse
 and inspect the existing draft, never retarget its tag or create duplicate assets.
 
+This repository opts into draft creation. Its tooling publisher first checks
+that the release is still a draft, publishes the tested `amd64` and `arm64`
+images and their index, validates the index, and uploads `tooling-index.json`
+and `tooling-image.json`. Only a successful upload permits final publication.
+A registry, validation, upload, or finalization failure fails the job and leaves
+the release unpublished unless publication itself completed. Inspect the remote
+state before recovery: existing image tags are never overwritten, including
+partial publications. Historical immutable releases are not repaired or retagged.
+
 GitHub locks assets when an immutable release becomes public. Uploading assets
 after publication fails; do not disable immutability to work around that failure.
 See [GitHub immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases).

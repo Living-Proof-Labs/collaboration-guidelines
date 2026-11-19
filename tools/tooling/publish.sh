@@ -3,6 +3,10 @@
 set -euo pipefail
 : "${GH_TOKEN:?}" "${GITHUB_REPOSITORY:?}" "${GITHUB_SHA:?}" "${GITHUB_ACTOR:?}" "${RELEASE_TAG:?}"
 [[ $RELEASE_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Expected stable version tag' >&2; exit 1; }
+# Reject published releases and failed lookups before any registry writes.
+# Immutable historical releases must never be repaired by this publisher.
+draft=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')
+[[ $draft == true ]] || { echo "Expected an unpublished draft release: $RELEASE_TAG" >&2; exit 1; }
 image="ghcr.io/${GITHUB_REPOSITORY,,}/tooling"
 # Fail closed on authentication, network and unexpected registry errors. Never
 # replace an existing version (including partial publications after failure).
@@ -41,4 +45,6 @@ for arch in amd64 arm64; do
 done
 node tools/tooling/record-index.mjs "$image" "$RELEASE_TAG" "$GITHUB_SHA"
 gh release upload "$RELEASE_TAG" artifacts/tooling-index.json artifacts/tooling-image.json --repo "$GITHUB_REPOSITORY"
+# Publication locks assets: only finalize after both evidence uploads succeed.
+gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
 cat artifacts/tooling-image.json >> "$GITHUB_STEP_SUMMARY"

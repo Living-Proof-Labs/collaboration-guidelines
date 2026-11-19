@@ -19,9 +19,11 @@ jobs:
     permissions:
       contents: write
     uses: ./.github/workflows/semantic-release.yml
+    with:
+      draft-release: true
   publish-tooling:
     needs: [verify, release]
-    if: needs.release.outputs.published == 'true'
+    if: needs.release.outputs.draft-created == 'true'
     runs-on: ubuntu-24.04
     # Existing Actions token only; no App key or persistent credential.
     permissions:
@@ -39,7 +41,7 @@ jobs:
           pattern: tooling-${{ github.sha }}-*
           merge-multiple: true
           path: tooling-candidate
-      - name: Publish tested images and immutable index
+      - name: Publish tested images, attach evidence, and finalize release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.release.outputs.git-tag }}
