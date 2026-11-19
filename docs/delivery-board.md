@@ -32,12 +32,13 @@ remains in
 
 ## Renovate updates
 
-The hourly board check adds each open Renovate pull request in the
+The [status check](#status-check) adds each open Renovate pull request
+in the
 organization that is missing from the board, including pull requests that were
 already open. A pull request already on the board stays a single card. The
 check covers every repository.
 
-The hourly check sets Status, Owner, and Priority only when the card is first
+The status check sets Status, Owner, and Priority only when the card is first
 added. After that, it keeps a Status or Owner that someone set on purpose.
 
 | What the update needs | Status / Owner | Priority |
@@ -53,7 +54,7 @@ Closed means close the pull request with a comment, then move the card to
 
 Vera's queue and blockers are set by the Owner field only. Assignees are never
 used for these items. An item in **Verifying Pull Request** with Owner Vera is
-her queue. The hourly check messages her about it, because changing a board
+her queue. The status check messages her about it, because changing a board
 field does not wake anyone. When she passes it, Rivet merges that exact head
 and the item goes straight to **Done**. A dependency bump skips a check after
 the merge unless she asks for one. When she fails it, the item goes to
@@ -137,22 +138,16 @@ does not replace Owner. For a Renovate update, Vera's queue and a return to
 Rivet are set by Owner alone. See [Renovate updates](#renovate-updates).
 
 Priority is **P0**, **P1**, or **P2**. Aaron or Keel set it, except when the
-hourly check first adds a Renovate pull request. See
+status check first adds a Renovate pull request. See
 [Renovate updates](#renovate-updates).
 
 ## Keep the board current
 
 Update Status and Owner when responsibility or state changes. Name the blocker
-on blocked items with a one-line comment that says what is needed, so Rivet
-can act on it during the hourly **Blocked** check. Revisit items that have not
-moved. Rivet runs a regular board check: check **Blocked** every hour, merge
-items that sit in **Ready To Merge** when the merge rule above is met, move
-merged work to **Verifying after Merge** (or straight to **Done** when there
-is nothing to verify), and surface stalls, missing owners, missing priority,
-and items whose status no longer matches the work. That check also adds open
-Renovate pull requests that are missing from the board, and messages Vera when
-an item in **Verifying Pull Request** has Owner Vera. See
-[Renovate updates](#renovate-updates).
+on blocked items with a one-line comment that says what is needed, so whoever
+owns the item can act on it. Revisit items that haven't moved. The engineering
+lead keeps the board current through the
+[status check](#status-check).
 
 ## Roles and queues
 
@@ -201,3 +196,33 @@ A chat message to Aaron is fine as well, but the board is the record. These
 decisions always need Aaron's own words: access and permissions, repository
 settings and rulesets, DNS, hosting, spending, signing, external
 communications, repository creation, and deploys outside the pipeline.
+
+## Status check
+
+The status check is the engineering lead's standard pass over the board, run
+on a schedule and whenever Aaron asks how things are going. These guidelines
+don't set how often it runs.
+
+1. **Blocked.** Act on items that are **Blocked** with the lead as Owner.
+   Make sure anything waiting on Aaron follows
+   [Decisions for Aaron](#decisions-for-aaron), and read his comments for
+   answers.
+2. **Merges.** Merge items in **Ready To Merge** once the
+   [merge rule](#ready-to-merge-handoff) is met. Move merged work to
+   **Verifying after Merge** with Owner Vera, or straight to **Done** when
+   there's nothing to verify. Move items to **Done** once a post-merge pass is
+   on record.
+3. **Queues.** Fill empty queues and wake idle agents, as described in
+   [Roles and queues](#roles-and-queues).
+4. **Renovate.** Add open Renovate pull requests that are missing from the
+   board. See [Renovate updates](#renovate-updates).
+5. **Hygiene.** Fix missing owners, missing priority, stale items, and
+   statuses that no longer match the work.
+6. **Report.** Tell Aaron what changed that he'd care about: merges and
+   releases, milestones, new decisions waiting on him, and agents that didn't
+   respond after being woken. When Aaron asked, always answer, even if the
+   answer is that nothing changed. On a schedule, stay quiet when nothing
+   changed.
+
+Keep the check lean. Read the board and the comments on items that are
+moving, rather than sweeping every repository.
