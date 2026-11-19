@@ -25,8 +25,8 @@ the engineering lead then merges it under the rule above. After merge, the
 item moves to Verifying after Merge until Vera verifies it on the integrated
 main branch; only then is it Done. Docs-only or chore changes with nothing to
 verify may go straight to Done. To get the engineering lead's attention, move
-the item to Blocked and leave a one-line comment saying what is blocking it
-and what is needed. See the
+the item to Blocked, set Owner to whoever can unblock it, and leave a
+one-line comment saying what is blocking it and what is needed. See the
 [delivery board guide](docs/delivery-board.md).
 
 For documentation changes, check relative links, Markdown structure, and adoption

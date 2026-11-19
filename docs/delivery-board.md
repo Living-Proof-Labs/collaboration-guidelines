@@ -8,7 +8,7 @@ The organization tracks delivery work on the
 board. The board is the shared picture of what is queued, in progress, blocked,
 ready to merge, or waiting for verification after integration. This page
 describes how to keep it accurate. Field and option names below match the live
-board as of 14 November 2026.
+board as of 20 November 2026.
 
 ## Capture every piece of work
 
@@ -23,7 +23,7 @@ becomes engineering work, open an issue and link the pull request to it.
 Triage is described in [Renovate updates](#renovate-updates).
 
 Write the definition of done before work starts. Move an item to
-**Ready to Start** only when that definition is written and agreed. Do not
+**Ready for Work** only when that definition is written and agreed. Do not
 start implementation from **Backlog**.
 
 Dependency Dashboard issues stay off the board. Broader dependency automation
@@ -73,17 +73,17 @@ The live options, in the board's current order, are:
 
 - **Backlog:** The work is captured, but the definition of done is not
   yet agreed.
-- **Ready to Start:** The definition of done is written. The work may
+- **Ready for Work:** The definition of done is written. The work may
   begin.
 - **In Progress:** Someone is actively doing the work.
-- **In Review:** A pull request is open.
-- **Verifying Pull Request:** Vera is performing independent verification.
 - **Blocked:** The work cannot proceed. Set Owner to whoever can
   unblock it, and leave a one-line comment on the issue or pull request
   saying what is blocking it and what is needed. Contributors (Cody,
   Vera, or anyone else) get the engineering lead's attention this way.
   Anything waiting on Aaron is **Blocked** with Owner Aaron. See
   [Decisions for Aaron](#decisions-for-aaron). Keep that comment current.
+- **In Review:** A pull request is open.
+- **Verifying Pull Request:** Vera is performing independent verification.
 - **Ready To Merge:** Aaron or Keel have placed the item here as a
   handoff to the engineering lead.
 - **Verifying after Merge:** The change is on `main`. Vera is
@@ -137,8 +137,8 @@ Rivet, Cody, Vera, Art, Keel, and Gemini. Assignee can still record helpers; it
 does not replace Owner. For a Renovate update, Vera's queue and a return to
 Rivet are set by Owner alone. See [Renovate updates](#renovate-updates).
 
-Priority is **P0**, **P1**, or **P2**. Aaron or Keel set it, except when the
-status check first adds a Renovate pull request. See
+Priority is **P0 - High**, **P1 - Medium**, or **P2 - Low**. Aaron or Keel
+set it, except when the status check first adds a Renovate pull request. See
 [Renovate updates](#renovate-updates).
 
 ## Keep the board current
@@ -158,8 +158,8 @@ Priority order.
 | Role | Current holder | Queue and handoff |
 | --- | --- | --- |
 | Engineering lead | Rivet | Sets Owner and Priority to steer work, fills the other queues, merges, and acts on items that are **Blocked** with the lead as Owner. Doesn't send ordered task lists. The board is the order. |
-| Developer | Cody | Works items in **Ready to Start** (Owner Cody). Opens a pull request with evidence, then hands off by setting **Verifying Pull Request** with Owner Vera. |
-| Verifier | Vera | Works items in **Verifying Pull Request** and **Verifying after Merge** (Owner Vera), and chooses her own verification depth. Hands off a pass by setting **Ready To Merge**, or **Done** after a post-merge pass. On a failure, she returns the item to its developer with a comment. |
+| Developer | Cody | Works items in **Ready for Work** (Owner Cody). Opens a pull request with evidence, then hands off by setting **Verifying Pull Request** with Owner Vera. |
+| Verifier | Vera | Works items in **Verifying Pull Request** and **Verifying after Merge** (Owner Vera), and chooses her own verification depth. Records her verdict on the pull request. On a pass, the engineering lead merges that exact head, and after a post-merge pass she moves the item to **Done**. On a failure, she sets **In Progress** with Owner the developer, plus a comment saying what's needed. A Renovate pull request has no developer, so it goes to **Blocked** with Owner the engineering lead (see [Renovate updates](#renovate-updates)). **Ready To Merge** stays Aaron's and Keel's handoff. |
 | Design and experience | Art | Works design items (Owner Art). Hands off by commenting with the spec and setting the Owner of the next step. |
 | Independent contributor | Keel | Takes its own items through the full lifecycle, including its own merges. Never reviews its own pull requests. The lead steps in only on blockers. |
 | First-draft contributor | Gemini | Takes easy, bounded tasks when Owner is Gemini. Aaron hands these off himself. Its pull request is a first draft that gets reviewed against the same definition of done. |
@@ -170,7 +170,7 @@ keeps those agents working:
 
 - **On every handoff,** tell the agent that the item is done, and ask it to
   continue with the next item in its queue until the queue is empty.
-- **On each regular board check,** fill any empty queue with the next ready
+- **On each status check,** fill any empty queue with the next ready
   item (for example, the next evaluator issue that has a definition of done).
   Then wake every agent whose queue isn't empty and whose top item has no
   recent activity. List the queue in order, with links.
