@@ -226,3 +226,7 @@ don't set how often it runs.
 
 Keep the check lean. Read the board and the comments on items that are
 moving, rather than sweeping every repository.
+
+For Keel's restart checklist and dispatch, collect, and checkpoint loop, use
+the [portable routine-check runbook](routine-check.md). It applies these roles
+and statuses without changing their authority.
