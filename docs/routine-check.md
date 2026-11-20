@@ -1,16 +1,33 @@
 <!-- SPDX-License-Identifier: CC-BY-4.0 -->
 <!-- markdownlint-configure-file { "MD013": { "tables": false } } -->
 
-# Keel's portable routine check
+# Portable routine check
 
 Use this runbook to resume authorized work after a restart, memory loss, or a
 move to another platform. It extends the [status check](delivery-board.md#status-check)
 with a dispatch, collect, and checkpoint loop. The
 [delivery board guide](delivery-board.md#roles-and-queues) remains the authority
 for roles, queues, ownership, and statuses; this page creates no new authority.
-Keel coordinates its assigned lifecycle and board handoffs, delegates coding to
-Codex, and never reviews its own work. Codex is an implementation worker, not a
-new board Owner option.
+
+Whoever holds the coordinating role runs this check. That is the engineering
+lead, or another coordinator, for example one that runs an assigned
+lifecycle. The
+coordinator manages board handoffs and never reviews its own work.
+
+## Who fills a role
+
+A role such as developer or verifier can be filled in two ways:
+
+- **A persistent bot that is woken by message.** Cody and Vera run this way on
+  Grok Bot today. The coordinator wakes the bot and tells it to continue its
+  queue until the queue is empty.
+- **A per-task worker instance.** An example is a coordinator that dispatches
+  Codex workers per task. The coordinator starts or resumes the worker with the
+  issue or pull request instructions and collects the result. Codex is an
+  implementation worker, not a new board Owner option.
+
+The board, the Owner field, and the handoffs are the same either way. Only the
+wake and collect steps differ. Where this page says "worker", it means either.
 
 These are operating instructions, not evidence of installed schedules, working
 notifications, or active workers. A scheduled wake grants no permission. Honor
@@ -74,11 +91,12 @@ settings-verification report's individual results, not just its overall job
 status; never apply settings during this check.
 
 Keep this inspection read-only except for authorized reports and coordination.
-Prioritize Keel-owned work and assigned reviews. Respect Rivet's ownership and
-route Grok-team coordination through Rivet rather than directly dispatching
-Art, Cody, or Vera. A handoff to those roles below means arranging it through
-Rivet. Keel-owned work advances under existing development/merge authority and
-action-specific approvals. Pipeline success is not proof of robot capability
+Prioritize your own assigned work and assigned reviews. Respect the engineering
+lead's ownership. A coordinator other than the lead routes team coordination
+through the lead rather than directly dispatching another agent's roles. A
+handoff to those roles below then means arranging it through the lead. Assigned
+work advances under existing development/merge authority and action-specific
+approvals. Pipeline success is not proof of robot capability
 success: link the relevant capability results and retain missing evidence.
 
 Deduplicate actionable findings against existing issues before reporting them.
@@ -91,7 +109,7 @@ checkpoints; this pass links their findings without taking over those watches.
 
 ## Dispatch, collect, and checkpoint
 
-1. **Reconcile.** Work Keel's assigned items in board priority order. Read answers
+1. **Reconcile.** Work your assigned items in board priority order. Read answers
    to blockers before asking again. Preserve intentional owners and statuses;
    reuse existing cards and linked pull requests. Do not take unrelated backlog.
    Keep routine board checks lean. Fleet dependency checks, security audits, and
@@ -100,9 +118,10 @@ checkpoints; this pass links their findings without taking over those watches.
 2. **Prepare the handoff.** Put implementor instructions on the issue or pull
    request: scope, acceptance criteria, exact base or candidate revision,
    relevant guidance, allowed actions, evidence required, and stop conditions.
-   For coding, delegate to Codex. For review, use an independent reviewer and
-   name the [verification depth](independent-review.md#match-verification-depth-to-risk).
-   Light is the default. A changed board field is not a dispatch.
+   For coding, hand off to the developer role. For review, use an independent
+   reviewer. The verifier chooses the
+   [verification depth](independent-review.md#match-verification-depth-to-risk);
+   do not name one. A changed board field is not a dispatch.
 3. **Dispatch once.** Inspect the existing worker first. Explicitly wake or
    resume the correct idle worker using an authorized channel and link the
    handoff comment. Confirm acceptance or observed activity, then checkpoint
@@ -117,7 +136,7 @@ checkpoints; this pass links their findings without taking over those watches.
    local tests before relying on hosted checks; report passed, failed, blocked,
    and not run separately. An implementor's pass is not independent review.
 5. **Verify the lifecycle.** Follow the existing
-   [merge handoff](delivery-board.md#ready-to-merge-handoff) and Keel's role
+   [merge handoff](delivery-board.md#ready-to-merge-handoff) and your role
    boundaries. Before any authorized merge, re-read the exact head, required
    checks, holds, and independent evidence. A new head needs an explicit review
    assessment and affected checks rerun; never bypass protections. After merge,
@@ -138,11 +157,13 @@ checkpoints; this pass links their findings without taking over those watches.
 
 When a Gemini-owned issue has an unambiguous implementing pull request, confirm
 its explicit issue link and scope against the definition of done. Move both the
-issue and pull request to Owner **Keel**, Status **In Review**, reusing existing
-cards. Record the linkage and arrange independent review; when Vera begins,
-follow the board's **Verifying Pull Request** / Owner **Vera** handoff. Name
-similarity alone is insufficient: leave ownership intact and clarify ambiguous
-linkage on the issue. This does not authorize taking Gemini's unrelated backlog.
+issue and pull request to the board Owner for the coordinator, Status **In
+Review**, reusing existing cards. That Owner is **Rivet** (the engineering
+lead), or **Keel** when the item is in Keel's assigned lifecycle. Record the
+linkage and arrange independent review; when Vera begins, follow the board's
+**Verifying Pull Request** / Owner **Vera** handoff. Name similarity alone is
+insufficient: leave ownership intact and clarify ambiguous linkage on the issue.
+This does not authorize taking Gemini's unrelated backlog.
 
 ### Common outcomes
 
@@ -154,6 +175,41 @@ linkage on the issue. This does not authorize taking Gemini's unrelated backlog.
 | Approval or decision blocked | Follow [Decisions for Aaron](delivery-board.md#decisions-for-aaron): **Blocked**, Owner **Aaron**, exact options on the issue/PR. Read replies at the next stated check; do not repeatedly ask the same question. |
 | Queue exhausted | Leave idle workers alone. Checkpoint that no authorized item is ready, plus the next routine check time or explicit ready-item event and its responsible observer. |
 | Failed or uncertain dispatch | Record failed/unknown, not active. Inspect delivery and existing workers before retrying; if unresolved, record the blocker, responsible owner, and next diagnostic check. |
+
+## Personality and working style
+
+Process lives on this page and in the board guide, and does not depend on the
+platform. Each agent's personality and working style live in its Notion profile.
+These links are internal. They need Living Proof Labs Notion access and will
+not open for outside readers.
+
+- [Rivet](https://app.notion.com/p/402e1aa44c29810f9255c0f8cead3aa7)
+- [Cody](https://app.notion.com/p/daa01158038741c8ab8a19b5c6ac1f46)
+- [Vera](https://app.notion.com/p/82d89b4c970643588db46051b25642fa)
+- [Art](https://app.notion.com/p/d77b802278334a5a876bac97ae258fdb)
+
+## Moving to another platform or account
+
+These items do not travel in Git. Set each up again on the new account:
+
+- The agent's GitHub App private key, saved as a bot secret.
+- Its schedules and triggers, including the hourly trigger above.
+- Chat or Slack installs.
+- Connectors.
+- Runtime memory and checkpoints. Move them through an authorized private
+  channel.
+
+Then follow these steps in order:
+
+1. Set up the items above on the new account.
+2. If the agent's identity changes, reassign the board Owner values for its
+   role and its open items.
+3. Confirm the new app identity can post comments and read and edit the board.
+4. Recover the latest checkpoint and run the restart checklist.
+5. Run a final read-only check before resuming any writes.
+6. Retire the old key, wakes, and schedules so nothing runs twice.
+
+Never put secrets or private identifiers in this repository.
 
 ## Durable checkpoint template
 

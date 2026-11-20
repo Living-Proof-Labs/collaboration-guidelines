@@ -127,7 +127,7 @@ and move straight to **Done**. A dependency bump that Vera has passed also
 goes straight to **Done** unless she asks for a check after the merge. See
 [Renovate updates](#renovate-updates).
 
-Post-merge checks are Light by default; see
+The verifier chooses the depth for post-merge checks, usually Light; see
 [independent review](independent-review.md#match-verification-depth-to-risk).
 
 ## Owner and Priority
@@ -227,6 +227,6 @@ don't set how often it runs.
 Keep the check lean. Read the board and the comments on items that are
 moving, rather than sweeping every repository.
 
-For Keel's restart checklist and dispatch, collect, and checkpoint loop, use
+For the restart checklist and dispatch, collect, and checkpoint loop, use
 the [portable routine-check runbook](routine-check.md). It applies these roles
 and statuses without changing their authority.
