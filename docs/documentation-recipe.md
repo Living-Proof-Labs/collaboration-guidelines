@@ -149,7 +149,7 @@ Do not rely on a third-party badge or a client-side release lookup for identity.
 
 | Label | Meaning and destination |
 | --- | --- |
-| Docs: development · short commit | Exact immutable source tree/commit used to build this manual; full hash in Version and source |
+| Docs: development | Exact immutable source tree/commit used to build this manual (commit SHA in link href/title); full hash in Version and source |
 | Docs: released version | Only when the manual actually describes that released revision; link its tag and record the resolved commit |
 | Package release: version | Actual published package release; separate from documentation or test-candidate identity |
 | Catalog/guidelines release: version | Actual published source release where no application package exists |
