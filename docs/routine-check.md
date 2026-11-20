@@ -10,7 +10,8 @@ with a dispatch, collect, and checkpoint loop. The
 for roles, queues, ownership, and statuses; this page creates no new authority.
 
 Whoever holds the coordinating role runs this check. That is the engineering
-lead, or another coordinator such as Keel for its assigned lifecycle. The
+lead, or another coordinator, for example one that runs an assigned
+lifecycle. The
 coordinator manages board handoffs and never reviews its own work.
 
 ## Who fills a role
@@ -20,10 +21,10 @@ A role such as developer or verifier can be filled in two ways:
 - **A persistent bot that is woken by message.** Cody and Vera run this way on
   Grok Bot today. The coordinator wakes the bot and tells it to continue its
   queue until the queue is empty.
-- **A per-task worker instance.** Keel dispatches Codex this way today. The
-  coordinator starts or resumes the worker with the issue or pull request
-  instructions and collects the result. Codex is an implementation worker, not a
-  new board Owner option.
+- **A per-task worker instance.** An example is a coordinator that dispatches
+  Codex workers per task. The coordinator starts or resumes the worker with the
+  issue or pull request instructions and collects the result. Codex is an
+  implementation worker, not a new board Owner option.
 
 The board, the Owner field, and the handoffs are the same either way. Only the
 wake and collect steps differ. Where this page says "worker", it means either.
@@ -156,12 +157,13 @@ checkpoints; this pass links their findings without taking over those watches.
 
 When a Gemini-owned issue has an unambiguous implementing pull request, confirm
 its explicit issue link and scope against the definition of done. Move both the
-issue and pull request to the coordinator as Owner, Status **In Review**,
-reusing existing
-cards. Record the linkage and arrange independent review; when Vera begins,
-follow the board's **Verifying Pull Request** / Owner **Vera** handoff. Name
-similarity alone is insufficient: leave ownership intact and clarify ambiguous
-linkage on the issue. This does not authorize taking Gemini's unrelated backlog.
+issue and pull request to the board Owner for the coordinator, Status **In
+Review**, reusing existing cards. That Owner is **Rivet** (the engineering
+lead), or **Keel** when the item is in Keel's assigned lifecycle. Record the
+linkage and arrange independent review; when Vera begins, follow the board's
+**Verifying Pull Request** / Owner **Vera** handoff. Name similarity alone is
+insufficient: leave ownership intact and clarify ambiguous linkage on the issue.
+This does not authorize taking Gemini's unrelated backlog.
 
 ### Common outcomes
 
@@ -194,9 +196,20 @@ These items do not travel in Git. Set each up again on the new account:
 - Its schedules and triggers, including the hourly trigger above.
 - Chat or Slack installs.
 - Connectors.
+- Runtime memory and checkpoints. Move them through an authorized private
+  channel.
 
-Never put secrets or private identifiers in this repository. Then recover the
-latest checkpoint and run the restart checklist.
+Then follow these steps in order:
+
+1. Set up the items above on the new account.
+2. If the agent's identity changes, reassign the board Owner values for its
+   role and its open items.
+3. Confirm the new app identity can post comments and read and edit the board.
+4. Recover the latest checkpoint and run the restart checklist.
+5. Run a final read-only check before resuming any writes.
+6. Retire the old key, wakes, and schedules so nothing runs twice.
+
+Never put secrets or private identifiers in this repository.
 
 ## Durable checkpoint template
 

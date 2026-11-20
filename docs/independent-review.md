@@ -110,7 +110,8 @@ specify a depth. The guide below describes what each depth means.
   Run full adversarial probing and compatibility harnesses, and keep
   exhaustive evidence.
 
-Checks after a merge are Light by default. Confirm the merge commit's
+The verifier chooses the depth for post-merge checks too, usually Light.
+Confirm the merge commit's
 tree matches the verified SHA's tree, or that the merge is a fast-forward
 to that SHA, and that CI or deployment succeeded. For a live page, take a
 quick look. Re-run suites only if something looks off. While those checks
