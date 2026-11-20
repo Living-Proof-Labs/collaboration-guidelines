@@ -28,7 +28,7 @@ test('relative markdown links and anchors resolve', () => {
 });
 
 test('the verifier, not the requester, chooses the verification depth', () => {
-  const stale = /(name the (verification )?depth (\(.*\) )?in each|names the depth in each|If none is named|Light is the default\. A changed|coordinator.{0,40}(sets|names|chooses) (the )?(depth|tier))/i;
+  const stale = /(name the (verification )?depth (\(.*\) )?in each|names the depth in each|If none is named|Light by default|Light is the default\. A changed|coordinator.{0,40}(sets|names|chooses) (the )?(depth|tier))/i;
   const hits = [];
   for (const f of [...files, '.codex', '.cursor', '.gemini', '.github', '.gitlab']) {
     const p = join(root, f);
