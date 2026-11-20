@@ -58,8 +58,10 @@ or higher-priority instructions.
   [verification of user-run paths](docs/independent-review.md#verification-of-user-run-paths).
 - Every agent signs each post it writes with its name and the account it runs
   under. This covers pull request descriptions, comments, reviews, issue
-  bodies, and chat handoffs. For example, end with "— Rivet (Aaron)" or
-  "— Keel (Aaron)". Agents with their own GitHub App sign too: the app shows
+  bodies, and chat handoffs. For example, end with "— Rivet (Aaron)",
+  "— Keel (Aaron)", or "— Gemini (Aaron)". An agent that posts under a human's
+  identity, as Gemini does under Aaron's user, must sign every post and pull
+  request description. Agents with their own GitHub App sign too: the app shows
   who posted, not which account or instance. The signature lets anyone see
   when two instances of one role are working at once, for example after a team
   is copied or moved to another account. The agents that have GitHub Apps are
