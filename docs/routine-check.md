@@ -74,7 +74,10 @@ waits until the merged routine is accessible.
 3. Find the existing worker through the authorized platform's worker lookup and
    private handoff record. Confirm its scope, revision, and actual state before
    resuming or replacing it. Missing private state means unknown, not idle.
-4. Select the next authorized action and record who will collect its result and
+4. Check for a duplicate instance. Look for recent posts on your items signed
+   with your own role name under a different account. If you find any, stop
+   writing on those items and follow the one-instance rule in `AGENTS.md`.
+5. Select the next authorized action and record who will collect its result and
    the next wake. If no wake mechanism is available, record that gap and arrange
    an authorized manual handoff; never claim a reminder has been installed.
 
@@ -201,13 +204,18 @@ These items do not travel in Git. Set each up again on the new account:
 
 Then follow these steps in order:
 
-1. Set up the items above on the new account.
-2. If the agent's identity changes, reassign the board Owner values for its
+1. Retire the old instance's schedules and wakes first. Confirm it has made
+   no recent posts under its old signature, so the old and new instances never
+   run at once.
+2. Set up the items above on the new account.
+3. Change the signature to the new account, for example from "— Rivet (Aaron)"
+   to the new account's name.
+4. If the agent's identity changes, reassign the board Owner values for its
    role and its open items.
-3. Confirm the new app identity can post comments and read and edit the board.
-4. Recover the latest checkpoint and run the restart checklist.
-5. Run a final read-only check before resuming any writes.
-6. Retire the old key, wakes, and schedules so nothing runs twice.
+5. Confirm the new app identity can post comments and read and edit the board.
+6. Recover the latest checkpoint and run the restart checklist.
+7. Run a final read-only check before resuming any writes.
+8. Retire the old key.
 
 Never put secrets or private identifiers in this repository.
 

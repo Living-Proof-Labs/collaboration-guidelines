@@ -56,11 +56,21 @@ or higher-priority instructions.
   [agent directory](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/config/github/agents.json)
   at commit `89573d88fc82ad79e2696e7cdd642444cdb99699`. See
   [verification of user-run paths](docs/independent-review.md#verification-of-user-run-paths).
-- A bot without its own GitHub account signs each GitHub post it writes (pull
-  request descriptions, comments, and reviews) with its name, for example a
-  final line with an em dash and the agent's name. The agents that have
-  GitHub Apps are listed in the same
+- Every agent signs each post it writes with its name and the account it runs
+  under. This covers pull request descriptions, comments, reviews, issue
+  bodies, and chat handoffs. An agent that posts under a human's identity must
+  sign every post and pull request description, because the signature is then
+  the only way to tell its work apart. Examples: "— Rivet (Aaron)",
+  "— Keel (Aaron)", "— Gemini (Aaron)". Agents with their own GitHub App sign
+  too: the app shows who posted, not which account or instance. The signature
+  lets anyone see when two instances of one role are working at once, for
+  example after a team is copied or moved to another account. The agents that
+  have GitHub Apps are listed in the same
   [agent directory](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/config/github/agents.json).
+- Keep one active instance per role. If recent posts carry your role name under
+  a different account, or a second instance works the same item, stop writing
+  on that item and do not race it. Set it **Blocked** with Owner Aaron and a
+  one-line comment naming both signatures.
 
 ## Write plainly
 
