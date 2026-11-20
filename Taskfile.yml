@@ -14,7 +14,7 @@ tasks:
     desc: Test release policy, engine, contracts, and docs deploy authentication
     cmds:
       - npm test --prefix .github/actions/semantic-release
-      - node --test tests/guidelines-pins.test.mjs tests/docs-brand-lock.test.mjs tests/docs-brand-check.test.mjs tools/docs-brand/test.mjs tests/action-sha-pins.test.mjs tests/guidelines-self-pin-review.test.mjs tests/deploy-freshness-auth.test.mjs tests/gemini-setup.test.mjs tests/tooling-image.test.mjs
+      - node --test tests/guidelines-pins.test.mjs tests/docs-brand-lock.test.mjs tests/docs-brand-check.test.mjs tools/docs-brand/test.mjs tests/action-sha-pins.test.mjs tests/guidelines-self-pin-review.test.mjs tests/deploy-freshness-auth.test.mjs tests/gemini-setup.test.mjs tests/tooling-image.test.mjs tests/doc-links-and-depth.test.mjs
   verify:
     desc: Run checks and tests
     cmds:
