@@ -93,9 +93,8 @@ Verification goes as deep as the change's risk warrants, so effort and
 cost go where they matter. The organization owner decided this on
 2026-11-12.
 
-The requester, normally the engineering lead, names the depth in each
-verification request. If none is named, use **Light**. The verifier may
-say a higher depth is needed.
+The verifier chooses the depth from the change's risk. Requesters do not
+specify a depth. The guide below describes what each depth means.
 
 - **Light** is the default for documentation, copy, styling, dependency
   or pin bumps, small fixes, and chores. Confirm CI is green at the
