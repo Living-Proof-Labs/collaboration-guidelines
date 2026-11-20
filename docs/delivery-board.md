@@ -127,8 +127,29 @@ and move straight to **Done**. A dependency bump that Vera has passed also
 goes straight to **Done** unless she asks for a check after the merge. See
 [Renovate updates](#renovate-updates).
 
+Post-merge verification is a smoke check, not a routine repeat of the
+pre-merge review. Confirm that the independently reviewed change landed on
+`main` and check the integration evidence relevant to its intended outcome,
+such as the main-branch checks, release or deployment record, and a brief
+check of the affected live behavior. Record the revision, evidence, and
+result. Expand the check when an integration change or finding warrants it.
 The verifier chooses the depth for post-merge checks, usually Light; see
 [independent review](independent-review.md#match-verification-depth-to-risk).
+
+If the original outcome is delivered and the smoke check passes, track a
+separately fixable finding in a small linked issue on Delivery. Include the
+evidence, an accountable Owner, and a testable definition of done. Link the
+original issue or pull request and the follow-up in both directions. Do not
+reopen correctly delivered work or leave it in this column solely to track
+that follow-up. For example, a delivered report migration and a stale link
+in a separate publisher can have separate delivery items.
+
+If the intended outcome did not land, remains incomplete, or an explicit
+acceptance gate still fails or is outstanding, keep the original work open
+or **Blocked**, with the missing outcome or gate recorded. Filing a follow-up
+does not turn a failed smoke check into a pass. These rules do not change
+Vera's acceptance role, explicit holds, pre-merge verification, merge
+protections, permissions, or release rules.
 
 ## Owner and Priority
 
