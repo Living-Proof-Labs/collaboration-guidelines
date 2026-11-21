@@ -49,11 +49,11 @@ test('outputs distinguish published, dry-run and no-release outcomes', () => {
   const result = { nextRelease: { version: '1.2.3', gitTag: 'v1.2.3' },
     releases: [{ url: 'https://github.com/example/consumer/releases/tag/v1.2.3' }] };
   assert.deepEqual(outputs(false, false),
-    { published: 'false', 'draft-created': 'false', version: '', 'git-tag': '', 'release-url': '' });
+    { published: 'false', 'draft-created': 'false', version: '', 'git-tag': '', 'release-url': '', commit: '' });
   assert.equal(outputs(result, false).published, 'true');
   assert.equal(outputs(result, false)['release-url'], result.releases[0].url);
-  assert.deepEqual(outputs(result, true),
-    { published: 'false', 'draft-created': 'false', version: '1.2.3', 'git-tag': 'v1.2.3', 'release-url': '' });
+  assert.deepEqual(outputs(result, true, false, 'a'.repeat(40)),
+    { published: 'false', 'draft-created': 'false', version: '1.2.3', 'git-tag': 'v1.2.3', 'release-url': '', commit: 'a'.repeat(40) });
 });
 
 test('draft release delegates to the official plugin without claiming public publication', () => {

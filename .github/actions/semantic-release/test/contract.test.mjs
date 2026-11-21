@@ -19,11 +19,13 @@ test('workflow and action preserve one source pin and output wiring', async () =
   assert.equal(job.permissions.contents, 'write');
   assert.equal(job.concurrency['cancel-in-progress'], false);
   assert.equal(action.runs.using, 'composite');
-  for (const key of ['published', 'draft-created', 'version', 'git-tag', 'release-url']) {
-    assert.equal(workflow.on.workflow_call.outputs[key].value, `\${{ jobs.release.outputs.${key} }}`);
+  for (const key of ['published', 'draft-created', 'version', 'git-tag', 'release-url', 'commit']) {
+    assert.equal(workflow.on.workflow_call.outputs[key].value, `\${{ jobs.release.outputs.${key} || jobs.candidate.outputs.${key} }}`);
     assert.equal(job.outputs[key], `\${{ steps.release.outputs.${key} }}`);
+    assert.equal(workflow.jobs.candidate.outputs[key], `\${{ steps.release.outputs.${key} }}`);
     assert.equal(action.outputs[key].value, `\${{ steps.release.outputs.${key} }}`);
   }
+  assert.equal(workflow.jobs.candidate.permissions.contents, 'read');
   const own = YAML.parse(await read('.github/workflows/release.yml'));
   assert.equal(own.jobs.release.needs, 'verify');
   assert.equal(own.jobs.release.uses, './.github/workflows/semantic-release.yml');
