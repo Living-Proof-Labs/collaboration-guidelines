@@ -6,7 +6,8 @@ import { join, dirname, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const files = ['AGENTS.md', 'CONTRIBUTING.md', 'README.md',
-  ...readdirSync(join(root, 'docs')).filter((f) => f.endsWith('.md')).map((f) => `docs/${f}`)]
+  ...readdirSync(join(root, 'docs')).filter((f) => f.endsWith('.md')).map((f) => `docs/${f}`),
+  ...readdirSync(join(root, 'docs', 'platforms')).filter((f) => f.endsWith('.md')).map((f) => `docs/platforms/${f}`)]
   .filter((f) => existsSync(join(root, f)));
 
 const slug = (h) => h.toLowerCase().replace(/`/g, '').replace(/[^\p{L}\p{N}\s-]/gu, '').trim().replace(/\s/g, '-');
