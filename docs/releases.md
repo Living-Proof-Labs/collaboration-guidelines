@@ -116,6 +116,16 @@ A writer failure fails the job;
 it is never converted into a successful no-release outcome. A repeat run with no
 new eligible commits returns `published=false`.
 
+If a build has already sealed an artifact for a planned release, pass both
+`expected-version` (the plain stable version) and `expected-commit` (the full
+source commit). The writer refuses a different plan or no release, and the
+release engine checks the same version, tag and commit again before tagging.
+Supplying only one input is an error. Calls without either input retain the
+existing behavior. A failure is not permission to publish or relabel an
+artifact; resolve the current plan and rebuild before attempting a different
+release. An already published matching release uses the separate read-only
+delivery retry described below, not another writer call.
+
 Only GitHub Releases are published. No npm package, generated changelog, or
 version-bump commit is produced. Existing `vX.Y.Z` tags are preserved and used as
 the release history; migration must retain the consumer's existing tags.

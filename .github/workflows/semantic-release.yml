@@ -9,6 +9,14 @@ on:
       draft-release:
         type: boolean
         default: false
+      expected-version:
+        description: Stable version already selected for this delivery. Requires expected-commit.
+        type: string
+        default: ''
+      expected-commit:
+        description: Exact source commit already selected for this delivery. Requires expected-version.
+        type: string
+        default: ''
     outputs:
       draft-created:
         description: Whether a draft release was created for asset assembly.
@@ -58,3 +66,5 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: ${{ inputs.dry-run }}
           draft-release: ${{ inputs.draft-release }}
+          expected-version: ${{ inputs.expected-version }}
+          expected-commit: ${{ inputs.expected-commit }}

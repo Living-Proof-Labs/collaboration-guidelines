@@ -21,6 +21,7 @@ export function outputs(result, dryRun, draftRelease = false, commit = '') {
 
 const stable = value => typeof value === 'string' &&
   /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(value) && semver.valid(value) === value;
+const validSha = value => typeof value === 'string' && /^[0-9a-f]{40}$/.exec(value)?.[0] === value;
 const identifier = value => typeof value === 'string' && /^[1-9][0-9]{0,19}$/.exec(value)?.[0] === value;
 
 function previewBuildVersions(base, prNumber, runNumber, runId, runAttempt) {
@@ -73,7 +74,6 @@ export function verifyTagMatchesCommit(gitTag, expectedCommit, { cwd, fetchTag =
 // This read-only gate applies only to an explicit main delivery retry.
 export async function readPublishedReplay(repo, tag, commit, get = path =>
   JSON.parse(execFileSync('gh', ['api', '--hostname', 'github.com', path], { encoding: 'utf8' }))) {
-  const validSha = value => typeof value === 'string' && /^[0-9a-f]{40}$/.exec(value)?.[0] === value;
   const repoPattern = /^[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+$/;
   if (typeof repo !== 'string' || repoPattern.exec(repo)?.[0] !== repo ||
       ['.', '..'].includes(repo.split('/')[1]) || typeof tag !== 'string' || !tag.startsWith('v') || !stable(tag.slice(1)) || !validSha(commit)) {
@@ -124,6 +124,15 @@ export async function run({ getReplay = readPublishedReplay, releaseEngine } = {
 
   const cwd = process.env.GITHUB_WORKSPACE;
   const expected = candidate ? process.env.RELEASE_EXPECTED_COMMIT : process.env.GITHUB_SHA;
+  const sealedVersion = process.env.RELEASE_WRITER_EXPECTED_VERSION ?? '';
+  const sealedCommit = process.env.RELEASE_WRITER_EXPECTED_COMMIT ?? '';
+  const guarded = sealedVersion !== '' || sealedCommit !== '';
+  if (guarded && (readOnly || !stable(sealedVersion) || !validSha(sealedCommit))) {
+    throw new Error('Only the release writer accepts an expected-version and expected-commit pair: provide both a stable version and a full lowercase commit SHA');
+  }
+  if (guarded && sealedCommit !== expected) {
+    throw new Error(`Expected release commit ${sealedCommit} does not match triggering commit ${expected}`);
+  }
   const replayTag = process.env.RELEASE_REPLAY_TAG ?? '';
   if (readOnly && (draftValue === 'true' || process.env.GITHUB_TOKEN)) {
     throw new Error('Read-only version resolution must not receive a release token or request a draft');
@@ -167,13 +176,24 @@ export async function run({ getReplay = readPublishedReplay, releaseEngine } = {
     return;
   }
 
+  if (guarded && !plan.version) {
+    throw new Error(`No release is due at ${head}; refusing to write expected release ${sealedVersion}`);
+  }
+  if (guarded && plan.version !== sealedVersion) {
+    throw new Error(`Current release plan is ${plan.version} at ${head}, expected ${sealedVersion}; refusing to release a different artifact identity`);
+  }
   const semanticRelease = releaseEngine ?? (await import('semantic-release')).default;
   const release = configuration(draftRelease);
+  // The engine refreshes refs after the checkout plan. Its pre-tag hook must
+  // still match the same version and commit, not silently accept a newer plan.
   release.plugins.push([fileURLToPath(new URL('./verify-plan.mjs', import.meta.url)), plan]);
   const result = await semanticRelease({
     ...release, extends: [], dryRun,
     repositoryUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}.git`,
   }, { cwd });
+  if (guarded && !result?.nextRelease) {
+    throw new Error(`Release engine did not select expected release ${sealedVersion} at ${sealedCommit}`);
+  }
   if (result?.nextRelease && !dryRun) {
     verifyTagMatchesCommit(result.nextRelease.gitTag, head, { cwd, fetchTag: true });
   }
