@@ -36,3 +36,36 @@ jobs:
     uses: ./.github/workflows/tooling-image.yml
     permissions:
       contents: read
+  release-candidate:
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/semantic-release-candidate.yml
+  release-candidate-contract:
+    if: always() && github.event_name == 'pull_request' && github.base_ref == 'main'
+    needs: release-candidate
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify the candidate contract for this PR head
+        shell: bash
+        env:
+          RESULT: ${{ needs.release-candidate.result }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+          CANDIDATE_COMMIT: ${{ needs.release-candidate.outputs.commit }}
+          CANDIDATE_VERSION: ${{ needs.release-candidate.outputs.version }}
+          CANDIDATE_TAG: ${{ needs.release-candidate.outputs.git-tag }}
+        run: |
+          if [[ "$RESULT" != success || ! "$EXPECTED_HEAD" =~ ^[0-9a-f]{40}$ || "$CANDIDATE_COMMIT" != "$EXPECTED_HEAD" ]]; then
+            echo 'Candidate did not successfully evaluate the exact PR head.' >&2
+            exit 1
+          fi
+          if [[ -z "$CANDIDATE_VERSION" && -z "$CANDIDATE_TAG" ]]; then
+            printf 'No release due for %s\n' "$CANDIDATE_COMMIT"
+            exit 0
+          fi
+          if [[ ! "$CANDIDATE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ || "$CANDIDATE_TAG" != "v$CANDIDATE_VERSION" ]]; then
+            echo 'Candidate version and tag do not form a stable release pair.' >&2
+            exit 1
+          fi
+          printf 'Release candidate %s (%s) for %s; read-only\n' "$CANDIDATE_VERSION" "$CANDIDATE_TAG" "$CANDIDATE_COMMIT"

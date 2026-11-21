@@ -22,6 +22,9 @@ on:
       git-tag:
         description: Published or dry-run tag, or empty for no release.
         value: ${{ jobs.release.outputs.git-tag }}
+      commit:
+        description: Exact 40-character source commit evaluated for this release.
+        value: ${{ jobs.release.outputs.commit }}
       release-url:
         description: Published release URL, or empty for dry-run or no release.
         value: ${{ jobs.release.outputs.release-url }}
@@ -41,6 +44,7 @@ jobs:
       published: ${{ steps.release.outputs.published }}
       version: ${{ steps.release.outputs.version }}
       git-tag: ${{ steps.release.outputs.git-tag }}
+      commit: ${{ steps.release.outputs.commit }}
       release-url: ${{ steps.release.outputs.release-url }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
