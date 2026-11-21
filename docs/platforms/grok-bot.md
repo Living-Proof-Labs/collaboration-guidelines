@@ -85,11 +85,12 @@ example "— Vera (`<owner>`)".
 
 ## Schedules
 
-- Only the coordinator, Rivet, gets the scheduled check. Its prompt is one line
-  that points at the [routine check](../routine-check.md), names the role, and
-  gives the signature.
-- Optionally give Rivet event alerts that point at the
-  [Event wakes](../routine-check.md#event-wakes-issue-or-pull-request) section.
+- Only the coordinator, Rivet, gets the scheduled check. Its prompt is the
+  runbook link plus role and signature, in the exact shape given in
+  [Setting up the alert on a new platform](../routine-check.md#setting-up-the-alert-on-a-new-platform).
+- Optionally give Rivet event alerts whose prompt points at the
+  [Event wakes](../routine-check.md#event-wakes-issue-or-pull-request) section,
+  in the same shape.
   An issue-assigned listener per repository serves as the coordinator's issue
   fast lane. An assignment event is only a wake signal; the handler decides
   relevance by board Owner and team mentions. Split the listener into several

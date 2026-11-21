@@ -105,22 +105,28 @@ The scheduled check is the reliable path. Each run:
 ## Event wakes (issue or pull request)
 
 A single event can wake an agent, for example a pull request opened or merged,
-a failed check, an issue assigned, or a new comment. An assignment event is
-only a wake signal: the handler decides relevance by board Owner and team
-mentions, never by the assignee. Handle only that one item.
+a failed check, an issue assigned, or a new comment. Handle only that one item.
 Do not sweep the board or the repositories.
 
-1. Read the item and its board Owner and Status.
-2. If the Owner is a team role, act according to its Status, or wake that
-   teammate with the item link if the work is theirs. Handoffs follow the
-   [roles and queues](delivery-board.md#roles-and-queues): a verifier pass
-   leaves Status alone for the coordinator to merge; a verifier fail moves the
-   item to **In Progress** with Owner the developer, plus a comment saying
-   what is needed.
-3. If the team does not own it, read only the latest comments for a team
+Relevance is judged from the item, its latest comments, and its board Owner and
+Status, regardless of the GitHub assignee. An assignment event is only a wake
+signal.
+
+1. Read the item, its latest comments, and its board Owner and Status.
+2. If it is the coordinator's own, act on it according to its Status. Handoffs
+   follow the [roles and queues](delivery-board.md#roles-and-queues): a
+   verifier pass leaves Status alone for the coordinator to merge; a verifier
+   fail moves the item to **In Progress** with Owner the developer, plus a
+   comment saying what is needed.
+3. If it concerns another team role, whether by Owner or by a comment that
+   names them, the coordinator wakes that agent with a short priority message
+   giving the item URL and what is needed, and tells them to continue with
+   their queue until it is empty. A non-coordinator acts only on its own
+   items.
+4. If the team does not own it, read only the latest comments for a team
    mention. Respond only if one asks something of a team role.
-4. If nothing is owed, end silently. Do not post an acknowledgement.
-5. If another instance of your role has posted on the item recently (within the
+5. If nothing is owed, end quietly. Do not post an acknowledgement.
+6. If another instance of your role has posted on the item recently (within the
    last 24 hours, or since the last check if that is longer) under a different
    signature, stop and follow
    [Check for duplicate instances](#check-for-duplicate-instances).
@@ -143,10 +149,14 @@ and what the agent does, not by a platform's trigger names or limits.
 - **Optional event listeners.** Each delivers one issue or pull request event
   with its URL. The agent runs [Event wakes](#event-wakes-issue-or-pull-request)
   for that item only. Skip these where a scheduled check is fast enough.
-- **Keep prompts to a one-line pointer.** Link this runbook, name the agent's
-  role, and give its signature, for example `Run the Event wakes section of
-  [runbook link] for [item URL]. Role: Vera. Sign as — Vera (Keel).` Put no
-  second checklist in the prompt.
+- **Keep prompts to a runbook link plus role and signature.** The logic lives
+  in the runbook, not the prompt. An event listener's prompt reads: `Run the
+  Event wakes section of [runbook link] for the issue in this event. Role:
+  Rivet (coordinator). Sign as — Rivet (Aaron). Report here only when the
+  account owner must see or decide something; otherwise end quietly.` The
+  scheduled check's prompt reads: `Run [runbook link]. Role: Rivet
+  (coordinator). Sign as — Rivet (Aaron). Report here only when the account
+  owner must see or decide something; otherwise end quietly.`
 - **Split by platform limits when needed.** If a platform caps what one trigger
   can cover, use several triggers with the same pointer; the runbook stays the
   single source.
