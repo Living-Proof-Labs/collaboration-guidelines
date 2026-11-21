@@ -55,7 +55,6 @@ jobs:
           CANDIDATE_COMMIT: ${{ needs.release-candidate.outputs.commit }}
           CANDIDATE_VERSION: ${{ needs.release-candidate.outputs.version }}
           CANDIDATE_TAG: ${{ needs.release-candidate.outputs.git-tag }}
-          BUILD_VERSION: ${{ needs.release-candidate.outputs.build-version }}
           SEMVER_VERSION: ${{ needs.release-candidate.outputs.semver-version }}
           PEP440_VERSION: ${{ needs.release-candidate.outputs.pep440-version }}
           DEBIAN_VERSION: ${{ needs.release-candidate.outputs.debian-version }}
@@ -63,6 +62,8 @@ jobs:
           CALLER_RUN_NUMBER: ${{ github.run_number }}
           CALLER_RUN_ID: ${{ github.run_id }}
           CALLER_RUN_ATTEMPT: ${{ github.run_attempt }}
+          PLAN_RUN_ID: ${{ needs.release-candidate.outputs.run-id }}
+          PLAN_RUN_ATTEMPT: ${{ needs.release-candidate.outputs.run-attempt }}
         run: |
           if [[ "$RESULT" != success || ! "$EXPECTED_HEAD" =~ ^[0-9a-f]{40}$ || "$CANDIDATE_COMMIT" != "$EXPECTED_HEAD" ]]; then
             echo 'Candidate did not successfully evaluate the exact PR head.' >&2
@@ -72,12 +73,13 @@ jobs:
           suffix="-pr.${PR_NUMBER}.${CALLER_RUN_NUMBER}.${CALLER_RUN_ATTEMPT}"
           if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]{0,19}$ || ! "$CALLER_RUN_NUMBER" =~ ^[1-9][0-9]{0,19}$ ||
                 ! "$CALLER_RUN_ID" =~ ^[1-9][0-9]{0,19}$ || ! "$CALLER_RUN_ATTEMPT" =~ ^[1-9][0-9]{0,19}$ ||
-                ! "$BUILD_VERSION" =~ ^${core}-pr\.[1-9][0-9]*\.[1-9][0-9]*\.[1-9][0-9]*$ ||
-                "$BUILD_VERSION" != *"$suffix" || "$SEMVER_VERSION" != "$BUILD_VERSION" ]]; then
+                ! "$SEMVER_VERSION" =~ ^${core}-pr\.[1-9][0-9]*\.[1-9][0-9]*\.[1-9][0-9]*$ ||
+                "$SEMVER_VERSION" != *"$suffix" || "$PLAN_RUN_ID" != "$CALLER_RUN_ID" ||
+                "$PLAN_RUN_ATTEMPT" != "$CALLER_RUN_ATTEMPT" ]]; then
             echo 'PR build version does not identify this caller run.' >&2
             exit 1
           fi
-          base="${BUILD_VERSION%"$suffix"}"
+          base="${SEMVER_VERSION%"$suffix"}"
           printf -v padded_id '%20s' "$CALLER_RUN_ID"
           printf -v padded_attempt '%20s' "$CALLER_RUN_ATTEMPT"
           if [[ "$PEP440_VERSION" != "$base.dev${CALLER_RUN_NUMBER}${padded_id// /0}${padded_attempt// /0}" ||
@@ -86,13 +88,13 @@ jobs:
             exit 1
           fi
           if [[ -z "$CANDIDATE_VERSION" && -z "$CANDIDATE_TAG" ]]; then
-            printf 'No release due for %s; build version %s\n' "$CANDIDATE_COMMIT" "$BUILD_VERSION"
+            printf 'No release due for %s; build version %s\n' "$CANDIDATE_COMMIT" "$SEMVER_VERSION"
             exit 0
           fi
           if [[ ! "$CANDIDATE_VERSION" =~ ^${core}$ || "$CANDIDATE_TAG" != "v$CANDIDATE_VERSION" ||
-                "$BUILD_VERSION" != "${CANDIDATE_VERSION}${suffix}" ]]; then
+                "$SEMVER_VERSION" != "${CANDIDATE_VERSION}${suffix}" ]]; then
             echo 'Candidate version and tag do not form a stable release pair.' >&2
             exit 1
           fi
           printf 'Release candidate %s (%s) for %s; build version %s; read-only\n' \
-            "$CANDIDATE_VERSION" "$CANDIDATE_TAG" "$CANDIDATE_COMMIT" "$BUILD_VERSION"
+            "$CANDIDATE_VERSION" "$CANDIDATE_TAG" "$CANDIDATE_COMMIT" "$SEMVER_VERSION"

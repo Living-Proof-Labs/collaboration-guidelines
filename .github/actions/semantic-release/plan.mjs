@@ -65,7 +65,7 @@ export async function planVersion(cwd, expected, { candidate = false, expectedBa
   const version = type ? (last ? semver.inc(last.version, type) : '1.0.0') : '';
   if (type && !version) throw new Error('Cannot calculate a stable main release version');
   const plan = { commit, version, gitTag: version ? config.tagFormat.replace('${version}', version) : '' };
-  if (candidate && includeBuildBase) {
+  if (includeBuildBase) {
     // This fallback identifies a preview only; never turn it into a release plan.
     plan.buildBase = version || (last ? semver.inc(last.version, 'patch') : '1.0.0');
   }

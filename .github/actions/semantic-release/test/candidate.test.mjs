@@ -9,7 +9,7 @@ import { Writable } from 'node:stream';
 import semanticRelease from 'semantic-release';
 import semver from 'semver';
 import config from '../release.config.mjs';
-import { candidateBuildVersions, run, verifiedMainBuildVersion } from '../run.mjs';
+import { candidateBuildVersions, run, verifyTagMatchesCommit } from '../run.mjs';
 import { planVersion } from '../plan.mjs';
 import { verifyRelease } from '../verify-plan.mjs';
 
@@ -42,7 +42,7 @@ test('detached candidate uses canonical history without a remote write path', as
     });
     await run();
     assert.match(await readFile(output, 'utf8'), /version=1\.0\.0\ngit-tag=v1\.0\.0/);
-    assert.match(await readFile(output, 'utf8'), /build-version=1\.0\.0-pr\.131\.42\.1\n/);
+    assert.match(await readFile(output, 'utf8'), /semver-version=1\.0\.0-pr\.131\.42\.1\n/);
     assert.equal(refs(), before);
     await assert.rejects(planVersion(cwd, initial, { candidate: true, expectedBase: initial }), /triggering commit/);
     await assert.rejects(planVersion(cwd, first, { candidate: true }), /exact PR event base/);
@@ -66,15 +66,9 @@ test('detached candidate uses canonical history without a remote write path', as
     git('checkout', '--detach', minor);
     commit('feat!: changed merge history');
     assert.equal((await plan()).version, '2.0.0');
-    const tagged = { version: '1.0.0', gitTag: 'v1.0.0' };
-    assert.deepEqual(verifiedMainBuildVersion(tagged, initial, { cwd, fetchTag: false }), {
-      'semver-version': '1.0.0', 'pep440-version': '1.0.0', 'debian-version': '1.0.0',
-    });
-    assert.throws(() => verifiedMainBuildVersion({ ...tagged, version: '1.0.1' }, initial,
-      { cwd, fetchTag: false }), /disagree/);
-    assert.throws(() => verifiedMainBuildVersion(tagged, minor, { cwd, fetchTag: false }), /expected/);
-    assert.throws(() => verifiedMainBuildVersion({ version: '2.0.0', gitTag: 'v2.0.0' }, minor,
-      { cwd, fetchTag: false }));
+    verifyTagMatchesCommit('v1.0.0', initial, { cwd, fetchTag: false });
+    assert.throws(() => verifyTagMatchesCommit('v1.0.0', minor, { cwd, fetchTag: false }), /expected/);
+    assert.throws(() => verifyTagMatchesCommit('v2.0.0', minor, { cwd, fetchTag: false }));
 
     // A rerun of the same PR event must still plan against the original base,
     // even if main already incorporated and released the exact candidate.
@@ -94,7 +88,7 @@ test('detached candidate uses canonical history without a remote write path', as
       GITHUB_RUN_ATTEMPT: '2' });
     await run();
     assert.match(await readFile(rerunOutput, 'utf8'), /version=1\.1\.0\ngit-tag=v1\.1\.0/);
-    assert.match(await readFile(rerunOutput, 'utf8'), /build-version=1\.1\.0-pr\.131\.42\.2\n/);
+    assert.match(await readFile(rerunOutput, 'utf8'), /semver-version=1\.1\.0-pr\.131\.42\.2\n/);
   } finally {
     process.env = saved;
     await rm(cwd, { recursive: true, force: true });
@@ -194,7 +188,7 @@ test('branch artifact version advances across runs and an intervening main relea
     const notDue = await candidateOutput(emptyReleaseBase, emptyReleaseBase, '8');
     assert.equal(notDue.version, '');
     assert.equal(notDue['git-tag'], '');
-    assert.equal(notDue['build-version'], '1.0.0-pr.131.8.1');
+    assert.equal(notDue['semver-version'], '1.0.0-pr.131.8.1');
 
     const baseline = commit('feat: stable baseline');
     git('update-ref', 'refs/tags/v9.7.9', baseline);
@@ -202,14 +196,14 @@ test('branch artifact version advances across runs and an intervening main relea
     const noRelease = await candidateOutput(baseline, baseline, '9');
     assert.equal(noRelease.version, '');
     assert.equal(noRelease['git-tag'], '');
-    assert.equal(noRelease['build-version'], '9.7.10-pr.131.9.1');
+    assert.equal(noRelease['semver-version'], '9.7.10-pr.131.9.1');
 
     git('checkout', '--detach', baseline);
     const head = commit('feat: same PR feature');
     const first = await candidateOutput(head, baseline, '42');
     const second = await candidateOutput(head, baseline, '43');
-    assert.equal(first['build-version'], '9.8.0-pr.131.42.1');
-    assert.equal(second['build-version'], '9.8.0-pr.131.43.1');
+    assert.equal(first['semver-version'], '9.8.0-pr.131.42.1');
+    assert.equal(second['semver-version'], '9.8.0-pr.131.43.1');
 
     git('checkout', 'main');
     const mainRelease = commit('feat: a different release on main');
@@ -221,23 +215,22 @@ test('branch artifact version advances across runs and an intervening main relea
     const third = await candidateOutput(head, mainRelease, '44');
     assert.equal(third.version, '9.9.0');
     assert.equal(third['git-tag'], 'v9.9.0');
-    assert.equal(third['build-version'], '9.9.0-pr.131.44.1');
-    assert.equal(third['semver-version'], third['build-version']);
+    assert.equal(third['semver-version'], '9.9.0-pr.131.44.1');
     assert.equal(third['pep440-version'], '9.9.0.dev440000000000000001264400000000000000000001');
     assert.equal(third['debian-version'], '9.9.0~pr.131.44.1');
-    assert.ok(semver.lt(first['build-version'], second['build-version']));
-    assert.ok(semver.lt(second['build-version'], third['build-version']));
+    assert.ok(semver.lt(first['semver-version'], second['semver-version']));
+    assert.ok(semver.lt(second['semver-version'], third['semver-version']));
     const retry = await candidateOutput(head, baseline, '42', '2');
     assert.equal(retry.version, first.version);
     assert.equal(retry['git-tag'], first['git-tag']);
     assert.equal(retry.commit, first.commit);
-    assert.equal(retry['build-version'], '9.8.0-pr.131.42.2');
+    assert.equal(retry['semver-version'], '9.8.0-pr.131.42.2');
     assert.ok(semver.lt(first['semver-version'], retry['semver-version']));
     assert.ok(semver.lt(retry['semver-version'], second['semver-version']));
     assert.notEqual(first['pep440-version'], retry['pep440-version']);
     assert.notEqual(first['debian-version'], retry['debian-version']);
     assert.equal(git('show-ref'), refs);
-    await assert.rejects(candidateOutput(head, baseline, '045'), /workflow run number/);
+    await assert.rejects(candidateOutput(head, baseline, '045'), /caller workflow run identity/);
     await assert.rejects(candidateOutput(head, baseline, '45', '1', '131\nextra=1'), /PR number/);
     await assert.rejects(readFile(join(cwd, 'fixture-45-1.txt')), { code: 'ENOENT' });
   } finally {
@@ -263,7 +256,7 @@ test('artifact precedence is numeric and untrusted identifiers fail closed', () 
     ['9.8.0', '131', '9\n', '1'], ['9.8.0', '131\n', '9', '1'], ['9.8.0\n', '131', '9', '1'],
     ['09.8.0', '131', '9', '1'], ['9.8.0-rc.1', '131', '9', '1'], ['9.8.0+metadata', '131', '9', '1'],
     ['9.8.0', '131', '9', '0001'], ['9.8.0', '131', '9', '1'.repeat(21)],
-  ]) assert.throws(() => candidateBuildVersions(...args, '1'), /stable base|Invalid candidate/);
+  ]) assert.throws(() => candidateBuildVersions(...args, '1'), /stable base|Invalid preview|Invalid PR number/);
   for (const attempt of [undefined, '', '0', '01', '1\n', '1'.repeat(21)]) {
     assert.throws(() => candidateBuildVersions('9.8.0', '131', '10', '15', attempt), /run ID and attempt/);
   }
@@ -309,17 +302,17 @@ test('late tag on the same PR event base never reuses an earlier attempt identit
     };
     const first = await attempt('1');
     assert.equal(first.version, '1.1.0');
-    assert.equal(first['build-version'], '1.1.0-pr.131.42.1');
+    assert.equal(first['semver-version'], '1.1.0-pr.131.42.1');
 
     // A fixture-only tag models a release finishing after the candidate was built.
     // Same event base, head, PR, run number and run ID on the retry.
     git('update-ref', 'refs/tags/v1.1.0', eventBase);
     const second = await attempt('2');
     assert.equal(second.version, '1.1.1');
-    assert.equal(second['build-version'], '1.1.1-pr.131.42.2');
+    assert.equal(second['semver-version'], '1.1.1-pr.131.42.2');
     const third = await attempt('3');
     assert.equal(third.version, second.version);
-    assert.equal(third['build-version'], '1.1.1-pr.131.42.3');
+    assert.equal(third['semver-version'], '1.1.1-pr.131.42.3');
     for (const k of ['semver-version', 'pep440-version', 'debian-version']) {
       assert.equal(new Set([first[k], second[k], third[k]]).size, 3);
     }

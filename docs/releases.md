@@ -109,15 +109,10 @@ repository access; they are not an unauthenticated PR preview mechanism.
 | `published` | String `true` only when this invocation publishes a release |
 | `version` | Published or proposed version; empty when no release is needed |
 | `git-tag` | Published or proposed tag; empty when no release is needed |
-| `semver-version` | Plain version after the exact tag is verified |
-| `pep440-version` | Same verified plain version for Python packages |
-| `debian-version` | Same verified upstream version for Debian |
-| `build-version` | Alias of `semver-version` |
 | `commit` | Exact source commit evaluated |
 | `release-url` | Published GitHub Release URL; empty for dry run or no release |
 
-Use the format-specific outputs downstream. They are empty on a main dry run
-or when no release is due. A failure fails the job;
+A writer failure fails the job;
 it is never converted into a successful no-release outcome. A repeat run with no
 new eligible commits returns `published=false`.
 
@@ -125,15 +120,27 @@ Only GitHub Releases are published. No npm package, generated changelog, or
 version-bump commit is produced. Existing `vX.Y.Z` tags are preserved and used as
 the release history; migration must retain the consumer's existing tags.
 
-## Pull request build versions
+## Resolve build versions without publishing
 
-Use the read-only [candidate workflow](../.github/workflows/semantic-release-candidate.yml)
-for pull requests to main. Its `version` and `git-tag` are a stable release
-forecast, not a version or tag produced by this run. Both are empty when no
-release is due. `commit` identifies the exact pull request head.
+Use the [read-only version workflow](../.github/workflows/semantic-release-candidate.yml)
+for pull requests to main and exact main pushes, independently of the
+release writer. Its `version` and `git-tag` are a forecast and are empty
+when no release is due. A build selects one standard-named output and
+needs only the read-only resolver. Do not choose a version based on the
+writer's result or the existence of a tag.
 
-Use `semver-version` (also exposed as `build-version`) to build and label
-the actual pull request artifact.
+For a main push with a planned release, all three formats carry the planned
+stable version whether or not the writer is enabled or succeeds. It is not
+a public version unless the separate publication gate verifies the writer,
+actual tag, exact commit and sealed artifact. With no release due, main
+uses a nonpublished preview such as `9.8.1-main.42.1` (Debian
+`9.8.1~main.42.1`, or the same Python development-version encoding).
+The fallback uses the next patch base, or `1.0.0` before the first release,
+never a previous stable version.
+
+### Pull requests
+
+Use `semver-version` to build and label the actual pull request artifact.
 The format is `BASE-pr.PR_NUMBER.RUN_NUMBER.ATTEMPT`, such as
 `9.8.0-pr.131.42.1`.
 The base is the forecast. With no forecast, use the next patch above the
@@ -165,11 +172,25 @@ appropriate to the artifact without rebuilding the version in the caller:
   same repository without depending on an undocumented order for run IDs.
   Separate repositories do not share a version namespace.
 - `debian-version` is `BASE~pr.PR_NUMBER.RUN_NUMBER.ATTEMPT` for Debian
-  package control metadata. The caller applies any Debian package revision separately.
+  package control metadata. Apply any Debian package revision separately.
   This does not change numeric versions in robot package manifests.
 
-Main supplies the same plain version to all three outputs after the tag is
-verified. Use the same versioned build path in both lanes.
+### Replay and publication
+
+The resolver returns `commit`, `run-id`, and `run-attempt`. Before building,
+verify those against the current checkout and attempt. GitHub can retain
+successful jobs on a failed-job-only rerun; if their planner output is from
+an earlier attempt, rerun all jobs instead of rebuilding with that identity.
+A failed plan is not a fallback. Keep the writer's normal failure behavior.
+
+For an explicit main delivery retry, a publisher can pass `replay-tag`
+on a manual run. This read-only gate requires the tag's exact commit to
+match current main and the checked-out source, plus an existing published
+stable release. It supplies the same three plain versions without invoking
+the writer. A bare tag (including one left by a failed writer), draft, or
+wrong commit does not qualify. Publication still independently verifies
+the tag and sealed artifact and only uses the artifact from that attempt.
+Keep the build path and its chosen version output the same in all lanes.
 
 ## Policy
 
