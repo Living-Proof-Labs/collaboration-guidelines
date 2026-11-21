@@ -109,15 +109,88 @@ repository access; they are not an unauthenticated PR preview mechanism.
 | `published` | String `true` only when this invocation publishes a release |
 | `version` | Published or proposed version; empty when no release is needed |
 | `git-tag` | Published or proposed tag; empty when no release is needed |
+| `commit` | Exact source commit evaluated |
 | `release-url` | Published GitHub Release URL; empty for dry run or no release |
 
-Use `needs.release.outputs.version` in downstream jobs. A failure fails the job;
+A writer failure fails the job;
 it is never converted into a successful no-release outcome. A repeat run with no
 new eligible commits returns `published=false`.
 
 Only GitHub Releases are published. No npm package, generated changelog, or
 version-bump commit is produced. Existing `vX.Y.Z` tags are preserved and used as
 the release history; migration must retain the consumer's existing tags.
+
+## Resolve build versions without publishing
+
+Use the [read-only version workflow](../.github/workflows/semantic-release-candidate.yml)
+for pull requests to main and exact main pushes, independently of the
+release writer. Its `version` and `git-tag` are a forecast and are empty
+when no release is due. A build selects one standard-named output and
+needs only the read-only resolver. Do not choose a version based on the
+writer's result or the existence of a tag.
+
+For a main push with a planned release, all three formats carry the planned
+stable version whether or not the writer is enabled or succeeds. It is not
+a public version unless the separate publication gate verifies the writer,
+actual tag, exact commit and sealed artifact. With no release due, main
+uses a nonpublished preview such as `9.8.1-main.42.1` (Debian
+`9.8.1~main.42.1`, or the same Python development-version encoding).
+The fallback uses the next patch base, or `1.0.0` before the first release,
+never a previous stable version.
+
+### Pull requests
+
+Use `semver-version` to build and label the actual pull request artifact.
+The format is `BASE-pr.PR_NUMBER.RUN_NUMBER.ATTEMPT`, such as
+`9.8.0-pr.131.42.1`.
+The base is the forecast. With no forecast, use the next patch above the
+latest stable release on the event base, or `1.0.0` before the first release.
+This fallback does not schedule a release or fill in the forecast outputs.
+No pull request creates a tag, release, or production deployment.
+
+Each new run of the same caller workflow gets a higher numeric run number.
+A newer pull request event can see a newly released main base and recalculate
+the forecast, even if its head has not yet incorporated that base. Older
+events use their own exact base, not moving main. For example,
+`9.8.0-pr.131.42.1` precedes `9.8.0-pr.131.43.1`, which precedes
+`9.9.0-pr.131.44.1` if the forecast rises. This is not a guarantee that the
+version core cannot fall if release intent or policy changes.
+
+Rerunning the same GitHub Actions run keeps its run number but uses a higher
+attempt number. A tag can appear on that same event base between attempts,
+so the forecast may change too. Each attempt gets its own build version.
+Use one caller workflow for each artifact family. Record the exact commit,
+run identifier, and attempt in artifact provenance, and use the output
+appropriate to the artifact without rebuilding the version in the caller:
+
+- `semver-version` is the canonical branch build version, for example
+  `9.8.0-pr.131.42.1`.
+- `pep440-version` is `BASE.devN` for Python. The numeric identifier `N`
+  concatenates the caller workflow run number, repository-unique run ID,
+  and attempt, with the last two numbers zero-padded to 20 digits. This stays
+  ordered within a workflow and prevents collisions between workflows in the
+  same repository without depending on an undocumented order for run IDs.
+  Separate repositories do not share a version namespace.
+- `debian-version` is `BASE~pr.PR_NUMBER.RUN_NUMBER.ATTEMPT` for Debian
+  package control metadata. Apply any Debian package revision separately.
+  This does not change numeric versions in robot package manifests.
+
+### Replay and publication
+
+The resolver returns `commit`, `run-id`, and `run-attempt`. Before building,
+verify those against the current checkout and attempt. GitHub can retain
+successful jobs on a failed-job-only rerun; if their planner output is from
+an earlier attempt, rerun all jobs instead of rebuilding with that identity.
+A failed plan is not a fallback. Keep the writer's normal failure behavior.
+
+For an explicit main delivery retry, a publisher can pass `replay-tag`
+on a manual run. This read-only gate requires the tag's exact commit to
+match current main and the checked-out source, plus an existing published
+stable release. It supplies the same three plain versions without invoking
+the writer. A bare tag (including one left by a failed writer), draft, or
+wrong commit does not qualify. Publication still independently verifies
+the tag and sealed artifact and only uses the artifact from that attempt.
+Keep the build path and its chosen version output the same in all lanes.
 
 ## Policy
 

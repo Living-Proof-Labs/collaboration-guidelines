@@ -9,6 +9,8 @@ import YAML from 'yaml';
 import { run } from '../run.mjs';
 const root = fileURLToPath(new URL('../../../../', import.meta.url));
 const read = path => readFile(resolve(root, path), 'utf8');
+const buildOutputs = ['semver-version', 'pep440-version', 'debian-version'];
+const provenance = ['run-id', 'run-attempt'];
 
 test('workflow and action preserve one source pin and output wiring', async () => {
   const workflow = YAML.parse(await read('.github/workflows/semantic-release.yml'));
@@ -25,6 +27,11 @@ test('workflow and action preserve one source pin and output wiring', async () =
     assert.equal(job.outputs[key], `\${{ steps.release.outputs.${key} }}`);
     assert.equal(action.outputs[key].value, `\${{ steps.release.outputs.${key} }}`);
   }
+  for (const key of [...buildOutputs, ...provenance, 'build-version']) {
+    assert.ok(!Object.hasOwn(job.outputs, key));
+    assert.ok(!Object.hasOwn(workflow.on.workflow_call.outputs, key));
+  }
+  assert.ok(!Object.hasOwn(action.outputs, 'build-version'));
   const own = YAML.parse(await read('.github/workflows/release.yml'));
   assert.equal(own.jobs.release.needs, 'verify');
   assert.equal(own.jobs.release.uses, './.github/workflows/semantic-release.yml');
@@ -82,16 +89,30 @@ test('candidate is a separately callable read-only workflow with no release toke
   const job = candidate.jobs.candidate;
   assert.deepEqual(job.permissions, { contents: 'read' });
   assert.match(job.if, /github.event_name == 'pull_request'.*github.base_ref == 'main'/);
-  assert.equal(job.steps[0].with.ref, '${{ github.event.pull_request.head.sha }}');
+  assert.match(job.if, /github.ref == 'refs\/heads\/main'/);
+  assert.match(job.if, /github.event_name == 'push'.*github.event_name == 'workflow_dispatch'/);
+  assert.equal(job.steps[0].with.ref, '${{ github.event.pull_request.head.sha || github.sha }}');
   assert.equal(job.steps[0].with['persist-credentials'], false);
   assert.equal(job.steps[0].with['fetch-depth'], 0);
   assert.equal(job.steps[1].env.BASE_REPOSITORY, '${{ github.event.pull_request.base.repo.full_name }}');
   assert.match(job.steps[1].run, /"\$BASE_REPOSITORY" == "\$GITHUB_REPOSITORY"/);
-  assert.deepEqual(job.steps[2].with, { 'dry-run': true, candidate: true });
+  assert.equal(job.steps[1].if, "github.event_name == 'pull_request'");
+  assert.deepEqual(job.steps[2].with, {
+    'dry-run': true,
+    candidate: "${{ github.event_name == 'pull_request' }}",
+    'plan-only': true,
+    'replay-tag': '${{ inputs.replay-tag }}',
+    'replay-read-token': "${{ github.event_name == 'workflow_dispatch' && inputs.replay-tag != '' && github.token || '' }}",
+  });
   assert.equal(job.steps[2].uses, '$/.github/actions/semantic-release');
   const action = YAML.parse(await read('.github/actions/semantic-release/action.yml'));
   assert.equal(action.runs.steps[2].env.RELEASE_EXPECTED_BASE, '${{ github.event.pull_request.base.sha }}');
-  assert.deepEqual(Object.keys(candidate.on.workflow_call.outputs), ['version', 'git-tag', 'commit']);
+  assert.equal(action.runs.steps[2].env.RELEASE_PR_NUMBER, '${{ github.event.pull_request.number }}');
+  assert.deepEqual(Object.keys(candidate.on.workflow_call.outputs), [...buildOutputs, 'version', 'git-tag', 'commit', ...provenance]);
+  for (const key of [...buildOutputs, ...provenance]) {
+    assert.equal(candidate.on.workflow_call.outputs[key].value, `\${{ jobs.candidate.outputs.${key} }}`);
+    assert.equal(job.outputs[key], `\${{ steps.plan.outputs.${key} }}`);
+  }
 });
 
 test('ordinary PRs exercise the read-only callable and validate its hosted candidate outputs', async () => {
@@ -114,12 +135,24 @@ test('ordinary PRs exercise the read-only callable and validate its hosted candi
     CANDIDATE_COMMIT: '${{ needs.release-candidate.outputs.commit }}',
     CANDIDATE_VERSION: '${{ needs.release-candidate.outputs.version }}',
     CANDIDATE_TAG: '${{ needs.release-candidate.outputs.git-tag }}',
+    SEMVER_VERSION: '${{ needs.release-candidate.outputs.semver-version }}',
+    PEP440_VERSION: '${{ needs.release-candidate.outputs.pep440-version }}',
+    DEBIAN_VERSION: '${{ needs.release-candidate.outputs.debian-version }}',
+    PR_NUMBER: '${{ github.event.pull_request.number }}',
+    CALLER_RUN_NUMBER: '${{ github.run_number }}',
+    CALLER_RUN_ID: '${{ github.run_id }}',
+    CALLER_RUN_ATTEMPT: '${{ github.run_attempt }}',
+    PLAN_RUN_ID: '${{ needs.release-candidate.outputs.run-id }}',
+    PLAN_RUN_ATTEMPT: '${{ needs.release-candidate.outputs.run-attempt }}',
   });
   const head = 'a'.repeat(40);
   const checkOutput = overrides => spawnSync('bash', ['-euo', 'pipefail', '-c', step.run], {
     encoding: 'utf8',
     env: { PATH: process.env.PATH, RESULT: 'success', EXPECTED_HEAD: head, CANDIDATE_COMMIT: head,
-      CANDIDATE_VERSION: '9.8.0', CANDIDATE_TAG: 'v9.8.0', ...overrides },
+      CANDIDATE_VERSION: '9.8.0', CANDIDATE_TAG: 'v9.8.0',
+      SEMVER_VERSION: '9.8.0-pr.131.42.1',
+      PEP440_VERSION: '9.8.0.dev420000000000000001234500000000000000000001', DEBIAN_VERSION: '9.8.0~pr.131.42.1',
+      PR_NUMBER: '131', CALLER_RUN_NUMBER: '42', CALLER_RUN_ID: '12345', CALLER_RUN_ATTEMPT: '1', PLAN_RUN_ID: '12345', PLAN_RUN_ATTEMPT: '1', ...overrides },
   });
   assert.match(checkOutput({}).stdout, /Release candidate 9\.8\.0 \(v9\.8\.0\)/);
   assert.match(checkOutput({ CANDIDATE_VERSION: '', CANDIDATE_TAG: '' }).stdout, /No release due/);
@@ -130,6 +163,12 @@ test('ordinary PRs exercise the read-only callable and validate its hosted candi
     { CANDIDATE_VERSION: '' },
     { CANDIDATE_TAG: '' },
     { CANDIDATE_TAG: 'v9.8.1' },
+    { SEMVER_VERSION: '' }, { SEMVER_VERSION: '9.8.0' },
+    { SEMVER_VERSION: '9.8.0-pr.131.43.1' }, { CALLER_RUN_NUMBER: '43' },
+    { CALLER_RUN_ATTEMPT: '2' }, { CALLER_RUN_ATTEMPT: '01' },
+    { PLAN_RUN_ID: '54321' }, { PLAN_RUN_ATTEMPT: '2' },
+    { SEMVER_VERSION: '9.8.0' }, { PEP440_VERSION: '9.8.0.dev42' },
+    { DEBIAN_VERSION: '9.8.0~pr.131.42.1-1' }, { CALLER_RUN_ID: '12346' },
     { CANDIDATE_VERSION: '09.8.0', CANDIDATE_TAG: 'v09.8.0' },
   ]) assert.equal(checkOutput(invalid).status, 1);
 });

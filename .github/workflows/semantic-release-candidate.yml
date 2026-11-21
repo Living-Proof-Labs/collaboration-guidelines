@@ -1,8 +1,22 @@
 # SPDX-License-Identifier: Apache-2.0
-name: Shared semantic release candidate
+name: Shared read-only build versions
 on:
   workflow_call:
+    inputs:
+      replay-tag:
+        type: string
+        default: ''
+        description: Existing stable release tag for an explicit current-main delivery retry.
     outputs:
+      semver-version:
+        description: SemVer artifact version.
+        value: ${{ jobs.candidate.outputs.semver-version }}
+      pep440-version:
+        description: Python package version following the PEP 440 specification.
+        value: ${{ jobs.candidate.outputs.pep440-version }}
+      debian-version:
+        description: Debian upstream version; does not include a package revision.
+        value: ${{ jobs.candidate.outputs.debian-version }}
       version:
         description: Proposed semantic version, or empty when no release is due.
         value: ${{ jobs.candidate.outputs.version }}
@@ -12,25 +26,40 @@ on:
       commit:
         description: Exact source commit evaluated.
         value: ${{ jobs.candidate.outputs.commit }}
+      run-id:
+        description: Caller workflow run identity for this build plan.
+        value: ${{ jobs.candidate.outputs.run-id }}
+      run-attempt:
+        description: Caller workflow attempt for this build plan.
+        value: ${{ jobs.candidate.outputs.run-attempt }}
 permissions:
   contents: read
 jobs:
   candidate:
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    if: >-
+      (github.event_name == 'pull_request' && github.base_ref == 'main') ||
+      (github.ref == 'refs/heads/main' &&
+       (github.event_name == 'push' || github.event_name == 'workflow_dispatch'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
     outputs:
+      semver-version: ${{ steps.plan.outputs.semver-version }}
+      pep440-version: ${{ steps.plan.outputs.pep440-version }}
+      debian-version: ${{ steps.plan.outputs.debian-version }}
       version: ${{ steps.plan.outputs.version }}
       git-tag: ${{ steps.plan.outputs.git-tag }}
       commit: ${{ steps.plan.outputs.commit }}
+      run-id: ${{ steps.plan.outputs.run-id }}
+      run-attempt: ${{ steps.plan.outputs.run-attempt }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Confirm the PR targets this repository
+        if: github.event_name == 'pull_request'
         shell: bash
         env:
           BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
@@ -39,4 +68,7 @@ jobs:
         id: plan
         with:
           dry-run: true
-          candidate: true
+          candidate: ${{ github.event_name == 'pull_request' }}
+          plan-only: true
+          replay-tag: ${{ inputs.replay-tag }}
+          replay-read-token: ${{ github.event_name == 'workflow_dispatch' && inputs.replay-tag != '' && github.token || '' }}
