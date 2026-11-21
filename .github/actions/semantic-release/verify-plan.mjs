@@ -4,6 +4,7 @@
 export function verifyRelease(plan, { nextRelease }) {
   if (nextRelease.gitHead !== plan.commit || nextRelease.version !== plan.version ||
       nextRelease.gitTag !== plan.gitTag) {
-    throw new Error('Release engine disagrees with the verified candidate version or commit');
+    throw new Error(`Release engine disagrees with the verified plan: expected ${plan.gitTag} ` +
+      `at ${plan.commit}, got ${nextRelease.gitTag} at ${nextRelease.gitHead}; refusing to tag`);
   }
 }

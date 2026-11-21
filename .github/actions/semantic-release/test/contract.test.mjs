@@ -27,6 +27,16 @@ test('workflow and action preserve one source pin and output wiring', async () =
     assert.equal(job.outputs[key], `\${{ steps.release.outputs.${key} }}`);
     assert.equal(action.outputs[key].value, `\${{ steps.release.outputs.${key} }}`);
   }
+  for (const [input, variable] of [
+    ['expected-version', 'RELEASE_WRITER_EXPECTED_VERSION'],
+    ['expected-commit', 'RELEASE_WRITER_EXPECTED_COMMIT'],
+  ]) {
+    assert.equal(workflow.on.workflow_call.inputs[input].type, 'string');
+    assert.equal(workflow.on.workflow_call.inputs[input].default, '');
+    assert.equal(job.steps[1].with[input], `\${{ inputs.${input} }}`);
+    assert.equal(action.inputs[input].required, false);
+    assert.equal(action.runs.steps[2].env[variable], `\${{ inputs.${input} }}`);
+  }
   for (const key of [...buildOutputs, ...provenance, 'build-version']) {
     assert.ok(!Object.hasOwn(job.outputs, key));
     assert.ok(!Object.hasOwn(workflow.on.workflow_call.outputs, key));
@@ -84,6 +94,7 @@ test('draft release is opt-in and reaches the official action input', async () =
 test('candidate is a separately callable read-only workflow with no release token', async () => {
   const candidate = YAML.parse(await read('.github/workflows/semantic-release-candidate.yml'));
   assert.deepEqual(Object.keys(candidate.on), ['workflow_call']);
+  assert.deepEqual(Object.keys(candidate.on.workflow_call.inputs), ['replay-tag']);
   assert.deepEqual(Object.keys(candidate.jobs), ['candidate']);
   assert.deepEqual(candidate.permissions, { contents: 'read' });
   const job = candidate.jobs.candidate;

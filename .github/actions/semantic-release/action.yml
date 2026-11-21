@@ -11,6 +11,12 @@ inputs:
   draft-release:
     description: Create a draft for the caller to attach verified assets before publication.
     default: 'false'
+  expected-version:
+    description: Stable version already selected for this delivery. Requires expected-commit.
+    required: false
+  expected-commit:
+    description: Exact source commit already selected for this delivery. Requires expected-version.
+    required: false
   candidate:
     description: Calculate version and tag in read-only candidate mode without publishing.
     default: 'false'
@@ -74,6 +80,8 @@ runs:
         RELEASE_ACTION_PATH: ${{ github.action_path }}
         RELEASE_DRY_RUN: ${{ inputs.dry-run }}
         RELEASE_DRAFT: ${{ inputs.draft-release }}
+        RELEASE_WRITER_EXPECTED_VERSION: ${{ inputs.expected-version }}
+        RELEASE_WRITER_EXPECTED_COMMIT: ${{ inputs.expected-commit }}
         RELEASE_CANDIDATE: ${{ inputs.candidate }}
         RELEASE_PLAN_ONLY: ${{ inputs.plan-only }}
         RELEASE_REPLAY_TAG: ${{ inputs.replay-tag }}
