@@ -3,6 +3,18 @@ name: Shared semantic release candidate
 on:
   workflow_call:
     outputs:
+      build-version:
+        description: Unique PR artifact prerelease version for this caller workflow run and attempt.
+        value: ${{ jobs.candidate.outputs.build-version }}
+      semver-version:
+        description: SemVer artifact version.
+        value: ${{ jobs.candidate.outputs.semver-version }}
+      pep440-version:
+        description: Python package version following the PEP 440 specification.
+        value: ${{ jobs.candidate.outputs.pep440-version }}
+      debian-version:
+        description: Debian upstream version; does not include a package revision.
+        value: ${{ jobs.candidate.outputs.debian-version }}
       version:
         description: Proposed semantic version, or empty when no release is due.
         value: ${{ jobs.candidate.outputs.version }}
@@ -21,6 +33,10 @@ jobs:
     permissions:
       contents: read
     outputs:
+      build-version: ${{ steps.plan.outputs.build-version }}
+      semver-version: ${{ steps.plan.outputs.semver-version }}
+      pep440-version: ${{ steps.plan.outputs.pep440-version }}
+      debian-version: ${{ steps.plan.outputs.debian-version }}
       version: ${{ steps.plan.outputs.version }}
       git-tag: ${{ steps.plan.outputs.git-tag }}
       commit: ${{ steps.plan.outputs.commit }}

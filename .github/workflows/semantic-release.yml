@@ -10,6 +10,18 @@ on:
         type: boolean
         default: false
     outputs:
+      build-version:
+        description: Version of the exact verified release tag; empty for dry run or no release.
+        value: ${{ jobs.release.outputs.build-version }}
+      semver-version:
+        description: SemVer artifact version.
+        value: ${{ jobs.release.outputs.semver-version }}
+      pep440-version:
+        description: Python package version following the PEP 440 specification.
+        value: ${{ jobs.release.outputs.pep440-version }}
+      debian-version:
+        description: Debian upstream version; does not include a package revision.
+        value: ${{ jobs.release.outputs.debian-version }}
       draft-created:
         description: Whether a draft release was created for asset assembly.
         value: ${{ jobs.release.outputs.draft-created }}
@@ -40,6 +52,10 @@ jobs:
       group: shared-semantic-release
       cancel-in-progress: false
     outputs:
+      build-version: ${{ steps.release.outputs.build-version }}
+      semver-version: ${{ steps.release.outputs.semver-version }}
+      pep440-version: ${{ steps.release.outputs.pep440-version }}
+      debian-version: ${{ steps.release.outputs.debian-version }}
       draft-created: ${{ steps.release.outputs.draft-created }}
       published: ${{ steps.release.outputs.published }}
       version: ${{ steps.release.outputs.version }}

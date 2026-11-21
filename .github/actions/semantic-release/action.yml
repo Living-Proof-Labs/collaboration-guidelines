@@ -15,6 +15,18 @@ inputs:
     description: Calculate version and tag in read-only candidate mode without publishing.
     default: 'false'
 outputs:
+  build-version:
+    description: PR artifact prerelease version or exact verified main tag version; empty on a main dry run or no release.
+    value: ${{ steps.release.outputs.build-version }}
+  semver-version:
+    description: SemVer artifact version.
+    value: ${{ steps.release.outputs.semver-version }}
+  pep440-version:
+    description: Python package version following the PEP 440 specification.
+    value: ${{ steps.release.outputs.pep440-version }}
+  debian-version:
+    description: Debian upstream version; does not include a package revision.
+    value: ${{ steps.release.outputs.debian-version }}
   draft-created:
     description: Whether this invocation created a draft release.
     value: ${{ steps.release.outputs.draft-created }}
@@ -52,6 +64,7 @@ runs:
         RELEASE_DRAFT: ${{ inputs.draft-release }}
         RELEASE_CANDIDATE: ${{ inputs.candidate }}
         RELEASE_EXPECTED_COMMIT: ${{ github.event.pull_request.head.sha }}
+        RELEASE_PR_NUMBER: ${{ github.event.pull_request.number }}
         RELEASE_EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
         GITHUB_TOKEN: ${{ inputs.token }}
       run: node "$RELEASE_ACTION_PATH/run.mjs"

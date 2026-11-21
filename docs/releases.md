@@ -109,15 +109,67 @@ repository access; they are not an unauthenticated PR preview mechanism.
 | `published` | String `true` only when this invocation publishes a release |
 | `version` | Published or proposed version; empty when no release is needed |
 | `git-tag` | Published or proposed tag; empty when no release is needed |
+| `semver-version` | Plain version after the exact tag is verified |
+| `pep440-version` | Same verified plain version for Python packages |
+| `debian-version` | Same verified upstream version for Debian |
+| `build-version` | Alias of `semver-version` |
+| `commit` | Exact source commit evaluated |
 | `release-url` | Published GitHub Release URL; empty for dry run or no release |
 
-Use `needs.release.outputs.version` in downstream jobs. A failure fails the job;
+Use the format-specific outputs downstream. They are empty on a main dry run
+or when no release is due. A failure fails the job;
 it is never converted into a successful no-release outcome. A repeat run with no
 new eligible commits returns `published=false`.
 
 Only GitHub Releases are published. No npm package, generated changelog, or
 version-bump commit is produced. Existing `vX.Y.Z` tags are preserved and used as
 the release history; migration must retain the consumer's existing tags.
+
+## Pull request build versions
+
+Use the read-only [candidate workflow](../.github/workflows/semantic-release-candidate.yml)
+for pull requests to main. Its `version` and `git-tag` are a stable release
+forecast, not a version or tag produced by this run. Both are empty when no
+release is due. `commit` identifies the exact pull request head.
+
+Use `semver-version` (also exposed as `build-version`) to build and label
+the actual pull request artifact.
+The format is `BASE-pr.PR_NUMBER.RUN_NUMBER.ATTEMPT`, such as
+`9.8.0-pr.131.42.1`.
+The base is the forecast. With no forecast, use the next patch above the
+latest stable release on the event base, or `1.0.0` before the first release.
+This fallback does not schedule a release or fill in the forecast outputs.
+No pull request creates a tag, release, or production deployment.
+
+Each new run of the same caller workflow gets a higher numeric run number.
+A newer pull request event can see a newly released main base and recalculate
+the forecast, even if its head has not yet incorporated that base. Older
+events use their own exact base, not moving main. For example,
+`9.8.0-pr.131.42.1` precedes `9.8.0-pr.131.43.1`, which precedes
+`9.9.0-pr.131.44.1` if the forecast rises. This is not a guarantee that the
+version core cannot fall if release intent or policy changes.
+
+Rerunning the same GitHub Actions run keeps its run number but uses a higher
+attempt number. A tag can appear on that same event base between attempts,
+so the forecast may change too. Each attempt gets its own build version.
+Use one caller workflow for each artifact family. Record the exact commit,
+run identifier, and attempt in artifact provenance, and use the output
+appropriate to the artifact without rebuilding the version in the caller:
+
+- `semver-version` is the canonical branch build version, for example
+  `9.8.0-pr.131.42.1`.
+- `pep440-version` is `BASE.devN` for Python. The numeric identifier `N`
+  concatenates the caller workflow run number, repository-unique run ID,
+  and attempt, with the last two numbers zero-padded to 20 digits. This stays
+  ordered within a workflow and prevents collisions between workflows in the
+  same repository without depending on an undocumented order for run IDs.
+  Separate repositories do not share a version namespace.
+- `debian-version` is `BASE~pr.PR_NUMBER.RUN_NUMBER.ATTEMPT` for Debian
+  package control metadata. The caller applies any Debian package revision separately.
+  This does not change numeric versions in robot package manifests.
+
+Main supplies the same plain version to all three outputs after the tag is
+verified. Use the same versioned build path in both lanes.
 
 ## Policy
 

@@ -2,6 +2,7 @@
 import { appendFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import semver from 'semver';
 import config from './release.config.mjs';
 import { planVersion } from './plan.mjs';
 
@@ -17,6 +18,31 @@ export function outputs(result, dryRun, draftRelease = false, commit = '') {
     commit,
   };
 }
+
+const stable = value => typeof value === 'string' &&
+  /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(value) && semver.valid(value) === value;
+const identifier = value => typeof value === 'string' && /^[1-9][0-9]{0,19}$/.exec(value)?.[0] === value;
+
+export function candidateBuildVersions(base, prNumber, runNumber, runId, runAttempt) {
+  if (!stable(base) || ![prNumber, runNumber, runId, runAttempt].every(identifier)) {
+    throw new Error('Candidate build versions require a stable base and canonical PR number, workflow run number, run ID and attempt');
+  }
+  const suffix = `pr.${prNumber}.${runNumber}.${runAttempt}`;
+  const version = `${base}-${suffix}`;
+  if (semver.valid(version) !== version) throw new Error('Invalid candidate SemVer build version');
+  // A run ID is unique in its repository, but only a run number is ordered
+  // within a workflow. Fixed widths keep the run ID and attempt distinct
+  // without allowing either to outrank a later workflow run.
+  return {
+    'semver-version': version,
+    'pep440-version': `${base}.dev${runNumber}${runId.padStart(20, '0')}${runAttempt.padStart(20, '0')}`,
+    'debian-version': `${base}~${suffix}`,
+  };
+}
+
+const mainBuildVersions = version => ({
+  'semver-version': version, 'pep440-version': version, 'debian-version': version,
+});
 
 export function configuration(draftRelease = false) {
   return { ...config, plugins: config.plugins.map(([name, options], index) =>
@@ -37,6 +63,14 @@ export function verifyTagMatchesCommit(gitTag, expectedCommit, { cwd, fetchTag =
   if (taggedCommit !== expectedCommit) {
     throw new Error(`Tag ${gitTag} resolves to ${taggedCommit}, expected ${expectedCommit}`);
   }
+}
+
+export function verifiedMainBuildVersion(next, expectedCommit, options) {
+  if (!stable(next.version) || next.gitTag !== `v${next.version}`) {
+    throw new Error('Release tag and plain version disagree');
+  }
+  verifyTagMatchesCommit(next.gitTag, expectedCommit, options);
+  return mainBuildVersions(next.version);
 }
 
 export async function run() {
@@ -63,12 +97,16 @@ export async function run() {
   }
   const plan = await planVersion(cwd, expected, {
     candidate, expectedBase: candidate ? process.env.RELEASE_EXPECTED_BASE : undefined,
+    includeBuildBase: candidate,
   });
   const head = plan.commit;
   let result;
+  let buildVersions = mainBuildVersions('');
   if (candidate) {
     // The planner only reads Git history and calls the locked commit analyzer.
     // Do not enter the engine's remote authorization/publish lifecycle here.
+    buildVersions = candidateBuildVersions(plan.buildBase, process.env.RELEASE_PR_NUMBER,
+      process.env.GITHUB_RUN_NUMBER, process.env.GITHUB_RUN_ID, process.env.GITHUB_RUN_ATTEMPT);
     result = plan.version ? { nextRelease: plan } : false;
   } else {
     const { default: semanticRelease } = await import('semantic-release');
@@ -79,11 +117,12 @@ export async function run() {
       repositoryUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}.git`,
     }, { cwd });
     if (result?.nextRelease && !dryRun) {
-      verifyTagMatchesCommit(result.nextRelease.gitTag, head, { cwd, fetchTag: true });
+      buildVersions = verifiedMainBuildVersion(result.nextRelease, head, { cwd, fetchTag: true });
     }
   }
 
-  const values = outputs(result, dryRun, draftRelease, head);
+  const values = { ...outputs(result, dryRun, draftRelease, head),
+    'build-version': buildVersions['semver-version'], ...buildVersions };
   await appendFile(process.env.GITHUB_OUTPUT,
     Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join(''));
 }
