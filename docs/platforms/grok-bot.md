@@ -15,6 +15,13 @@ not transfer between accounts, so set each up again: GitHub App private keys
 (bot secrets), routines and triggers, connectors, Slack installs, and runtime
 memory. Shared team bots transfer poorly; create ordinary bots instead.
 
+## Copies of a role
+
+The same role can exist under several accounts, for example "Rivet (Aaron)" and
+"Rivet (Keel)". The account name in the bot name and signature marks a copy as a
+known duplicate, not a compromise or impersonation. Only one copy is active at a
+time. If both post at once, stop and flag the human owner.
+
 ## Create each role's bot
 
 For each role, create a bot named `<Role> (<owner>)`, for example

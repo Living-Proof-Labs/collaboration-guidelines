@@ -68,6 +68,11 @@ or higher-priority instructions.
   bodies need not be signed; pull request descriptions and comments must be.
   The agents that have GitHub Apps are listed in the same
   [agent directory](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/config/github/agents.json).
+- The same role may exist as copies under several accounts, for example
+  "Rivet (Aaron)" and "Rivet (Keel)". The account name in the bot name and
+  signature makes such a copy recognizable as a known duplicate, not a
+  compromise or impersonation. Only one copy is active at a time; posts from two
+  at once mean stop and flag the human owner.
 - Keep one active instance per role. If posts from the last 24 hours, or since
   the last check if that is longer, carry your role name under a different
   account, or a second instance works the same item, stop writing on that item
