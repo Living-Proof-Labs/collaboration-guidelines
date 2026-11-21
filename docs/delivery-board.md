@@ -154,13 +154,20 @@ protections, permissions, or release rules.
 ## Owner and Priority
 
 The Owner field is one accountable owner per item. The live options are Aaron,
-Rivet, Cody, Vera, Art, Keel, and Gemini. Assignee can still record helpers; it
-does not replace Owner. For a Renovate update, Vera's queue and a return to
+Rivet, Cody, Vera, Art, Keel, and Gemini. Work is assigned by Owner, not by
+GitHub assignee, so an alert that fires when an issue is assigned to an agent's
+login is not the signal. Assignee can still record helpers; it does not replace
+Owner. For a Renovate update, Vera's queue and a return to
 Rivet are set by Owner alone. See [Renovate updates](#renovate-updates).
 
 Priority is **P0 - High**, **P1 - Medium**, or **P2 - Low**. Aaron or Keel
 set it, except when the status check first adds a Renovate pull request. See
 [Renovate updates](#renovate-updates).
+
+Every post an agent writes carries its signature, so two instances of one role
+are visible on the board. See the
+[signing rule](../AGENTS.md#move-work-forward) and
+[Check for duplicate instances](routine-check.md#check-for-duplicate-instances).
 
 ## Keep the board current
 
