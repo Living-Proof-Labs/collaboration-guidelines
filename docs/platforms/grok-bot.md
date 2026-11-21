@@ -62,12 +62,18 @@ everything passes. It never prints a secret.
 - Description links its Notion profile and the guidelines.
 - Its own GitHub App key secret is present and a token can be minted.
 - It can read repositories, comment, and edit the board. Do a read-only test
-  first, then one harmless signed comment if allowed.
+  first, then one harmless signed comment if allowed. Post it on the bot's own
+  setup issue, or on an existing tracking issue the account owner names, never
+  on another item.
 - The required connectors are connected.
+- Memory: runtime memory does not transfer, so on first start it re-reads the
+  guidelines and its Notion profile. It records any standing rule learned since
+  in the profile or the guidelines, not only in memory.
 - Coordinator only: the scheduled check exists and points at the
   [routine check](../routine-check.md), and the old account's routines are
   retired.
-- The signature is correct.
+- The signature is correct: the latest post ends with
+  "— Role (account owner)", for example "— Vera (Aaron)", matching the bot name.
 - No duplicate instance is posting.
 
 ## Verify before activating
@@ -84,8 +90,14 @@ example "— Vera (`<owner>`)".
   gives the signature.
 - Optionally give Rivet event alerts that point at the
   [Event wakes](../routine-check.md#event-wakes-issue-or-pull-request) section.
-- Cody, Vera, and Art get no timers. The coordinator wakes them at each handoff
-  and tells them to continue until their queue is empty.
+  An issue-assigned listener per repository serves as the coordinator's issue
+  fast lane. An assignment event is only a wake signal; the handler decides
+  relevance by board Owner and team mentions. Split the listener into several
+  routines when a platform caps the repositories per trigger (Grok Bot capped
+  it at 8 in practice).
+- Cody, Vera, and Art get no queue-sweep timers. The coordinator wakes them at
+  each handoff and tells them to continue until their queue is empty. A role may
+  keep its own narrow maintenance check, for example a weekly drift check.
 
 ## Before activating a copy
 

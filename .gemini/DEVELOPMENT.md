@@ -129,10 +129,11 @@ background timer, follow this sequence on every task:
    pull request for Rivet.
 4. **Sign every GitHub post:** Because Gemini shares the connected GitHub
    account rather than posting from a dedicated GitHub App, sign every issue
-   description, pull request body, review reply, comment, and commit message
-   body with your name and account, `— Gemini (Aaron)`, as required by
+   description, pull request body, review reply, and comment with your name and
+   account, `— Gemini (Aaron)`, as required by
    [AGENTS.md](../AGENTS.md). Gemini posts as Aaron's own user, so the
-   signature is the only way to tell its work apart.
+   signature is the only way to tell its work apart. Commit message bodies need
+   no signature; pull request descriptions and comments do.
 5. **Report board-write limits honestly:** Never claim Project #2 status or
    owner fields were updated when `addProjectV2ItemById` or
    `updateProjectV2ItemFieldValue` fails; record the exact GraphQL error so

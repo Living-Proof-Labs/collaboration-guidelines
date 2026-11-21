@@ -57,17 +57,19 @@ or higher-priority instructions.
   at commit `89573d88fc82ad79e2696e7cdd642444cdb99699`. See
   [verification of user-run paths](docs/independent-review.md#verification-of-user-run-paths).
 - Every agent signs each post it writes with its name and the account it runs
-  under. This covers pull request descriptions, comments, reviews, issue
-  bodies, and chat handoffs. An agent that posts under a human's identity must
-  sign every post and pull request description, because the signature is then
-  the only way to tell its work apart. Examples: "— Rivet (Aaron)",
-  "— Keel (Aaron)", "— Gemini (Aaron)". Agents with their own GitHub App sign
-  too: the app shows who posted, not which account or instance. The signature
-  lets anyone see when two instances of one role are working at once, for
-  example after a team is copied or moved to another account. Commit message
-  bodies need not be signed; pull request descriptions and comments must be.
-  The agents that have GitHub Apps are listed in the same
-  [agent directory](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/config/github/agents.json).
+  under. The account is the person whose account the bot runs under, for
+  example Aaron or Keel, not a login or a platform name. This covers pull
+  request descriptions, comments, reviews, issue bodies, and chat handoffs. An
+  agent that posts under a human's identity must sign every post and pull
+  request description, because the signature is then the only way to tell its
+  work apart. Examples: "— Rivet (Aaron)", "— Keel (Aaron)", "— Gemini
+  (Aaron)". Agents with their own GitHub App sign too: the app shows who
+  posted, not which account or instance. The signature lets anyone see when
+  two instances of one role are working at once, for example after a team is
+  copied or moved to another account. Commit message bodies need not be
+  signed; pull request descriptions and comments must be. The agents that have
+  GitHub Apps are listed in the same [agent
+  directory](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/config/github/agents.json).
 - The same role may exist as copies under several accounts, for example
   "Rivet (Aaron)" and "Rivet (Keel)". The account name in the bot name and
   signature makes such a copy recognizable as a known duplicate, not a

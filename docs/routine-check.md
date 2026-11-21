@@ -105,17 +105,24 @@ The scheduled check is the reliable path. Each run:
 ## Event wakes (issue or pull request)
 
 A single event can wake an agent, for example a pull request opened or merged,
-a failed check, an issue assigned, or a new comment. Handle only that one item.
+a failed check, an issue assigned, or a new comment. An assignment event is
+only a wake signal: the handler decides relevance by board Owner and team
+mentions, never by the assignee. Handle only that one item.
 Do not sweep the board or the repositories.
 
 1. Read the item and its board Owner and Status.
 2. If the Owner is a team role, act according to its Status, or wake that
-   teammate with the item link if the work is theirs.
+   teammate with the item link if the work is theirs. Handoffs follow the
+   [roles and queues](delivery-board.md#roles-and-queues): a verifier pass
+   leaves Status alone for the coordinator to merge; a verifier fail moves the
+   item to **In Progress** with Owner the developer, plus a comment saying
+   what is needed.
 3. If the team does not own it, read only the latest comments for a team
    mention. Respond only if one asks something of a team role.
 4. If nothing is owed, end silently. Do not post an acknowledgement.
-5. If another instance of your role has posted on the item recently under a
-   different signature, stop and follow
+5. If another instance of your role has posted on the item recently (within the
+   last 24 hours, or since the last check if that is longer) under a different
+   signature, stop and follow
    [Check for duplicate instances](#check-for-duplicate-instances).
 
 Platform event triggers usually cannot see board Owner changes or mentions in
@@ -152,16 +159,20 @@ check if that is longer, signed with your own role name under a different
 account. Also compare the account shown as the author with the signature, and
 look for unsigned posts that read like your role's work.
 
-A concrete query, for example with the GitHub command line:
+A concrete query, for example with the GitHub command line. The cutoff is UTC
+ISO 8601, for example `2026-11-21T09:00:00Z`. It prints the author, time, and
+last line of each comment, and the same for the description:
 
 ```text
-gh issue view <n> --json comments --jq '.comments[]
+gh issue view <n> --json author,createdAt,body,comments --jq '
+  ([{author, createdAt, body}] + .comments)[]
   | select(.createdAt > "<cutoff>")
-  | [.author.login, .createdAt, (.body | split("\n") | last)]
+  | [.author.login, .createdAt, (.body | rtrimstr("\n") | split("\n") | last)]
   | @tsv'
 ```
 
-Use `gh pr view` for pull requests. Flag a post that:
+Use `gh pr view` for pull requests; it reads the description the same way.
+Flag a post that:
 
 - ends with your role name and a different account, for example
   "— Rivet (Keel)" when you are "— Rivet (Aaron)";
