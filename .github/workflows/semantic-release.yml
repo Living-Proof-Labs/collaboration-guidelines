@@ -9,62 +9,30 @@ on:
       draft-release:
         type: boolean
         default: false
-      candidate:
-        type: boolean
-        default: false
-      checkout-ref:
-        type: string
-        default: ''
     outputs:
       draft-created:
         description: Whether a draft release was created for asset assembly.
-        value: ${{ jobs.release.outputs.draft-created || jobs.candidate.outputs.draft-created }}
+        value: ${{ jobs.release.outputs.draft-created }}
       published:
         description: Whether this invocation published a release.
-        value: ${{ jobs.release.outputs.published || jobs.candidate.outputs.published }}
+        value: ${{ jobs.release.outputs.published }}
       version:
         description: Published or dry-run version, or empty for no release.
-        value: ${{ jobs.release.outputs.version || jobs.candidate.outputs.version }}
+        value: ${{ jobs.release.outputs.version }}
       git-tag:
         description: Published or dry-run tag, or empty for no release.
-        value: ${{ jobs.release.outputs.git-tag || jobs.candidate.outputs.git-tag }}
+        value: ${{ jobs.release.outputs.git-tag }}
+      commit:
+        description: Exact 40-character source commit evaluated for this release.
+        value: ${{ jobs.release.outputs.commit }}
       release-url:
         description: Published release URL, or empty for dry-run or no release.
-        value: ${{ jobs.release.outputs.release-url || jobs.candidate.outputs.release-url }}
-      commit:
-        description: Exact 40-character commit SHA evaluated for this version.
-        value: ${{ jobs.release.outputs.commit || jobs.candidate.outputs.commit }}
+        value: ${{ jobs.release.outputs.release-url }}
 permissions:
   contents: read
 jobs:
-  candidate:
-    if: inputs.candidate
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      draft-created: ${{ steps.release.outputs.draft-created }}
-      published: ${{ steps.release.outputs.published }}
-      version: ${{ steps.release.outputs.version }}
-      git-tag: ${{ steps.release.outputs.git-tag }}
-      release-url: ${{ steps.release.outputs.release-url }}
-      commit: ${{ steps.release.outputs.commit }}
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          ref: ${{ inputs.checkout-ref || github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      # GitHub.com: same repository and exact revision as this called workflow.
-      - uses: $/.github/actions/semantic-release
-        id: release
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          dry-run: true
-          draft-release: false
-          candidate: true
   release:
-    if: ${{ !inputs.candidate && github.ref == 'refs/heads/main' }}
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -76,8 +44,8 @@ jobs:
       published: ${{ steps.release.outputs.published }}
       version: ${{ steps.release.outputs.version }}
       git-tag: ${{ steps.release.outputs.git-tag }}
-      release-url: ${{ steps.release.outputs.release-url }}
       commit: ${{ steps.release.outputs.commit }}
+      release-url: ${{ steps.release.outputs.release-url }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -90,4 +58,3 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: ${{ inputs.dry-run }}
           draft-release: ${{ inputs.draft-release }}
-          candidate: false

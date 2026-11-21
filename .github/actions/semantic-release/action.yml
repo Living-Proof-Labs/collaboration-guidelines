@@ -3,8 +3,8 @@ name: Living Proof Labs semantic release
 description: Publish GitHub Releases with the pinned shared semantic-release policy.
 inputs:
   token:
-    description: Caller GitHub token with contents write permission.
-    required: true
+    description: Caller GitHub token with contents write permission (release only).
+    required: false
   dry-run:
     description: Calculate without publishing; still verifies repository access.
     default: 'false'
@@ -41,9 +41,8 @@ runs:
         node-version: '24.22.3'
     - name: Install the pinned release toolchain
       shell: bash
-      env:
-        RELEASE_ACTION_PATH: ${{ github.action_path }}
-      run: npm ci --prefix "$RELEASE_ACTION_PATH" --omit=dev --ignore-scripts
+      working-directory: ${{ github.action_path }}
+      run: npm ci --omit=dev --ignore-scripts
     - name: Run semantic-release
       id: release
       shell: bash
@@ -52,5 +51,7 @@ runs:
         RELEASE_DRY_RUN: ${{ inputs.dry-run }}
         RELEASE_DRAFT: ${{ inputs.draft-release }}
         RELEASE_CANDIDATE: ${{ inputs.candidate }}
+        RELEASE_EXPECTED_COMMIT: ${{ github.event.pull_request.head.sha }}
+        RELEASE_EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
         GITHUB_TOKEN: ${{ inputs.token }}
       run: node "$RELEASE_ACTION_PATH/run.mjs"

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-import semanticRelease from 'semantic-release';
 import { appendFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import config from './release.config.mjs';
+import { planVersion } from './plan.mjs';
 
 // Adapt the official engine result to the GitHub Actions output contract.
 export function outputs(result, dryRun, draftRelease = false, commit = '') {
@@ -18,20 +18,9 @@ export function outputs(result, dryRun, draftRelease = false, commit = '') {
   };
 }
 
-export function configuration(draftRelease = false, { candidate = false, branch = 'main' } = {}) {
-  if (candidate) {
-    return {
-      ...config,
-      branches: [branch],
-      plugins: config.plugins.slice(0, 2),
-      ci: false,
-    };
-  }
-  return {
-    ...config,
-    plugins: config.plugins.map(([name, options], index) =>
-      [name, index === 2 ? { ...options, draftRelease } : options]),
-  };
+export function configuration(draftRelease = false) {
+  return { ...config, plugins: config.plugins.map(([name, options], index) =>
+    [name, index === 2 ? { ...options, draftRelease } : options]) };
 }
 
 export function verifyTagMatchesCommit(gitTag, expectedCommit, { cwd, fetchTag = true } = {}) {
@@ -41,7 +30,7 @@ export function verifyTagMatchesCommit(gitTag, expectedCommit, { cwd, fetchTag =
       encoding: 'utf8',
     });
   }
-  const taggedCommit = execFileSync('git', ['rev-parse', `${gitTag}^{commit}`], {
+  const taggedCommit = execFileSync('git', ['rev-parse', '--verify', `refs/tags/${gitTag}^{commit}`], {
     cwd,
     encoding: 'utf8',
   }).trim();
@@ -68,32 +57,30 @@ export async function run() {
   }
 
   const cwd = process.env.GITHUB_WORKSPACE;
-  const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' }).trim();
-  if (!candidate && head !== process.env.GITHUB_SHA) {
-    throw new Error('Checked-out HEAD must match the triggering commit');
+  const expected = candidate ? process.env.RELEASE_EXPECTED_COMMIT : process.env.GITHUB_SHA;
+  if (candidate && (draftValue === 'true' || process.env.GITHUB_TOKEN)) {
+    throw new Error('Candidate must not receive a release token or request a draft');
   }
-
-  let branch = 'main';
+  const plan = await planVersion(cwd, expected, {
+    candidate, expectedBase: candidate ? process.env.RELEASE_EXPECTED_BASE : undefined,
+  });
+  const head = plan.commit;
+  let result;
   if (candidate) {
-    branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
-      cwd,
-      encoding: 'utf8',
-    }).trim();
-    if (branch === 'HEAD') {
-      branch = 'candidate-preview';
-      execFileSync('git', ['checkout', '-B', branch], { cwd, encoding: 'utf8' });
+    // The planner only reads Git history and calls the locked commit analyzer.
+    // Do not enter the engine's remote authorization/publish lifecycle here.
+    result = plan.version ? { nextRelease: plan } : false;
+  } else {
+    const { default: semanticRelease } = await import('semantic-release');
+    const release = configuration(draftRelease);
+    release.plugins.push([fileURLToPath(new URL('./verify-plan.mjs', import.meta.url)), plan]);
+    result = await semanticRelease({
+      ...release, extends: [], dryRun,
+      repositoryUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}.git`,
+    }, { cwd });
+    if (result?.nextRelease && !dryRun) {
+      verifyTagMatchesCommit(result.nextRelease.gitTag, head, { cwd, fetchTag: true });
     }
-  }
-
-  const result = await semanticRelease({
-    ...configuration(draftRelease, { candidate, branch }),
-    extends: [],
-    dryRun,
-    repositoryUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}.git`,
-  }, { cwd });
-
-  if (!candidate && !dryRun && result?.nextRelease) {
-    verifyTagMatchesCommit(result.nextRelease.gitTag, head, { cwd, fetchTag: true });
   }
 
   const values = outputs(result, dryRun, draftRelease, head);
