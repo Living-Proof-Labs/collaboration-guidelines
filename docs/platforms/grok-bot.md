@@ -90,7 +90,11 @@ example "— Vera (`<owner>`)".
   [Setting up the alert on a new platform](../routine-check.md#setting-up-the-alert-on-a-new-platform).
 - Optionally give Rivet event alerts whose prompt points at the
   [Event wakes](../routine-check.md#event-wakes-issue-or-pull-request) section,
-  in the same shape.
+  in the same shape. Each run ends with a brief summary of the actions taken to
+  the runner's report destination.
+- Anything that needs someone's answer or decision, human or agent, goes on the
+  board as **Blocked** with that person as Owner, plus a comment saying exactly
+  what they need to answer. Do not use a chat message or a report.
   An issue-assigned listener per repository serves as the coordinator's issue
   fast lane. An assignment event is only a wake signal; the handler decides
   relevance by board Owner and team mentions. Split the listener into several

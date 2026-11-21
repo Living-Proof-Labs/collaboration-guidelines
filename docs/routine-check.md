@@ -101,6 +101,9 @@ The scheduled check is the reliable path. Each run:
    comment names a team role without changing ownership, and only on what that
    comment asks. Read at most the 30 most recently updated such items per run;
    note any remainder in the checkpoint for the next run.
+3. Anything that needs someone's answer or decision, human or agent, goes on
+   the board as **Blocked** with that person as Owner, plus a comment saying
+   exactly what they need to answer. Do not use a chat message or a report.
 
 ## Event wakes (issue or pull request)
 
@@ -125,7 +128,11 @@ signal.
    items.
 4. If the team does not own it, read only the latest comments for a team
    mention. Respond only if one asks something of a team role.
-5. If nothing is owed, end quietly. Do not post an acknowledgement.
+5. Anything that needs someone's answer or decision, human or agent, goes on
+   the board as **Blocked** with that person as Owner, plus a comment saying
+   exactly what they need to answer. Do not use a chat message or a report.
+   If nothing is owed, post no acknowledgement on the item; the run still ends
+   with its brief summary.
 6. If another instance of your role has posted on the item recently (within the
    last 24 hours, or since the last check if that is longer) under a different
    signature, stop and follow
@@ -152,11 +159,18 @@ and what the agent does, not by a platform's trigger names or limits.
 - **Keep prompts to a runbook link plus role and signature.** The logic lives
   in the runbook, not the prompt. An event listener's prompt reads: `Run the
   Event wakes section of [runbook link] for the issue in this event. Role:
-  Rivet (coordinator). Sign as — Rivet (Aaron). Report here only when the
-  account owner must see or decide something; otherwise end quietly.` The
-  scheduled check's prompt reads: `Run [runbook link]. Role: Rivet
-  (coordinator). Sign as — Rivet (Aaron). Report here only when the account
-  owner must see or decide something; otherwise end quietly.`
+  Rivet (coordinator). Sign as — Rivet (Aaron). Anything needing someone's
+  answer goes on the board as Status Blocked with that person as Owner, plus a
+  comment. End with a short summary here of the actions taken (or that none
+  were needed).` The scheduled check's prompt reads: `Run [runbook link]. Role:
+  Rivet (coordinator). Sign as — Rivet (Aaron). Anything needing someone's
+  answer goes on the board as Status Blocked with that person as Owner, plus a
+  comment. End with a short summary here of the actions taken (or that none
+  were needed).`
+- **End each run with a brief summary.** Each run, scheduled or event, ends with
+  a brief summary of the actions taken (or that none were needed) sent to the
+  runner's report destination. Decisions still go on the board, not in the
+  summary.
 - **Split by platform limits when needed.** If a platform caps what one trigger
   can cover, use several triggers with the same pointer; the runbook stays the
   single source.
