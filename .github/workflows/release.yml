@@ -46,3 +46,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.release.outputs.git-tag }}
         run: bash tools/tooling/publish.sh
+  deploy-manual:
+    needs: [verify, release, publish-tooling]
+    if: >-
+      always() && github.ref == 'refs/heads/main' && needs.verify.result == 'success' &&
+      (needs.release.outputs.published == 'true' || (needs.release.outputs.draft-created == 'true' && needs.publish-tooling.result == 'success'))
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/manual.yml
+    with:
+      release_tag: ${{ needs.release.outputs.git-tag }}
+      release_version: ${{ needs.release.outputs.version }}
