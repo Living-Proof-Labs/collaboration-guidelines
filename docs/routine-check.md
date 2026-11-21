@@ -74,12 +74,106 @@ waits until the merged routine is accessible.
 3. Find the existing worker through the authorized platform's worker lookup and
    private handoff record. Confirm its scope, revision, and actual state before
    resuming or replacing it. Missing private state means unknown, not idle.
-4. Check for a duplicate instance. Look for recent posts on your items signed
-   with your own role name under a different account. If you find any, stop
-   writing on those items and follow the one-instance rule in `AGENTS.md`.
+4. Check for a duplicate instance. See
+   [Check for duplicate instances](#check-for-duplicate-instances).
 5. Select the next authorized action and record who will collect its result and
    the next wake. If no wake mechanism is available, record that gap and arrange
    an authorized manual handoff; never claim a reminder has been installed.
+
+## Assignment is by board Owner
+
+Work is assigned by the Owner field on the
+[Delivery board](https://github.com/orgs/Living-Proof-Labs/projects/2), not by
+the GitHub assignee. Old alerts that fire when an issue is assigned to an
+agent's login are retired: a person or agent may be assigned without owning the
+item, and ownership changes do not assign anyone. Do not use assignees as the
+signal.
+
+## Scheduled check scope
+
+The scheduled check is the reliable path. Each run:
+
+1. Finds board items whose Owner is any team role (for example Rivet, Cody,
+   Vera, Art) and wakes each teammate whose queue is not empty, per the
+   [delivery board guide](delivery-board.md#roles-and-queues).
+2. Also reads issues and pull requests in the organization updated since the
+   last successful check that the team does not own. Act only when a recent
+   comment names a team role without changing ownership, and only on what that
+   comment asks. Read at most the 30 most recently updated such items per run;
+   note any remainder in the checkpoint for the next run.
+
+## Event wakes (issue or pull request)
+
+A single event can wake an agent, for example a pull request opened or merged,
+a failed check, an issue assigned, or a new comment. Handle only that one item.
+Do not sweep the board or the repositories.
+
+1. Read the item and its board Owner and Status.
+2. If the Owner is a team role, act according to its Status, or wake that
+   teammate with the item link if the work is theirs.
+3. If the team does not own it, read only the latest comments for a team
+   mention. Respond only if one asks something of a team role.
+4. If nothing is owed, end silently. Do not post an acknowledgement.
+5. If another instance of your role has posted on the item recently under a
+   different signature, stop and follow
+   [Check for duplicate instances](#check-for-duplicate-instances).
+
+Platform event triggers usually cannot see board Owner changes or mentions in
+comments on items the team does not own. The scheduled check stays the reliable
+path; event listeners are an optional fast lane for speed, such as a merge or a
+failed check on the main branch.
+
+### Setting up the alert on a new platform
+
+For a worked example, see [Grok Bot](platforms/grok-bot.md).
+
+Any scheduler or automation works, for example Grok Bot routines, OpenAI Codex
+automations, GitHub Actions, or cron. Describe each trigger by what it delivers
+and what the agent does, not by a platform's trigger names or limits.
+
+- **One scheduled check.** A recurring tick with no payload. The agent runs this
+  runbook's full sweep.
+- **Optional event listeners.** Each delivers one issue or pull request event
+  with its URL. The agent runs [Event wakes](#event-wakes-issue-or-pull-request)
+  for that item only. Skip these where a scheduled check is fast enough.
+- **Keep prompts to a one-line pointer.** Link this runbook, name the agent's
+  role, and give its signature, for example `Run the Event wakes section of
+  [runbook link] for [item URL]. Role: Vera. Sign as — Vera (Keel).` Put no
+  second checklist in the prompt.
+- **Split by platform limits when needed.** If a platform caps what one trigger
+  can cover, use several triggers with the same pointer; the runbook stays the
+  single source.
+
+## Check for duplicate instances
+
+Two instances of one role working at once cause conflicting writes. Before
+writing on an item, look for posts from the last 24 hours, or since the last
+check if that is longer, signed with your own role name under a different
+account. Also compare the account shown as the author with the signature, and
+look for unsigned posts that read like your role's work.
+
+A concrete query, for example with the GitHub command line:
+
+```text
+gh issue view <n> --json comments --jq '.comments[]
+  | select(.createdAt > "<cutoff>")
+  | [.author.login, .createdAt, (.body | split("\n") | last)]
+  | @tsv'
+```
+
+Use `gh pr view` for pull requests. Flag a post that:
+
+- ends with your role name and a different account, for example
+  "— Rivet (Keel)" when you are "— Rivet (Aaron)";
+- carries your role name and the same account but comes from a second instance
+  (for example overlapping work you did not do); or
+- has no signature but is clearly your role's work, such as a verdict or a
+  handoff.
+
+Signing is required on pull request descriptions and comments; commit message
+bodies need not be signed. See the
+[signing rule](../AGENTS.md#move-work-forward). If you find a
+duplicate, stop writing on that item and follow the one-instance rule there.
 
 ## Lean repository coverage
 

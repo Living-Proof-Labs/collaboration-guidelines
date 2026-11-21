@@ -162,3 +162,10 @@ labelled `drift`; there is no central tracking issue.
 Start by practicing this loop on the top-level product tool in a separate
 product PR. This guide defines the process; it does not claim that product has
 been installed, reviewed, or given scenario coverage by this documentation change.
+
+## Signing review posts
+
+Sign every review comment and pull request description with your name and the
+account you run under, so a second instance of the verifier is visible. See
+the [signing rule](../AGENTS.md#move-work-forward) and
+[Check for duplicate instances](routine-check.md#check-for-duplicate-instances).

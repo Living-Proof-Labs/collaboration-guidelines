@@ -64,13 +64,18 @@ or higher-priority instructions.
   "— Keel (Aaron)", "— Gemini (Aaron)". Agents with their own GitHub App sign
   too: the app shows who posted, not which account or instance. The signature
   lets anyone see when two instances of one role are working at once, for
-  example after a team is copied or moved to another account. The agents that
-  have GitHub Apps are listed in the same
+  example after a team is copied or moved to another account. Commit message
+  bodies need not be signed; pull request descriptions and comments must be.
+  The agents that have GitHub Apps are listed in the same
   [agent directory](https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/config/github/agents.json).
-- Keep one active instance per role. If recent posts carry your role name under
-  a different account, or a second instance works the same item, stop writing
-  on that item and do not race it. Set it **Blocked** with Owner Aaron and a
-  one-line comment naming both signatures.
+- Keep one active instance per role. If posts from the last 24 hours, or since
+  the last check if that is longer, carry your role name under a different
+  account, or a second instance works the same item, stop writing on that item
+  and do not race it. Set it **Blocked** with Owner Aaron and a one-line comment
+  naming both signatures. See
+  [Check for duplicates](docs/routine-check.md#check-for-duplicate-instances).
+- Work is assigned by the Delivery board Owner field, never by the GitHub
+  assignee. See [Owner and Priority](docs/delivery-board.md#owner-and-priority).
 
 ## Write plainly
 
