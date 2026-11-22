@@ -37,9 +37,11 @@ For each role, create a bot named `<Role> (<owner>)`, for example
   repository;
 - a default mark (shape and colour) from the role table below.
 
-Do not upload a custom picture. The built-in mark animates while the bot is
-working, which shows progress; a custom picture is static. Each role keeps the
-same colour on every account, so copies are recognizable. The emoji is for
+Do not upload a custom picture. The assigned colour shows on the bot's name only
+with the default mark; setting a custom picture turns the name gray (tested on
+2026-11-23). A green dot on the bot's icon shows that it is working. A blue dot
+at the end of the bot's name shows that a message is waiting. Each role keeps
+the same colour on every account, so copies are recognizable. The emoji is for
 reference only: it matches the role's Notion page icon and GitHub App avatar.
 Where the shape says to record it here, the account owner chooses the shape and
 the bot adds it to this table once set.
