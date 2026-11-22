@@ -223,7 +223,10 @@ that needs him has to be visible there:
    Owner.
 
 A chat message to Aaron is fine as well, but the board is the record. These
-decisions always need Aaron's own words: access and permissions, repository
+decisions need Aaron's own words, or a decision he has delegated to Rivet as
+described in
+[Rivet speaks for the account owner](platforms/grok-bot.md#rivet-speaks-for-the-account-owner):
+access and permissions, repository
 settings and rulesets, DNS, hosting, spending, signing, external
 communications, repository creation, and deploys outside the pipeline.
 

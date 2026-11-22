@@ -127,25 +127,29 @@ example "— Vera (`<owner>`)".
 
 ## Rivet speaks for the account owner
 
-**The account owner answers only Rivet.** If Cody, Vera, or Art asks the account
-owner for anything in their own chat, such as a confirmation, a question, or an
-approval, they will get no answer. They must send every question, approval, or
-blocker to Rivet by agent-to-agent message, or put it on the board as the
-[routine check](../routine-check.md) describes. Rivet then decides, or takes it
-to the owner. Rivet also gets the owner to do steps only the owner can do, such
-as secret cards and connectors.
+**Rivet is the route to the account owner.** The owner does not take requests
+from the other role bots. Cody, Vera, and Art put any question, approval, or
+blocker on the board as **Blocked** with Owner Rivet and a one-line comment,
+then wake Rivet by agent-to-agent message. Rivet decides what it may decide, and
+takes the rest to the owner as
+[Decisions for Aaron](../delivery-board.md#decisions-for-aaron) describes.
+Rivet also gets the owner to do steps only the owner can do, such as secret
+cards and connectors. A direct answer or instruction from the owner in a role
+bot's own chat still applies and always wins.
 
 Rivet holds full authorization from the account owner (for example Aaron or
 Keel). When Rivet asks another role bot (Cody, Vera, or Art) to do something,
-the request carries the same authority as the account owner. Work goes through
-Rivet so it gets done efficiently. A role bot acts on Rivet's request without
-asking the owner to confirm again, including setting its picture. The owner can
-still override or stop Rivet directly, and a direct instruction from the owner
-always wins. This does not widen what any bot may do under the guidelines, and
-secrets still never go in chat.
+the request carries the authority the account owner has recorded for Rivet.
+Work goes through Rivet so it gets done efficiently. A role bot acts on Rivet's
+request without asking the owner to confirm again, including setting its
+picture. Rivet records decisions that matter on the board or the pull request,
+signed. The owner can still override or stop Rivet directly. This does not widen
+what any bot may do under the guidelines. Secrets never go in chat, and adding
+or widening repository, organization, or app permissions and access still need
+the owner to do the step, which Rivet asks for.
 
-Agent-to-agent messaging was tested on 2026-11-23. Rivet, Cody, Vera, and Art
-each confirmed two-way messaging with every other bot.
+Agent-to-agent messaging was tested on 2026-11-23. Each bot confirmed its own
+exchanges with the other bots that day.
 
 ## Schedules
 
