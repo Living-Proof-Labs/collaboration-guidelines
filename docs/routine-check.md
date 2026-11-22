@@ -287,9 +287,8 @@ checkpoints; this pass links their findings without taking over those watches.
 
 Gemini is a fast, decent coder for new easy-to-medium issues. It adds coding
 capacity. It does not take work through the lifecycle, and it does not take
-feedback and keep going. The engineering lead (Rivet, or Keel for items in
-Keel's lifecycle) delegates to Gemini and then takes the result back for
-review:
+feedback and keep going. The [engineering lead](delivery-board.md#roles-and-queues)
+delegates to Gemini and then takes the result back for review:
 
 1. **Delegate.** Set the issue Owner to **Gemini**. Gemini is told to pull
    against the issues it owns. It opens a pull request and stops.
