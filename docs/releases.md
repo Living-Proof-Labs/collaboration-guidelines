@@ -314,3 +314,18 @@ Explicit offline or air-gapped exports remain an opt-in use case. Changes to
 future asset selection leave existing release assets and registry images intact.
 Historical cleanup requires a separate inventory, reference/dependency protection,
 and explicit approval; it is not part of this distribution change.
+
+## Deliver this repository’s manual
+
+A normal push to main runs verification, resolves a version without writing,
+and tests and seals the manual. The writer and tooling publication retain their
+draft, image, evidence and finalization sequence. Only then does Pages deploy
+the sealed manual for the exact immutable published release, after an
+authenticated current-main check. Pull requests to main have their own versioned
+manual artifacts and cannot deploy.
+
+The **Guidelines release** workflow retains its existing no-input manual recovery
+for the release and tooling. It does not deploy Pages. If a Pages artifact has
+expired, run **Repository manual** on main with an explicit `replay_tag` for the
+existing immutable stable release at current main. This route rebuilds and tests
+only the manual, and cannot create a tag, publish a release, or push an image.

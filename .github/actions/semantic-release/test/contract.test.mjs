@@ -43,7 +43,7 @@ test('workflow and action preserve one source pin and output wiring', async () =
   }
   assert.ok(!Object.hasOwn(action.outputs, 'build-version'));
   const own = YAML.parse(await read('.github/workflows/release.yml'));
-  assert.equal(own.jobs.release.needs, 'verify');
+  assert.deepEqual(own.jobs.release.needs, ['verify', 'version', 'manual']);
   assert.equal(own.jobs.release.uses, './.github/workflows/semantic-release.yml');
   assert.deepEqual(own.on.push.branches, ['main']);
 });
