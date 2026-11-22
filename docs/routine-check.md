@@ -72,9 +72,10 @@ Before delivery work, verify all three checks:
 2. **Browser tabs.** Close tabs that are no longer needed. Preserve unsaved
    work and pending handoffs. Verify what remains at the start and again
    before ending the run.
-3. **Codex development machines.** On the machines used for delivery, start
-   the standard development environment and run its documented smoke check.
-   A connected machine alone does not pass. If disk space is the blocker,
+3. **Codex development machines.** On the machines used for delivery, follow
+   the [shared host recipe](shared-host.md) to start the standard development
+   environment and run its documented smoke check. A connected machine alone
+   does not pass. If disk space is the blocker,
    follow the existing Docker cleanup procedure on idle machines: remove only
    unused, rebuildable images and cache or finished output that can be
    recreated. Preserve in-progress work and volumes. Retry the same check.
