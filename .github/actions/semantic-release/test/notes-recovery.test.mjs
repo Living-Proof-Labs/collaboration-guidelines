@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { Writable } from 'node:stream';
+import { inspect } from 'node:util';
 import semanticRelease from 'semantic-release';
 import { run } from '../run.mjs';
+
+const envToken = 'ghs_envLeakCanary0123456789';
+const urlToken = 'ghs_urlLeakCanary99990000';
 
 const repositoryUrl = 'https://github.example.invalid/example/consumer.git';
 const sink = new Writable({ write(_chunk, _encoding, done) { done(); } });
@@ -122,6 +127,47 @@ async function output(cwd) {
       const index = line.indexOf('=');
       return [line.slice(0, index), line.slice(index + 1)];
     }));
+}
+
+function captureConsole() {
+  const lines = [];
+  const methods = ['log', 'info', 'warn', 'error', 'debug'];
+  const saved = {};
+  for (const method of methods) {
+    saved[method] = console[method];
+    console[method] = (...args) => {
+      lines.push(args.map(arg => typeof arg === 'string' ? arg : inspect(arg, { depth: 6 })).join(' '));
+    };
+  }
+  return {
+    text: () => lines.join('\n'),
+    restore() {
+      for (const method of methods) console[method] = saved[method];
+    },
+  };
+}
+
+function rendered(error) {
+  return [error?.message, error?.stack, error?.stderr, error?.stdout, error?.command, error?.output,
+    inspect(error, { depth: 6 })].map(value => String(value ?? '')).join('\n');
+}
+
+function assertRedacted(text, secrets, label) {
+  const value = String(text);
+  for (const secret of secrets) {
+    assert.equal(value.includes(secret), false, `${label} still contains a credential`);
+    assert.equal(value.includes(encodeURIComponent(secret)), false, `${label} still contains an encoded credential`);
+  }
+  assert.doesNotMatch(value, /https?:\/\/(?!\*\*\*@)[^\s/@]+@/i, `${label} still contains URL userinfo`);
+}
+
+function writtenOutput(cwd) {
+  try {
+    return readFileSync(join(cwd, 'outputs'), 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return '';
+    throw error;
+  }
 }
 
 test('notes push failure retries without moving tags and still publishes the release', async () => {
@@ -346,6 +392,205 @@ test('an existing Release for the tag at HEAD is left unchanged', async () => {
     assert.ok(calls.some(call => call.args[1] === 'view'));
     assert.deepEqual(fixture.refs(), before);
   } finally {
+    process.env = saved;
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a bare-tag ls-remote failure redacts the authenticated url', async () => {
+  const fixture = await repo();
+  const saved = { ...process.env };
+  const logs = captureConsole();
+  try {
+    fixture.git('commit', '--allow-empty', '-m', 'fix: bare tag remote failure');
+    const head = fixture.git('rev-parse', 'HEAD');
+    fixture.git('tag', 'v1.0.1', head);
+    fixture.git('push', 'origin', 'main', '--tags');
+    bind(saved, fixture.cwd, fixture.gitEnv, head, {
+      RELEASE_WRITER_EXPECTED_VERSION: '1.0.1',
+      RELEASE_WRITER_EXPECTED_COMMIT: head,
+      GITHUB_ACTION: 'true',
+      GITHUB_TOKEN: envToken,
+      GITHUB_SERVER_URL: 'https://127.0.0.1:9',
+    });
+    await assert.rejects(run({
+      releaseEngine: async () => assert.fail('writer must not run'),
+      gh: () => assert.fail('gh must not run when the remote lookup fails'),
+      sleep: async () => {},
+    }), error => {
+      const text = `${rendered(error)}\n${logs.text()}\n${writtenOutput(fixture.cwd)}`;
+      assertRedacted(text, [envToken], 'bare-tag ls-remote failure');
+      assert.match(error.message, /https:\/\/\*\*\*@127\.0\.0\.1:9\/example\/consumer\.git/);
+      assert.match(error.stack, /https:\/\/\*\*\*@127\.0\.0\.1:9\/example\/consumer\.git/);
+      return true;
+    });
+  } finally {
+    logs.restore();
+    process.env = saved;
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a notes-recovery ls-remote failure redacts credential urls', async () => {
+  const fixture = await repo();
+  const saved = { ...process.env };
+  const logs = captureConsole();
+  const secrets = [envToken, urlToken];
+  try {
+    fixture.git('commit', '--allow-empty', '-m', 'fix: notes remote failure');
+    const head = fixture.git('rev-parse', 'HEAD');
+    fixture.git('tag', 'v1.0.1', head);
+    fixture.git('push', 'origin', 'main', '--tags');
+    bind(saved, fixture.cwd, fixture.gitEnv, head, {
+      GITHUB_ACTION: 'true',
+      GITHUB_TOKEN: envToken,
+      GH_TOKEN: envToken,
+      GITHUB_SERVER_URL: 'https://127.0.0.1:9',
+    });
+    await assert.rejects(run({
+      releaseEngine: async () => {
+        throw new Error(`git push failed to push refs/notes/semantic-release-v1.0.1 ${urlToken} ` +
+          `https://x-access-token:${urlToken}@github.com/example/consumer.git?token=${urlToken}`);
+      },
+      gh: () => assert.fail('gh must not run when the remote lookup fails'),
+      sleep: async () => assert.fail('notes must not be retried before the remote tag is read'),
+    }), error => {
+      const text = `${rendered(error)}\n${logs.text()}\n${writtenOutput(fixture.cwd)}`;
+      assertRedacted(text, secrets, 'notes ls-remote failure');
+      assert.match(error.message, /https:\/\/\*\*\*@127\.0\.0\.1:9\/example\/consumer\.git/);
+      return true;
+    });
+  } finally {
+    logs.restore();
+    process.env = saved;
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('a recovery gh failure redacts credential urls in the error, cause, and step output', async () => {
+  const fixture = await repo();
+  const saved = { ...process.env };
+  const logs = captureConsole();
+  const secrets = [envToken, urlToken];
+  try {
+    fixture.git('commit', '--allow-empty', '-m', 'fix: gh failure leak');
+    const head = fixture.git('rev-parse', 'HEAD');
+    fixture.git('tag', 'v1.0.1', head);
+    fixture.git('push', 'origin', 'main', '--tags');
+    bind(saved, fixture.cwd, fixture.gitEnv, head, {
+      RELEASE_WRITER_EXPECTED_VERSION: '1.0.1',
+      RELEASE_WRITER_EXPECTED_COMMIT: head,
+      GITHUB_TOKEN: envToken,
+      GH_TOKEN: envToken,
+    });
+    await assert.rejects(run({
+      releaseEngine: async () => assert.fail('writer must not run'),
+      gh: () => {
+        const error = new Error(
+          `Command failed: gh release view https://x-access-token:${urlToken}@github.com/example/consumer` +
+          `?access_token=${urlToken}&token=${envToken} raw ${envToken}`,
+        );
+        error.stderr = `https://user:${urlToken}@github.com/example/consumer.git?client_secret=${urlToken}`;
+        error.stdout = `stdout ${envToken}`;
+        error.cause = new Error(
+          `nested http://oauth2:${urlToken}@github.com/example/consumer?api_key=${encodeURIComponent(urlToken)}`,
+        );
+        throw error;
+      },
+      sleep: async () => {},
+    }), error => {
+      const text = `${rendered(error)}\n${logs.text()}\n${writtenOutput(fixture.cwd)}`;
+      assertRedacted(text, secrets, 'gh failure');
+      assert.match(error.message, /https:\/\/\*\*\*@github\.com\/example\/consumer\?access_token=\*\*\*&token=\*\*\*/);
+      assert.match(String(error.stderr), /https:\/\/\*\*\*@github\.com\/example\/consumer\.git\?client_secret=\*\*\*/);
+      assert.match(error.cause.message, /http:\/\/\*\*\*@github\.com\/example\/consumer\?api_key=\*\*\*/);
+      assert.equal(String(error.stdout).includes(envToken), false);
+      return true;
+    });
+  } finally {
+    logs.restore();
+    process.env = saved;
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('an unhandled writer failure on the recovery path redacts credential urls', async () => {
+  const fixture = await repo();
+  const saved = { ...process.env };
+  const logs = captureConsole();
+  const secrets = [envToken, urlToken];
+  try {
+    fixture.git('commit', '--allow-empty', '-m', 'fix: unhandled leak');
+    const head = fixture.git('rev-parse', 'HEAD');
+    fixture.git('push', 'origin', 'main');
+    bind(saved, fixture.cwd, fixture.gitEnv, head, {
+      GITHUB_TOKEN: envToken,
+      GH_TOKEN: envToken,
+    });
+    await assert.rejects(run({
+      releaseEngine: async () => {
+        const error = new Error(
+          `publisher failed https://user:password@github.com/example/consumer.git?github_token=${urlToken} ${envToken}`,
+        );
+        error.stderr = `https://x-access-token:${urlToken}@github.com/example/consumer.git`;
+        error.cause = new Error(`cause ${envToken} https://token@github.com/example/consumer?password=${urlToken}`);
+        throw error;
+      },
+      gh: () => assert.fail('gh must not run for an unhandled writer error'),
+      sleep: async () => {},
+    }), error => {
+      const text = `${rendered(error)}\n${logs.text()}\n${writtenOutput(fixture.cwd)}`;
+      assertRedacted(text, secrets, 'unhandled writer failure');
+      assert.match(error.message, /https:\/\/\*\*\*@github\.com\/example\/consumer\.git\?github_token=\*\*\*/);
+      assert.match(String(error.stderr), /https:\/\/\*\*\*@github\.com\/example\/consumer\.git/);
+      assert.match(error.cause.message, /https:\/\/\*\*\*@github\.com\/example\/consumer\?password=\*\*\*/);
+      return true;
+    });
+  } finally {
+    logs.restore();
+    process.env = saved;
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('recovery step output redacts credential urls returned for the release', async () => {
+  const fixture = await repo();
+  const saved = { ...process.env };
+  const logs = captureConsole();
+  try {
+    fixture.git('commit', '--allow-empty', '-m', 'fix: output leak');
+    const head = fixture.git('rev-parse', 'HEAD');
+    fixture.git('tag', 'v1.0.1', head);
+    fixture.git('push', 'origin', 'main', '--tags');
+    bind(saved, fixture.cwd, fixture.gitEnv, head, {
+      RELEASE_WRITER_EXPECTED_VERSION: '1.0.1',
+      RELEASE_WRITER_EXPECTED_COMMIT: head,
+      GITHUB_TOKEN: envToken,
+      GH_TOKEN: envToken,
+    });
+    await run({
+      releaseEngine: async () => assert.fail('an existing tag must be recovered without the writer'),
+      gh: args => {
+        if (args[1] === 'view') {
+          const error = new Error('Command failed: gh release view');
+          error.status = 1;
+          error.stderr = 'release not found\n';
+          throw error;
+        }
+        if (args[1] === 'create') {
+          return `https://x-access-token:${envToken}@github.example.invalid/example/consumer/releases/tag/${args[2]}` +
+            `?access_token=${envToken}&keep=1\n`;
+        }
+        throw new Error(`unexpected gh ${args.join(' ')}`);
+      },
+      sleep: async () => {},
+    });
+    const text = `${writtenOutput(fixture.cwd)}\n${logs.text()}`;
+    assertRedacted(text, [envToken], 'recovery step output');
+    assert.match(text,
+      /release-url=https:\/\/\*\*\*@github\.example\.invalid\/example\/consumer\/releases\/tag\/v1\.0\.1\?access_token=\*\*\*&keep=1/);
+  } finally {
+    logs.restore();
     process.env = saved;
     await rm(fixture.root, { recursive: true, force: true });
   }
