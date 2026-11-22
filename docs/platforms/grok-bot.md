@@ -8,6 +8,9 @@ It is the checklist a primary Grok Bot follows to set the team up on an
 account. The process lives in the guidelines; this page covers only the
 platform steps. Replace `<owner>` with the account owner's name.
 
+<!-- markdownlint-disable-next-line MD013 -->
+Setup prompt: `Follow https://docs.livingprooflabs.com/collaboration-guidelines/docs/platforms/grok-bot.html; the owner is <owner>.`
+
 ## What does and does not transfer
 
 Knowledge transfers through these guidelines and the Notion profiles. These do
@@ -24,6 +27,7 @@ time. If both post at once, stop and flag the human owner.
 
 ## Create each role's bot
 
+The primary bot creates the role bots itself using its `create-agent` tool.
 For each role, create a bot named `<Role> (<owner>)`, for example
 "Vera (Aaron)". Set:
 
@@ -74,6 +78,7 @@ everything passes. It never prints a secret.
   retired.
 - The signature is correct: the latest post ends with
   "— Role (account owner)", for example "— Vera (Aaron)", matching the bot name.
+  A bot's first start, with no prior posts, counts as a pass.
 - No duplicate instance is posting.
 
 ## Verify before activating
@@ -85,8 +90,10 @@ example "— Vera (`<owner>`)".
 
 ## Schedules
 
-- Only the coordinator, Rivet, gets the scheduled check. Its prompt is the
-  runbook link plus role and signature, in the exact shape given in
+- Only the coordinator, Rivet, gets the scheduled check. Create Rivet's routines
+  paused, and enable them only after every bot's self-check passes and the old
+  copies are confirmed quiet. Its prompt is the runbook link plus role and
+  signature, in the exact shape given in
   [Setting up the alert on a new platform](../routine-check.md#setting-up-the-alert-on-a-new-platform).
 - Optionally give Rivet event alerts whose prompt points at the
   [Event wakes](../routine-check.md#event-wakes-issue-or-pull-request) section,
@@ -94,8 +101,9 @@ example "— Vera (`<owner>`)".
   the runner's report destination.
 - Anything that needs someone's answer or decision, human or agent, goes on the
   board as **Blocked** with that person as Owner, plus a comment saying exactly
-  what they need to answer. Do not use a chat message or a report.
-  An issue-assigned listener per repository serves as the coordinator's issue
+  what they need to answer. Do not use a chat message or a report for decisions
+  (priority wake messages between bots are still fine).
+- An issue-assigned listener per repository serves as the coordinator's issue
   fast lane. An assignment event is only a wake signal; the handler decides
   relevance by board Owner and team mentions. Split the listener into several
   routines when a platform caps the repositories per trigger (Grok Bot capped
@@ -112,6 +120,10 @@ example "— Vera (`<owner>`)".
    [Check for duplicate instances](../routine-check.md#check-for-duplicate-instances).
 3. Update each bot's signature to the new account, and reassign board Owner
    values if an identity changed.
-4. Then enable the schedule.
+4. Enable Rivet's paused routines only after every bot's self-check passes and
+   the old copies are confirmed quiet.
+
+At the end of setup, the primary bot reports one summary per bot, covering what
+passed, what is blocked, and what the owner still needs to do.
 
 Never put secrets or private identifiers in this repository.

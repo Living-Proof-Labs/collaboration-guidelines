@@ -56,3 +56,5 @@ nav:
       - Codex development: providers/codex/DEVELOPMENT.md
       - Cursor development: providers/cursor/DEVELOPMENT.md
       - Gemini development: providers/gemini/DEVELOPMENT.md
+      - Routine check: docs/routine-check.md
+      - Grok Bot setup: docs/platforms/grok-bot.md

@@ -103,7 +103,8 @@ The scheduled check is the reliable path. Each run:
    note any remainder in the checkpoint for the next run.
 3. Anything that needs someone's answer or decision, human or agent, goes on
    the board as **Blocked** with that person as Owner, plus a comment saying
-   exactly what they need to answer. Do not use a chat message or a report.
+   exactly what they need to answer. Do not use a chat message or a report for
+   decisions (priority wake messages between bots are still fine).
 
 ## Event wakes (issue or pull request)
 
@@ -130,7 +131,8 @@ signal.
    mention. Respond only if one asks something of a team role.
 5. Anything that needs someone's answer or decision, human or agent, goes on
    the board as **Blocked** with that person as Owner, plus a comment saying
-   exactly what they need to answer. Do not use a chat message or a report.
+   exactly what they need to answer. Do not use a chat message or a report for
+   decisions (priority wake messages between bots are still fine).
    If nothing is owed, post no acknowledgement on the item; the run still ends
    with its brief summary.
 6. If another instance of your role has posted on the item recently (within the
@@ -157,16 +159,11 @@ and what the agent does, not by a platform's trigger names or limits.
   with its URL. The agent runs [Event wakes](#event-wakes-issue-or-pull-request)
   for that item only. Skip these where a scheduled check is fast enough.
 - **Keep prompts to a runbook link plus role and signature.** The logic lives
-  in the runbook, not the prompt. An event listener's prompt reads: `Run the
-  Event wakes section of [runbook link] for the issue in this event. Role:
-  Rivet (coordinator). Sign as — Rivet (Aaron). Anything needing someone's
-  answer goes on the board as Status Blocked with that person as Owner, plus a
-  comment. End with a short summary here of the actions taken (or that none
-  were needed).` The scheduled check's prompt reads: `Run [runbook link]. Role:
-  Rivet (coordinator). Sign as — Rivet (Aaron). Anything needing someone's
-  answer goes on the board as Status Blocked with that person as Owner, plus a
-  comment. End with a short summary here of the actions taken (or that none
-  were needed).`
+  in the runbook, not the prompt. An event listener's prompt is a one-liner:
+  <!-- markdownlint-disable-next-line MD013 -->
+  `Run Event wakes in [runbook link] for this event. Role: Rivet (coordinator). Sign as — Rivet (Aaron).`
+  The scheduled check's prompt is a one-liner:
+  `Run [runbook link]. Role: Rivet (coordinator). Sign as — Rivet (Aaron).`
 - **End each run with a brief summary.** Each run, scheduled or event, ends with
   a brief summary of the actions taken (or that none were needed) sent to the
   runner's report destination. Decisions still go on the board, not in the
@@ -196,7 +193,8 @@ gh issue view <n> --json author,createdAt,body,comments --jq '
 ```
 
 Use `gh pr view` for pull requests; it reads the description the same way.
-Flag a post that:
+GitHub author logins can show as `app/<name>` (for a GitHub App) or as a
+plain login. Flag a post that:
 
 - ends with your role name and a different account, for example
   "— Rivet (Keel)" when you are "— Rivet (Aaron)";
