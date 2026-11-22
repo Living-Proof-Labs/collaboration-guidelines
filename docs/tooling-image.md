@@ -44,7 +44,8 @@ Record the failed run and affected release, correct the problem, and publish a
 new version. If the job fails before any image or evidence publication, an
 explicitly reviewed recovery may reuse the retained tested archives, but this
 workflow does not silently overwrite or resume a partial publication. A rerun
-where semantic release finds no new version does not publish an image.
+where semantic release finds no new version does not publish an image, unless
+the action recovers a tag at HEAD that has no Release (see [releases](releases.md)).
 
 Local script tests use a fake registry CLI to exercise successful publication,
 existing tags, authorization errors, corrupted archives, wrong architecture or
