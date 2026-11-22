@@ -68,7 +68,10 @@ The private key is the secret; see the next section.
 
 ## Credentials and connectors
 
-The account owner does these. An agent never asks for a secret in chat.
+The account owner does these, and Rivet is the only role that asks the owner
+(see [Rivet speaks for the account owner](#rivet-speaks-for-the-account-owner)).
+Cody, Vera, and Art ask Rivet, who gets the owner to do the step. An agent never
+asks for a secret in chat.
 
 1. Add each bot's GitHub App private key as that bot's secret, named
    `<ROLE>_GITHUB_APP_PRIVATE_KEY` (for example
@@ -87,8 +90,9 @@ The account owner does these. An agent never asks for a secret in chat.
 
 Each bot runs this check on first start and after any account move. It reports
 every item as passed, failed, or blocked, and does not start board work until
-all pass. For anything missing, it asks the account owner for exactly that step
-(for example a secret card or a connector connect), then re-checks until
+all pass. For anything missing, Rivet asks the account owner for exactly that
+step (for example a secret card or a connector connect). Cody, Vera, and Art ask
+Rivet for it, and Rivet gets the owner to do it. Each bot then re-checks until
 everything passes. It never prints a secret.
 
 - Name includes the account owner, for example "Vera (Aaron)".
@@ -98,8 +102,8 @@ everything passes. It never prints a secret.
   fingerprint with the one on the app's Key pairs page.
 - It can read repositories, comment, and edit the board. Do a read-only test
   first, then one harmless signed comment if allowed. Post it on the bot's own
-  setup issue, or on an existing tracking issue the account owner names, never
-  on another item.
+  setup issue, or on an existing tracking issue the account owner names to
+  Rivet, never on another item.
 - The required connectors are connected.
 - Memory: runtime memory does not transfer, so on first start it re-reads the
   guidelines and its Notion profile. It records any standing rule learned since
@@ -122,6 +126,14 @@ Post or edit only after the read-only test passes, and sign every post, for
 example "— Vera (`<owner>`)".
 
 ## Rivet speaks for the account owner
+
+**The account owner answers only Rivet.** If Cody, Vera, or Art asks the account
+owner for anything in their own chat, such as a confirmation, a question, or an
+approval, they will get no answer. They must send every question, approval, or
+blocker to Rivet by agent-to-agent message, or put it on the board as the
+[routine check](../routine-check.md) describes. Rivet then decides, or takes it
+to the owner. Rivet also gets the owner to do steps only the owner can do, such
+as secret cards and connectors.
 
 Rivet holds full authorization from the account owner (for example Aaron or
 Keel). When Rivet asks another role bot (Cody, Vera, or Art) to do something,
