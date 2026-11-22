@@ -112,9 +112,41 @@ repository access; they are not an unauthenticated PR preview mechanism.
 | `commit` | Exact source commit evaluated |
 | `release-url` | Published GitHub Release URL; empty for dry run or no release |
 
-A writer failure fails the job;
-it is never converted into a successful no-release outcome. A repeat run with no
-new eligible commits returns `published=false`.
+A writer failure fails the job. It is never converted into a successful
+no-release outcome. The notes-push recovery below is a publication of the
+release that the writer had already tagged, not an empty success. A repeat
+run that finds that Release already present returns `published=false`.
+
+The writer pushes the version tag, then `refs/notes/semantic-release-vX.Y.Z`,
+and only then creates the GitHub Release. GitHub can reject that notes ref
+with a bare `(failed)` and no rule name. The tag is already on the remote,
+and the Release does not exist. A later run sees the tag and reports that
+there are no relevant changes, so those commits never appear in a Release.
+Earlier notes refs on the same repositories show that the rejection is
+transient rather than a standing permission or ruleset failure.
+
+After that notes push fails, the action retries the same notes ref three
+times, waiting 1 second, then 2 seconds, then 4 seconds. The retry is not a
+force push and does not push any tag. The Release is still created when
+every notes attempt fails, because the interrupted writer never reached
+publication. A retry that succeeds also continues to publication for the
+same reason. Creation uses `gh release create --verify-tag` with notes
+generated from the previous stable tag by the same notes generator the
+writer uses. `--verify-tag` does not create or move a tag. When the caller
+set `draft-release`, the recovered Release is a draft, so the caller can
+still attach assets before publication.
+
+The same creation runs on a later invocation when the evaluated commit
+already has a stable tag that peels to exactly that commit and that tag has
+no GitHub Release. `published`, `draft-created`, `version`, `git-tag`, and
+`release-url` describe the Release created by that recovery. A tag that
+peels to any other commit is refused, and every existing tag is left
+untouched. A Release that already exists, whether draft or published, is
+not created again and is not edited; this invocation reports no new
+publication. `expected-version` and `expected-commit` still bind the
+writer: recovery publishes only that sealed version at that commit.
+Recovery does not fill in Releases for older tags that are not the
+evaluated commit.
 
 If a build has already sealed an artifact for a planned release, pass both
 `expected-version` (the plain stable version) and `expected-commit` (the full
@@ -123,8 +155,9 @@ release engine checks the same version, tag and commit again before tagging.
 Supplying only one input is an error. Calls without either input retain the
 existing behavior. A failure is not permission to publish or relabel an
 artifact; resolve the current plan and rebuild before attempting a different
-release. An already published matching release uses the separate read-only
-delivery retry described below, not another writer call.
+release. An already published matching release is left unchanged. The
+read-only delivery retry described below is what reuses it for a later
+artifact delivery without creating a tag or another Release.
 
 Only GitHub Releases are published. No npm package, generated changelog, or
 version-bump commit is produced. Existing `vX.Y.Z` tags are preserved and used as

@@ -5,6 +5,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import semver from 'semver';
 import config from './release.config.mjs';
 import { planVersion } from './plan.mjs';
+import {
+  defaultGh, defaultSleep, localTagRefusal, recoverBareTag, recoverNotesFailure, redactError,
+} from './notes-recovery.mjs';
 
 // Adapt the official engine result to the GitHub Actions output contract.
 export function outputs(result, dryRun, draftRelease = false, commit = '') {
@@ -103,7 +106,9 @@ export async function readPublishedReplay(repo, tag, commit, get = path =>
   return tag.slice(1);
 }
 
-export async function run({ getReplay = readPublishedReplay, releaseEngine } = {}) {
+export async function run({
+  getReplay = readPublishedReplay, releaseEngine, execFile = execFileSync, gh = defaultGh, sleep = defaultSleep,
+} = {}) {
   if (!['true', 'false'].includes(process.env.RELEASE_DRY_RUN)) {
     throw new Error('dry-run must be true or false');
   }
@@ -176,24 +181,54 @@ export async function run({ getReplay = readPublishedReplay, releaseEngine } = {
     return;
   }
 
+  const repositoryUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}.git`;
+  const emitRecovery = async recovered => {
+    if (recovered?.refused) throw new Error(recovered.refused);
+    if (recovered?.created) {
+      await emit(outputs(recovered.result, false, draftRelease, head));
+      return true;
+    }
+    if (recovered?.noop) {
+      await emit(outputs(false, false, false, head));
+      return true;
+    }
+    return false;
+  };
   if (guarded && !plan.version) {
+    // The tag for the sealed version can already be at this commit when an
+    // earlier notes push failed after tagging. Repair the Release in place.
+    if (!dryRun && await emitRecovery(await recoverBareTag({
+      cwd, head, repositoryUrl, draftRelease, gh, sealedVersion,
+    }))) return;
     throw new Error(`No release is due at ${head}; refusing to write expected release ${sealedVersion}`);
   }
   if (guarded && plan.version !== sealedVersion) {
     throw new Error(`Current release plan is ${plan.version} at ${head}, expected ${sealedVersion}; refusing to release a different artifact identity`);
+  }
+  if (!dryRun && plan.version) {
+    const refusal = localTagRefusal(cwd, plan.gitTag, head);
+    if (refusal) throw new Error(refusal);
   }
   const semanticRelease = releaseEngine ?? (await import('semantic-release')).default;
   const release = configuration(draftRelease);
   // The engine refreshes refs after the checkout plan. Its pre-tag hook must
   // still match the same version and commit, not silently accept a newer plan.
   release.plugins.push([fileURLToPath(new URL('./verify-plan.mjs', import.meta.url)), plan]);
-  const result = await semanticRelease({
-    ...release, extends: [], dryRun,
-    repositoryUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}.git`,
-  }, { cwd });
+  let result;
+  try {
+    result = await semanticRelease({ ...release, extends: [], dryRun, repositoryUrl }, { cwd });
+  } catch (error) {
+    if (!dryRun && await emitRecovery(await recoverNotesFailure({
+      error, cwd, head, repositoryUrl, draftRelease, sealedVersion, gh, sleep, execFile,
+    }))) return;
+    throw redactError(error, process.env);
+  }
   if (guarded && !result?.nextRelease) {
     throw new Error(`Release engine did not select expected release ${sealedVersion} at ${sealedCommit}`);
   }
+  if (!dryRun && !result?.nextRelease && await emitRecovery(await recoverBareTag({
+    cwd, head, repositoryUrl, draftRelease, gh,
+  }))) return;
   if (result?.nextRelease && !dryRun) {
     verifyTagMatchesCommit(result.nextRelease.gitTag, head, { cwd, fetchTag: true });
   }
