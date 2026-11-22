@@ -41,7 +41,7 @@ def build():
     (source / 'assets').mkdir()
     (source / 'assets/brand.css').write_bytes(brand.stylesheet())
     paths = ['README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'LICENSE.md']
-    paths += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'docs').glob('*.md'))]
+    paths += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'docs').rglob('*.md'))]
     # Bot GitHub Apps is organization-specific and is not copied. The manual
     # nav points at the pinned guide:
     # https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/docs/GITHUB-APPS.md

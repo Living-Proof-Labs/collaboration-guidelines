@@ -93,9 +93,11 @@ The live options, in the board's current order, are:
   Docs-only or chore changes with nothing to verify may move
   straight to **Done**.
 
-**Blocked** is a side state, not a step in the happy path. When the blocker is
-cleared, move the item back to the status that matches its current work, not
-automatically to **Ready To Merge**.
+**Blocked** is a side state, not a step in the happy path. Use **In Progress**
+while the current owner can keep working on the item, and **Blocked** only when
+progress is stopped waiting on someone else's answer, decision, or fix. When
+the blocker is cleared, move the item back to the status that matches its
+current work, not automatically to **Ready To Merge**.
 
 Revisit stale items instead of leaving an outdated status in place.
 
