@@ -61,6 +61,28 @@ including outstanding actions and wakes. Keep private identifiers private.
 This documentation neither installs nor changes a live scheduler; migration
 waits until the merged routine is accessible.
 
+## Hourly preflight
+
+Before delivery work, verify all three checks:
+
+1. **GitHub access.** Make an authenticated API call. Keel runs
+   `gh api user --jq .login`, checks for `keel-agent-lpl`, then reads a
+   Living Proof Labs repository with `gh api`. An anonymous response or a
+   connected app does not prove that Keel's CLI works.
+2. **Browser tabs.** Close tabs that are no longer needed. Preserve unsaved
+   work and pending handoffs. Verify what remains at the start and again
+   before ending the run.
+3. **Codex development machines.** On the machines used for delivery, start
+   the standard development environment and run its documented smoke check.
+   A connected machine alone does not pass. If disk space is the blocker,
+   follow the existing Docker cleanup procedure on idle machines: remove only
+   unused, rebuildable images and cache or finished output that can be
+   recreated. Preserve in-progress work and volumes. Retry the same check.
+
+If a check fails or cannot be verified, the routine is **Blocked**. Record
+the failing check, who can resolve it, and the next check. Work on clearing
+the blocker, but do not continue delivery until all three checks pass.
+
 ## Restart checklist
 
 1. Read the repository's applicable `AGENTS.md`, the board guide, and the
