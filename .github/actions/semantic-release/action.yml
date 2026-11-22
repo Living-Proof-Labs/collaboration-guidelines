@@ -3,15 +3,42 @@ name: Living Proof Labs semantic release
 description: Publish GitHub Releases with the pinned shared semantic-release policy.
 inputs:
   token:
-    description: Caller GitHub token with contents write permission.
-    required: true
+    description: Caller GitHub token with contents write permission (release only).
+    required: false
   dry-run:
     description: Calculate without publishing; still verifies repository access.
     default: 'false'
   draft-release:
     description: Create a draft for the caller to attach verified assets before publication.
     default: 'false'
+  expected-version:
+    description: Stable version already selected for this delivery. Requires expected-commit.
+    required: false
+  expected-commit:
+    description: Exact source commit already selected for this delivery. Requires expected-version.
+    required: false
+  candidate:
+    description: Calculate version and tag in read-only candidate mode without publishing.
+    default: 'false'
+  plan-only:
+    description: Resolve build versions and a forecast without invoking the release writer.
+    default: 'false'
+  replay-tag:
+    description: Existing published stable tag, for explicit main delivery retry only.
+    required: false
+  replay-read-token:
+    description: Read-only GitHub token for checking an explicit delivery retry.
+    required: false
 outputs:
+  semver-version:
+    description: SemVer artifact version.
+    value: ${{ steps.release.outputs.semver-version }}
+  pep440-version:
+    description: Python package version following the PEP 440 specification.
+    value: ${{ steps.release.outputs.pep440-version }}
+  debian-version:
+    description: Debian upstream version; does not include a package revision.
+    value: ${{ steps.release.outputs.debian-version }}
   draft-created:
     description: Whether this invocation created a draft release.
     value: ${{ steps.release.outputs.draft-created }}
@@ -27,6 +54,15 @@ outputs:
   release-url:
     description: Published GitHub Release URL; empty for dry-run or no release.
     value: ${{ steps.release.outputs.release-url }}
+  commit:
+    description: Exact 40-character commit SHA evaluated for this version.
+    value: ${{ steps.release.outputs.commit }}
+  run-id:
+    description: Caller workflow run identity for the read-only build plan.
+    value: ${{ steps.release.outputs.run-id }}
+  run-attempt:
+    description: Caller workflow attempt for the read-only build plan.
+    value: ${{ steps.release.outputs.run-attempt }}
 runs:
   using: composite
   steps:
@@ -35,9 +71,8 @@ runs:
         node-version: '24.22.3'
     - name: Install the pinned release toolchain
       shell: bash
-      env:
-        RELEASE_ACTION_PATH: ${{ github.action_path }}
-      run: npm ci --prefix "$RELEASE_ACTION_PATH" --omit=dev --ignore-scripts
+      working-directory: ${{ github.action_path }}
+      run: npm ci --omit=dev --ignore-scripts
     - name: Run semantic-release
       id: release
       shell: bash
@@ -45,5 +80,14 @@ runs:
         RELEASE_ACTION_PATH: ${{ github.action_path }}
         RELEASE_DRY_RUN: ${{ inputs.dry-run }}
         RELEASE_DRAFT: ${{ inputs.draft-release }}
+        RELEASE_WRITER_EXPECTED_VERSION: ${{ inputs.expected-version }}
+        RELEASE_WRITER_EXPECTED_COMMIT: ${{ inputs.expected-commit }}
+        RELEASE_CANDIDATE: ${{ inputs.candidate }}
+        RELEASE_PLAN_ONLY: ${{ inputs.plan-only }}
+        RELEASE_REPLAY_TAG: ${{ inputs.replay-tag }}
+        GH_TOKEN: ${{ inputs.replay-read-token }}
+        RELEASE_EXPECTED_COMMIT: ${{ github.event.pull_request.head.sha }}
+        RELEASE_PR_NUMBER: ${{ github.event.pull_request.number }}
+        RELEASE_EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
         GITHUB_TOKEN: ${{ inputs.token }}
       run: node "$RELEASE_ACTION_PATH/run.mjs"

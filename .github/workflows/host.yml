@@ -48,6 +48,10 @@ jobs:
           fail-on-empty: 'true'
       - name: Individual test checks
         if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        # Publishing the Checks entry can fail on a transient API error. The
+        # test results and the case counts are still enforced by the summary
+        # step and the completeness check below.
+        continue-on-error: true
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
         with:
           name: Shared host test results (${{ matrix.distro }})

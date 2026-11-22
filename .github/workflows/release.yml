@@ -12,15 +12,47 @@ jobs:
       contents: read
       checks: write
     uses: ./.github/workflows/verify.yml
+  version:
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/semantic-release-candidate.yml
+  manual:
+    needs: version
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/manual-build.yml
+    with:
+      version: ${{ needs.version.outputs.semver-version }}
+      commit: ${{ needs.version.outputs.commit }}
+      run: ${{ needs.version.outputs.run-id }}
+      attempt: ${{ needs.version.outputs.run-attempt }}
   release:
-    needs: verify
-    # Publication is authorized; false is an operational off switch.
-    if: github.ref == 'refs/heads/main' && vars.RELEASES_ENABLED != 'false'
+    needs: [verify, version, manual]
+    # Keep the existing no-input dispatch for tooling release recovery.
+    # Normal pushes require the exact preverified manual. Dispatch never deploys it.
+    if: >-
+      !cancelled() && github.ref == 'refs/heads/main' &&
+      vars.RELEASES_ENABLED != 'false' && needs.verify.result == 'success' &&
+      ((github.event_name == 'workflow_dispatch' &&
+        needs.version.result == 'skipped' && needs.manual.result == 'skipped') ||
+       (github.event_name == 'push' &&
+        needs.version.result == 'success' && needs.manual.result == 'success' &&
+        needs.version.outputs.version != '' &&
+        needs.version.outputs.version == needs.version.outputs.semver-version &&
+        needs.version.outputs.git-tag == format('v{0}', needs.version.outputs.version) &&
+        needs.version.outputs.commit == github.sha &&
+        needs.version.outputs.run-id == github.run_id &&
+        needs.version.outputs.run-attempt == github.run_attempt &&
+        needs.manual.outputs.artifact-id != '' && needs.manual.outputs.digest != ''))
     permissions:
       contents: write
     uses: ./.github/workflows/semantic-release.yml
     with:
       draft-release: true
+      expected-version: ${{ needs.version.outputs.version || '' }}
+      expected-commit: ${{ needs.version.outputs.commit || '' }}
   publish-tooling:
     needs: [verify, release]
     if: needs.release.outputs.draft-created == 'true'
@@ -47,15 +79,24 @@ jobs:
           RELEASE_TAG: ${{ needs.release.outputs.git-tag }}
         run: bash tools/tooling/publish.sh
   deploy-manual:
-    needs: [verify, release, publish-tooling]
+    needs: [release, publish-tooling, version, manual]
     if: >-
-      always() && github.ref == 'refs/heads/main' && needs.verify.result == 'success' &&
-      (needs.release.outputs.published == 'true' || (needs.release.outputs.draft-created == 'true' && needs.publish-tooling.result == 'success'))
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.release.outputs.draft-created == 'true' &&
+      needs.publish-tooling.result == 'success' &&
+      needs.release.outputs.git-tag == needs.version.outputs.git-tag &&
+      needs.release.outputs.version == needs.version.outputs.version &&
+      needs.release.outputs.commit == needs.version.outputs.commit
     permissions:
       contents: read
       pages: write
       id-token: write
-    uses: ./.github/workflows/manual.yml
+    uses: ./.github/workflows/deploy-manual.yml
     with:
       release_tag: ${{ needs.release.outputs.git-tag }}
-      release_version: ${{ needs.release.outputs.version }}
+      version: ${{ needs.release.outputs.version }}
+      commit: ${{ needs.release.outputs.commit }}
+      run: ${{ needs.version.outputs.run-id }}
+      attempt: ${{ needs.version.outputs.run-attempt }}
+      artifact_id: ${{ needs.manual.outputs.artifact-id }}
+      digest: ${{ needs.manual.outputs.digest }}

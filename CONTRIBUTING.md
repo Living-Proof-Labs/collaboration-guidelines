@@ -20,7 +20,8 @@ or merge hold.
 Track that work on the organization
 [Living Proof Labs Delivery](https://github.com/orgs/Living-Proof-Labs/projects/2)
 board: give it an issue or draft item, link the pull request, and keep Status
-and Owner current. Aaron or Keel move a ready pull request to Ready To Merge;
+and Owner current. Work is assigned by the Owner field, not the GitHub
+assignee. Aaron or Keel move a ready pull request to Ready To Merge;
 the engineering lead then merges it under the rule above. After merge, the
 item moves to Verifying after Merge until Vera verifies it on the integrated
 main branch; only then is it Done. Docs-only or chore changes with nothing to

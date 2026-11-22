@@ -85,16 +85,15 @@ to public issues.
 
 ## Publication
 
-The main-only manual workflow uses a separate Pages deployment job after verified
-generation. Build and PR jobs remain read-only; deployment has no checkout or
-project execution. Inside the deployment lock the job reads current main with
-`gh api` and `GH_TOKEN` (`contents: read` is enough) and publishes only when
-that SHA is still the candidate. An anonymous read can hit the shared rate
-limit and leave the site on the previous release. Publication requires
-repository Pages configured for GitHub
-Actions and the `github-pages` environment restricted to main. No project CNAME,
-DNS, mail, or organization change is needed. The repository is configured for
-this publication path.
+Pull requests produce read-only previews. The normal release workflow can
+publish the sealed manual only after its matching immutable release and tooling
+evidence exist. See [manual delivery and retry](releases.md#deliver-this-repositorys-manual)
+for the two separate workflows. Inside the deployment lock, a read-only
+`gh api` check with `GH_TOKEN` confirms that the tag still points to current main.
+An anonymous check can hit the shared rate limit and leave the previous release
+online. Publication uses repository Pages configured for GitHub Actions and the
+`github-pages` environment restricted to main. No project domain, mail, or
+organization change is needed.
 
 Initial publication was verified at source commit
 `cd434afa1ce9fdb7bb5aff394222622b18657199` in

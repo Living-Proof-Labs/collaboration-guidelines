@@ -326,7 +326,7 @@ test("repository workflows authenticate every main-freshness read", () => {
     problems.push(...freshnessProblems(name, text));
   }
   assert.deepEqual(problems, [], problems.join("\n"));
-  assert.deepEqual(calls, ["manual.yml"]);
+  assert.deepEqual(calls, ["deploy-manual.yml"]);
 });
 
 test("an unauthenticated urllib freshness read fails", () => {

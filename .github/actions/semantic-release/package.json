@@ -7,14 +7,15 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "markdownlint \"../../../*.md\" \"../../../docs/*.md\" \"../../../templates/generated-docs/*.md\" \"../../../.github/*.md\" \"../../../.gitlab/*.md\" \"../../../.codex/*.md\" \"../../../.cursor/*.md\" \"../../../.gemini/*.md\""
+    "check": "markdownlint \"../../../*.md\" \"../../../docs/*.md\" \"../../../docs/platforms/*.md\" \"../../../templates/generated-docs/*.md\" \"../../../.github/*.md\" \"../../../.gitlab/*.md\" \"../../../.codex/*.md\" \"../../../.cursor/*.md\" \"../../../.gemini/*.md\""
   },
   "dependencies": {
     "semantic-release": "25.0.9",
     "conventional-changelog-conventionalcommits": "8.0.0",
     "@semantic-release/commit-analyzer": "13.0.1",
     "@semantic-release/release-notes-generator": "14.1.1",
-    "@semantic-release/github": "12.0.10"
+    "@semantic-release/github": "12.0.10",
+    "semver": "7.8.5"
   },
   "devDependencies": {
     "markdownlint-cli": "0.45.0",

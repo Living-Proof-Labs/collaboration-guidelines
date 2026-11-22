@@ -23,6 +23,7 @@ case ${1:-} in
     # Identity is embedded in that image, never supplied from a later checkout.
     bash tools/manual/container.sh build
     cid=$(docker create --network none -e GITHUB_RUN_ID="${GITHUB_RUN_ID:-}" \
+      -e GITHUB_RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-}" -e MANUAL_VERSION="${MANUAL_VERSION:-}" \
       collaboration-manual:local)
     trap 'docker rm -f "$cid" >/dev/null' EXIT
     status=0

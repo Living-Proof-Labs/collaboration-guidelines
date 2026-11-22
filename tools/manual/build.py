@@ -14,6 +14,7 @@ from urllib.parse import urlsplit, urlunsplit
 import yaml
 
 import brand
+from delivery import edition
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'artifacts/manual'
@@ -34,6 +35,20 @@ def build():
     if dirty_value is not None and dirty_value not in ('true', 'false'):
         raise ValueError('SOURCE_DIRTY must be true or false')
     dirty = dirty_value == 'true' if dirty_value is not None else bool(run('git', 'status', '--porcelain'))
+    version = os.environ.get('MANUAL_VERSION') or None
+    kind = edition(version)
+    if version and dirty:
+        raise ValueError('Versioned manuals require the exact clean checkout')
+    source_ref = f'v{version}' if kind == 'release' else commit
+    docs_label = (f'Docs: {source_ref}' if kind == 'release' else
+                  f'Docs: preview {version}' if kind == 'preview' else 'Docs: development')
+    repo_label = f'Source · {source_ref}' if kind == 'release' else 'Source · development'
+    context = (
+        f'Guidance release **{source_ref}**. See the [published release]({REPO}/releases/tag/{source_ref}).'
+        if kind == 'release' else
+        f'Documentation preview **{version}**. This is not a release.'
+        if kind == 'preview' else
+        'This is development documentation, not a release.')
     source = OUT / 'source'
     if source.exists():
         shutil.rmtree(source)
@@ -41,7 +56,7 @@ def build():
     (source / 'assets').mkdir()
     (source / 'assets/brand.css').write_bytes(brand.stylesheet())
     paths = ['README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'LICENSE.md']
-    paths += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'docs').glob('*.md'))]
+    paths += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'docs').rglob('*.md'))]
     # Bot GitHub Apps is organization-specific and is not copied. The manual
     # nav points at the pinned guide:
     # https://github.com/Living-Proof-Labs/.github/blob/89573d88fc82ad79e2696e7cdd642444cdb99699/docs/GITHUB-APPS.md
@@ -55,13 +70,17 @@ def build():
     for p in paths:
         if p.startswith('.'):
             mapping[p] = 'providers/' + p[1:]
-    record = {'source_commit': commit, 'source_dirty': dirty, 'guidelines_baseline': BASELINE,
+    record = {'source_commit': commit, 'source_dirty': dirty, 'source_ref': source_ref,
+              'version': version, 'edition': kind, 'docs_label': docs_label, 'repo_label': repo_label,
+              'run_id': os.environ.get('GITHUB_RUN_ID') or None,
+              'run_attempt': os.environ.get('GITHUB_RUN_ATTEMPT') or None,
+              'guidelines_baseline': BASELINE,
               'guidelines_baseline_commit': BASELINE_SHA, 'docs_brand': brand.lock(), 'generator': 'zensical==0.0.73',
               'workflow_run': (REPO + '/actions/runs/' + os.environ['GITHUB_RUN_ID']
                                if os.environ.get('GITHUB_RUN_ID') else None), 'sources': {}}
     record['sources']['docs-brand.lock.json'] = hashlib.sha256(
         (ROOT / 'docs-brand.lock.json').read_bytes()).hexdigest()
-    source_link = REPO + '/tree/' + commit
+    source_link = REPO + '/tree/' + source_ref
     for path, destination in mapping.items():
         text = (ROOT / path).read_text()
         record['sources'][path] = hashlib.sha256(text.encode()).hexdigest()
@@ -75,16 +94,16 @@ def build():
             if resolved in mapping:
                 relative = posixpath.relpath(mapping[resolved], posixpath.dirname(destination) or '.')
                 return '](' + urlunsplit(('', '', relative, url.query, url.fragment)) + ')'
-            return '](' + REPO + '/blob/' + commit + '/' + resolved + (('#' + url.fragment) if url.fragment else '') + ')'
+            return '](' + REPO + '/blob/' + source_ref + '/' + resolved + (('#' + url.fragment) if url.fragment else '') + ')'
 
         text = re.sub(r'\]\(([^)\s]+)\)', rewrite, text)
         target = source / destination
         target.parent.mkdir(parents=True, exist_ok=True)
-        version = posixpath.relpath('version.md', posixpath.dirname(destination) or '.')
+        version_path = posixpath.relpath('version.md', posixpath.dirname(destination) or '.')
         license_path = posixpath.relpath('LICENSE.md', posixpath.dirname(destination) or '.')
         text += (f'\n\n---\n\n[Documentation home](https://docs.livingprooflabs.com/) · '
-                 f'[Docs: development]({source_link} "{commit}") · '
-                 f'[Version and source]({version}) · [Help / report an issue]({REPO}/issues) · '
+                 f'[{docs_label}]({source_link} "{commit}") · '
+                 f'[Version and source]({version_path}) · [Help / report an issue]({REPO}/issues) · '
                  f'[License]({license_path})\n')
         target.write_text(text)
     task_data = json.loads(run('task', '--list', '--json'))
@@ -97,20 +116,21 @@ def build():
     record['sources']['Taskfile.yml'] = hashlib.sha256((ROOT / 'Taskfile.yml').read_bytes()).hexdigest()
     (source / 'build.json').write_text(json.dumps(record, indent=2) + '\n')
     (source / 'version.md').write_text(
-        '# Version and source\n\nThis is development documentation, not a package release. '
+        f'# Version and source\n\n{context} '
+        f'The exact source commit is `{commit}`. '
         'Historical rendered manuals are not maintained; use the matching '
         f'[published source tag]({REPO}/tags) for an adopted release.\n\n'
-        f'[Docs: development]({source_link} "{commit}"); dirty checkout: **{str(dirty).lower()}**. '
+        f'[{docs_label}]({source_link} "{commit}"); dirty checkout: **{str(dirty).lower()}**. '
         'A dirty preview has changes beyond that commit; source hashes below identify its inputs.\n\n'
         f'Recipe baseline: [{BASELINE}]({REPO}/tree/{BASELINE}), resolved to `{BASELINE_SHA}`. '
-        'This is a released guidance dependency, not the version of this development manual. '
+        'This is a released guidance dependency, not the version of this guidelines manual. '
         f'[Published guidelines releases]({REPO}/releases) are separate.\n\n'
         f"Docs brand: [{record['docs_brand']['version']}]({REPO}/tree/{record['docs_brand']['version']}/brand/docs), "
         'with the resolved commit and stylesheet SHA-256 recorded below.\n\n'
         '```json\n' + json.dumps(record, indent=2) + '\n```\n\n[Build record](build.json)\n')
     config = yaml.safe_load((ROOT / 'tools/manual/mkdocs.yml').read_text())
     config.update(docs_dir='source', site_dir='html', repo_url=source_link,
-                  repo_name='Source · development')
+                  repo_name=repo_label)
     (OUT / 'mkdocs.yml').write_text(yaml.safe_dump(config, sort_keys=False))
     subprocess.run([sys.executable, '-m', 'zensical', 'build', '--clean', '-f', str(OUT / 'mkdocs.yml')],
                    cwd=ROOT, check=True)
