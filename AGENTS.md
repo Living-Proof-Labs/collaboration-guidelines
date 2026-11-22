@@ -35,9 +35,8 @@ or higher-priority instructions.
   requirement needs it. Honor any specific hold on merging or release.
 - Direction, priorities, commercial commitments, signing, purchasing, granting
   access, and unreviewed external communications stay with the organization
-  owner. Those decisions are not a merge gate. The owner may delegate them to
-  Rivet, whose requests to the other role bots then carry the owner's authority;
-  see [Rivet speaks for the account owner](docs/platforms/grok-bot.md#rivet-speaks-for-the-account-owner).
+  owner. Those decisions are not a merge gate. See
+  [Decisions for Aaron](docs/delivery-board.md#decisions-for-aaron).
 - Test and verify before merge using checks appropriate to the change. Report
   failures, skipped checks, and uncertainty truthfully; never call unrun checks
   passing. Resolve relevant failures or document the unresolved blocker. Include

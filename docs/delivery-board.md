@@ -223,12 +223,13 @@ that needs him has to be visible there:
    Owner.
 
 A chat message to Aaron is fine as well, but the board is the record. These
-decisions need Aaron's own words, or a decision he has delegated to Rivet as
-described in
+decisions need Aaron's own words, or a decision he has delegated to Rivet or
+Keel (approved by Aaron on
+[pull request 139][pr139]), as described in
 [Rivet speaks for the account owner](platforms/grok-bot.md#rivet-speaks-for-the-account-owner):
-access and permissions, repository
-settings and rulesets, DNS, hosting, spending, signing, external
-communications, repository creation, and deploys outside the pipeline.
+access and permissions, repository settings and rulesets, DNS, hosting,
+spending, signing, external communications, repository creation, and deploys
+outside the pipeline.
 
 ## Status check
 
@@ -263,3 +264,5 @@ moving, rather than sweeping every repository.
 For the restart checklist and dispatch, collect, and checkpoint loop, use
 the [portable routine-check runbook](routine-check.md). It applies these roles
 and statuses without changing their authority.
+
+[pr139]: https://github.com/Living-Proof-Labs/collaboration-guidelines/pull/139

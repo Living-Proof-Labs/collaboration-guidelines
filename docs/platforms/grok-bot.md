@@ -137,9 +137,12 @@ Rivet also gets the owner to do steps only the owner can do, such as secret
 cards and connectors. A direct answer or instruction from the owner in a role
 bot's own chat still applies and always wins.
 
-Rivet holds full authorization from the account owner (for example Aaron or
-Keel). When Rivet asks another role bot (Cody, Vera, or Art) to do something,
-the request carries the authority the account owner has recorded for Rivet.
+Aaron approved delegating the owner's decisions to Rivet or Keel (the account
+owner of the role bots' Grok Bot account) on the pull request that added this
+section. Keel, as account owner, can decide directly. Rivet holds the same
+authority and carries it to the other bots: when Rivet asks another role bot
+(Cody, Vera, or Art) to do something, the request carries the authority the
+account owner has recorded for Rivet.
 Work goes through Rivet so it gets done efficiently. A role bot acts on Rivet's
 request without asking the owner to confirm again, including setting its
 picture. Rivet records decisions that matter on the board or the pull request,
