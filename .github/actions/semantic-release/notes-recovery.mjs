@@ -221,9 +221,20 @@ function releaseResult(tag, url) {
   return { nextRelease: { version: tag.slice(1), gitTag: tag }, releases: [{ url }] };
 }
 
-function viewRelease(tag, gh) {
+function repositoryName() {
+  const repo = process.env.GITHUB_REPOSITORY ?? '';
+  if (!/^[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
+    throw new Error('Recovery requires GITHUB_REPOSITORY as owner/name');
+  }
+  return repo;
+}
+
+function viewRelease(tag, gh, cwd) {
   try {
-    const data = JSON.parse(gh(['release', 'view', tag, '--json', 'tagName,isDraft,url']));
+    const data = JSON.parse(gh(
+      ['release', 'view', tag, '--repo', repositoryName(), '--json', 'tagName,isDraft,url'],
+      { cwd },
+    ));
     if (data?.tagName !== tag || typeof data.url !== 'string' || !data.url) {
       throw new Error(`Release view for ${tag} returned an unexpected payload`);
     }
@@ -235,14 +246,16 @@ function viewRelease(tag, gh) {
   }
 }
 
-function createRelease(tag, draft, notes, gh) {
-  const args = ['release', 'create', tag, '--verify-tag', '--title', tag, '--notes-file', '-'];
+function createRelease(tag, draft, notes, gh, cwd) {
+  const args = [
+    'release', 'create', tag, '--repo', repositoryName(), '--verify-tag', '--title', tag, '--notes-file', '-',
+  ];
   if (draft) args.push('--draft');
   let stdout;
   try {
-    stdout = gh(args, { input: notes });
+    stdout = gh(args, { input: notes, cwd });
   } catch (error) {
-    const existing = viewRelease(tag, gh);
+    const existing = viewRelease(tag, gh, cwd);
     if (existing) return { created: false };
     throw error;
   }
@@ -261,12 +274,13 @@ export function localTagRefusal(cwd, tag, head) {
 }
 
 async function publishIfMissing({ cwd, head, repositoryUrl, tag, draftRelease, gh }) {
+  repositoryName();
   const remote = remoteTagCommit(cwd, authenticatedPushUrl(repositoryUrl, process.env), tag);
   if (!remote) return null;
   if (remote !== head) return { refused: refusal(tag, remote, head) };
-  if (viewRelease(tag, gh)) return { noop: true };
+  if (viewRelease(tag, gh, cwd)) return { noop: true };
   const notes = await notesForTag(cwd, tag, head, repositoryUrl);
-  return createRelease(tag, draftRelease, notes, gh);
+  return createRelease(tag, draftRelease, notes, gh, cwd);
 }
 
 export async function recoverBareTag({ cwd, head, repositoryUrl, draftRelease, gh, sealedVersion = '' }) {
@@ -303,6 +317,7 @@ export async function recoverNotesFailure({
   if (sealedVersion && tag !== `v${sealedVersion}`) return { unhandled: true };
   const local = peelTag(cwd, tag);
   if (local !== head) return { refused: refusal(tag, local, head) };
+  repositoryName();
   const url = authenticatedPushUrl(repositoryUrl, process.env);
   const remoteBefore = remoteTagCommit(cwd, url, tag);
   if (remoteBefore !== head) return { refused: refusal(tag, remoteBefore, head) };
@@ -320,17 +335,18 @@ export async function recoverNotesFailure({
       ));
     }
   }
-  if (viewRelease(tag, gh)) return { noop: true };
+  if (viewRelease(tag, gh, cwd)) return { noop: true };
   const notes = await notesForTag(cwd, tag, head, repositoryUrl);
-  return createRelease(tag, draftRelease, notes, gh);
+  return createRelease(tag, draftRelease, notes, gh, cwd);
 }
 
-export function defaultGh(args, { input } = {}) {
+export function defaultGh(args, { input, cwd } = {}) {
   const env = { ...process.env, GH_PROMPT_DISABLED: '1' };
   if (!env.GH_TOKEN && env.GITHUB_TOKEN) env.GH_TOKEN = env.GITHUB_TOKEN;
+  const workdir = cwd || env.GITHUB_WORKSPACE || process.cwd();
   try {
     return execFileSync('gh', args, {
-      encoding: 'utf8', input, env, stdio: ['pipe', 'pipe', 'pipe'], timeout: 60_000,
+      cwd: workdir, encoding: 'utf8', input, env, stdio: ['pipe', 'pipe', 'pipe'], timeout: 60_000,
     });
   } catch (error) {
     error.stderr = error.stderr?.toString?.() ?? '';

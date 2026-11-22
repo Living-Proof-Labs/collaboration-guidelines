@@ -2,13 +2,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { Writable } from 'node:stream';
 import { inspect } from 'node:util';
 import semanticRelease from 'semantic-release';
+import { defaultGh } from '../notes-recovery.mjs';
 import { run } from '../run.mjs';
 
 const envToken = 'ghs_envLeakCanary0123456789';
@@ -593,5 +594,116 @@ test('recovery step output redacts credential urls returned for the release', as
     logs.restore();
     process.env = saved;
     await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('recovery gh commands name the repository and run in the workspace', async () => {
+  const fixture = await repo();
+  const saved = { ...process.env };
+  const calls = [];
+  try {
+    fixture.git('commit', '--allow-empty', '-m', 'fix: bind the repository');
+    const head = fixture.git('rev-parse', 'HEAD');
+    fixture.git('tag', 'v1.0.1', head);
+    fixture.git('push', 'origin', 'main', '--tags');
+    bind(saved, fixture.cwd, fixture.gitEnv, head, {
+      RELEASE_WRITER_EXPECTED_VERSION: '1.0.1',
+      RELEASE_WRITER_EXPECTED_COMMIT: head,
+    });
+    await run({
+      releaseEngine: async () => assert.fail('writer must not run'),
+      gh: (args, options = {}) => {
+        calls.push({ args: [...args], cwd: options.cwd });
+        if (args[1] === 'view') {
+          const error = new Error('Command failed: gh release view');
+          error.status = 1;
+          error.stderr = 'release not found\n';
+          throw error;
+        }
+        if (args[1] === 'create') {
+          return `https://github.example.invalid/example/consumer/releases/tag/${args[2]}\n`;
+        }
+        throw new Error(`unexpected gh ${args.join(' ')}`);
+      },
+      sleep: async () => {},
+    });
+    assert.ok(calls.some(call => call.args[1] === 'view'));
+    assert.ok(calls.some(call => call.args[1] === 'create'));
+    for (const call of calls) {
+      const repoFlag = call.args.indexOf('--repo');
+      assert.equal(call.args[repoFlag + 1], 'example/consumer');
+      assert.equal(call.cwd, fixture.cwd);
+      assert.equal(call.args[2], 'v1.0.1');
+    }
+  } finally {
+    process.env = saved;
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('recovery refuses a repository name that is not owner/name without echoing it', async () => {
+  const fixture = await repo();
+  const saved = { ...process.env };
+  const secret = 'ghs_repoNameLeakCanary4242';
+  try {
+    fixture.git('commit', '--allow-empty', '-m', 'fix: reject a bad repository');
+    const head = fixture.git('rev-parse', 'HEAD');
+    fixture.git('tag', 'v1.0.1', head);
+    fixture.git('push', 'origin', 'main', '--tags');
+    bind(saved, fixture.cwd, fixture.gitEnv, head, {
+      RELEASE_WRITER_EXPECTED_VERSION: '1.0.1',
+      RELEASE_WRITER_EXPECTED_COMMIT: head,
+      GITHUB_REPOSITORY: `not a repo ${secret}`,
+    });
+    await assert.rejects(run({
+      releaseEngine: async () => assert.fail('writer must not run'),
+      gh: () => assert.fail('gh must not run without a repository name'),
+      sleep: async () => {},
+    }), error => {
+      assert.match(error.message, /Recovery requires GITHUB_REPOSITORY as owner\/name/);
+      assert.equal(rendered(error).includes(secret), false);
+      return true;
+    });
+  } finally {
+    process.env = saved;
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('defaultGh runs in the workspace when the process cwd is elsewhere', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'default-gh-'));
+  const workspace = join(root, 'workspace');
+  const outside = join(root, 'outside');
+  const bin = join(root, 'bin');
+  const spy = join(root, 'spy');
+  await mkdir(workspace);
+  await mkdir(outside);
+  await mkdir(bin);
+  await writeFile(join(bin, 'gh'), `#!/bin/sh
+printf '%s\\n' "$PWD" >> ${JSON.stringify(spy)}
+printf '%s\\n' "$@" >> ${JSON.stringify(spy)}
+printf '\\n' >> ${JSON.stringify(spy)}
+`);
+  await chmod(join(bin, 'gh'), 0o755);
+  const saved = { ...process.env };
+  const previous = process.cwd();
+  try {
+    process.chdir(outside);
+    process.env = {
+      ...process.env,
+      PATH: `${bin}:${process.env.PATH}`,
+      GITHUB_WORKSPACE: workspace,
+      GH_TOKEN: '',
+    };
+    delete process.env.GITHUB_TOKEN;
+    defaultGh(['release', 'view', 'v1.0.0', '--repo', 'example/consumer']);
+    defaultGh(['release', 'view', 'v1.0.0', '--repo', 'example/consumer'], { cwd: workspace });
+    const records = (await readFile(spy, 'utf8')).trim().split('\n\n');
+    assert.equal(records.length, 2);
+    for (const record of records) assert.equal(record.split('\n')[0], workspace);
+  } finally {
+    process.chdir(previous);
+    process.env = saved;
+    await rm(root, { recursive: true, force: true });
   }
 });
