@@ -6,7 +6,7 @@ import semver from 'semver';
 import config from './release.config.mjs';
 import { planVersion } from './plan.mjs';
 import {
-  defaultGh, defaultSleep, localTagRefusal, recoverBareTag, recoverNotesFailure, redactError,
+  defaultGh, defaultSleep, localTagRefusal, recoverBareTag, recoverNotesFailure, redactError, redactText,
 } from './notes-recovery.mjs';
 
 // Adapt the official engine result to the GitHub Actions output contract.
@@ -197,9 +197,9 @@ export async function run({
   if (guarded && !plan.version) {
     // The tag for the sealed version can already be at this commit when an
     // earlier notes push failed after tagging. Repair the Release in place.
-    if (!dryRun && await emitRecovery(await recoverBareTag({
+    if (!dryRun && await attemptRecovery(async () => emitRecovery(await recoverBareTag({
       cwd, head, repositoryUrl, draftRelease, gh, sealedVersion,
-    }))) return;
+    })))) return;
     throw new Error(`No release is due at ${head}; refusing to write expected release ${sealedVersion}`);
   }
   if (guarded && plan.version !== sealedVersion) {
@@ -218,26 +218,35 @@ export async function run({
   try {
     result = await semanticRelease({ ...release, extends: [], dryRun, repositoryUrl }, { cwd });
   } catch (error) {
-    if (!dryRun && await emitRecovery(await recoverNotesFailure({
+    if (!dryRun && await attemptRecovery(async () => emitRecovery(await recoverNotesFailure({
       error, cwd, head, repositoryUrl, draftRelease, sealedVersion, gh, sleep, execFile,
-    }))) return;
+    })))) return;
     throw redactError(error, process.env);
   }
   if (guarded && !result?.nextRelease) {
     throw new Error(`Release engine did not select expected release ${sealedVersion} at ${sealedCommit}`);
   }
-  if (!dryRun && !result?.nextRelease && await emitRecovery(await recoverBareTag({
+  if (!dryRun && !result?.nextRelease && await attemptRecovery(async () => emitRecovery(await recoverBareTag({
     cwd, head, repositoryUrl, draftRelease, gh,
-  }))) return;
+  })))) return;
   if (result?.nextRelease && !dryRun) {
     verifyTagMatchesCommit(result.nextRelease.gitTag, head, { cwd, fetchTag: true });
   }
   await emit(outputs(result, dryRun, draftRelease, head));
 }
 
+async function attemptRecovery(attempt) {
+  try {
+    return await attempt();
+  } catch (error) {
+    throw redactError(error, process.env);
+  }
+}
+
 async function emit(values) {
   await appendFile(process.env.GITHUB_OUTPUT,
-    Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join(''));
+    Object.entries(values).map(([key, value]) =>
+      `${key}=${redactText(String(value ?? ''), process.env)}\n`).join(''));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

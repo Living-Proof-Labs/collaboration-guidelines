@@ -47,20 +47,99 @@ export function tagAlreadyExists(error) {
   return match?.[1] ?? null;
 }
 
-export function redactError(error, env) {
-  const secrets = [env.GITHUB_TOKEN, env.GH_TOKEN].filter(Boolean);
-  const message = String(error?.message ?? error);
-  if (!secrets.some(secret => message.includes(secret))) return error;
-  const cleaned = secrets.reduce((text, secret) => text.split(secret).join('***'), message);
-  const redacted = new Error(cleaned);
-  redacted.cause = error;
-  return redacted;
+// Ignore tiny values so a short placeholder cannot punch holes in unrelated text.
+const minimumSecretLength = 8;
+const textFields = [
+  'message', 'stack', 'stderr', 'stdout', 'command', 'shortMessage', 'cmd',
+  'escapedCommand', 'originalMessage', 'description',
+];
+
+function isCredentialQueryName(name) {
+  let decoded = name;
+  try {
+    decoded = decodeURIComponent(name.replace(/\+/g, ' '));
+  } catch {
+    // Keep the raw name when it is not valid percent-encoding.
+  }
+  const normalized = decoded.toLowerCase().replace(/-/g, '_');
+  if (normalized === 'token_type') return false;
+  if (normalized.includes('token')) return true;
+  return /(?:^|_)(?:password|passwd|secret|api_key|apikey)$/.test(normalized) ||
+    ['auth', 'authorization', 'password', 'passwd', 'secret', 'api_key', 'apikey'].includes(normalized);
+}
+
+function credentialSecrets(env) {
+  const secrets = [];
+  for (const value of [env?.GITHUB_TOKEN, env?.GH_TOKEN]) {
+    if (typeof value !== 'string' || value.length < minimumSecretLength || secrets.includes(value)) continue;
+    secrets.push(value);
+    const encoded = encodeURIComponent(value);
+    if (encoded !== value && !secrets.includes(encoded)) secrets.push(encoded);
+  }
+  return secrets.sort((left, right) => right.length - left.length);
+}
+
+function asText(value) {
+  if (typeof value === 'string') return value;
+  if (Buffer.isBuffer(value) || ArrayBuffer.isView(value)) {
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('utf8');
+  }
+  return null;
+}
+
+// Strip URL userinfo, token query values, and configured tokens before anything is printed.
+export function redactText(text, env = {}) {
+  let cleaned = String(text ?? '');
+  cleaned = cleaned.replace(/(https?:\/\/)[^/?#\s@]+@/gi, '$1***@');
+  cleaned = cleaned.replace(/\bx-access-token:[^\s@]+/gi, 'x-access-token:***');
+  cleaned = cleaned.replace(/([?&])([^&#=\s]+)=([^&#\s]*)/g, (match, separator, name, value) => {
+    if (!value || !isCredentialQueryName(name)) return match;
+    return `${separator}${name}=***`;
+  });
+  for (const secret of credentialSecrets(env)) cleaned = cleaned.split(secret).join('***');
+  return cleaned;
+}
+
+export function redactError(error, env = {}) {
+  const seen = new WeakSet();
+  const visit = value => {
+    const text = asText(value);
+    if (text !== null) return redactText(text, env);
+    if (!value || typeof value !== 'object') return value;
+    if (seen.has(value)) return value;
+    seen.add(value);
+    if (Array.isArray(value)) {
+      for (let index = 0; index < value.length; index += 1) value[index] = visit(value[index]);
+      return value;
+    }
+    const assign = (key, next) => {
+      try { value[key] = next; } catch { /* read-only */ }
+    };
+    for (const key of textFields) {
+      if (value[key] == null) continue;
+      assign(key, visit(value[key]));
+    }
+    if (value.output != null) assign('output', visit(value.output));
+    if (value.cause) assign('cause', visit(value.cause));
+    if (Array.isArray(value.errors)) assign('errors', value.errors.map(item => visit(item)));
+    for (const key of Object.keys(value)) {
+      const textValue = asText(value[key]);
+      if (textValue === null) continue;
+      assign(key, redactText(textValue, env));
+    }
+    return value;
+  };
+  return visit(error);
 }
 
 function git(cwd, args) {
-  return execFileSync('git', args, {
-    cwd, encoding: 'utf8', stdio: 'pipe', env: process.env, timeout: 60_000,
-  });
+  try {
+    return execFileSync('git', args, {
+      cwd, encoding: 'utf8', stdio: 'pipe', env: process.env, timeout: 60_000,
+    });
+  } catch (error) {
+    throw redactError(error, process.env);
+  }
 }
 
 export function peelTag(cwd, tag) {
@@ -142,9 +221,20 @@ function releaseResult(tag, url) {
   return { nextRelease: { version: tag.slice(1), gitTag: tag }, releases: [{ url }] };
 }
 
-function viewRelease(tag, gh) {
+function repositoryName() {
+  const repo = process.env.GITHUB_REPOSITORY ?? '';
+  if (!/^[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
+    throw new Error('Recovery requires GITHUB_REPOSITORY as owner/name');
+  }
+  return repo;
+}
+
+function viewRelease(tag, gh, cwd) {
   try {
-    const data = JSON.parse(gh(['release', 'view', tag, '--json', 'tagName,isDraft,url']));
+    const data = JSON.parse(gh(
+      ['release', 'view', tag, '--repo', repositoryName(), '--json', 'tagName,isDraft,url'],
+      { cwd },
+    ));
     if (data?.tagName !== tag || typeof data.url !== 'string' || !data.url) {
       throw new Error(`Release view for ${tag} returned an unexpected payload`);
     }
@@ -156,18 +246,20 @@ function viewRelease(tag, gh) {
   }
 }
 
-function createRelease(tag, draft, notes, gh) {
-  const args = ['release', 'create', tag, '--verify-tag', '--title', tag, '--notes-file', '-'];
+function createRelease(tag, draft, notes, gh, cwd) {
+  const args = [
+    'release', 'create', tag, '--repo', repositoryName(), '--verify-tag', '--title', tag, '--notes-file', '-',
+  ];
   if (draft) args.push('--draft');
   let stdout;
   try {
-    stdout = gh(args, { input: notes });
+    stdout = gh(args, { input: notes, cwd });
   } catch (error) {
-    const existing = viewRelease(tag, gh);
+    const existing = viewRelease(tag, gh, cwd);
     if (existing) return { created: false };
     throw error;
   }
-  const url = String(stdout).trim().split('\n').filter(Boolean).at(-1) ?? '';
+  const url = redactText(String(stdout).trim().split('\n').filter(Boolean).at(-1) ?? '', process.env);
   if (!/^https:\/\/\S+$/.test(url)) throw new Error(`Release creation for ${tag} did not return a URL`);
   return { created: true, result: releaseResult(tag, url) };
 }
@@ -182,12 +274,13 @@ export function localTagRefusal(cwd, tag, head) {
 }
 
 async function publishIfMissing({ cwd, head, repositoryUrl, tag, draftRelease, gh }) {
+  repositoryName();
   const remote = remoteTagCommit(cwd, authenticatedPushUrl(repositoryUrl, process.env), tag);
   if (!remote) return null;
   if (remote !== head) return { refused: refusal(tag, remote, head) };
-  if (viewRelease(tag, gh)) return { noop: true };
+  if (viewRelease(tag, gh, cwd)) return { noop: true };
   const notes = await notesForTag(cwd, tag, head, repositoryUrl);
-  return createRelease(tag, draftRelease, notes, gh);
+  return createRelease(tag, draftRelease, notes, gh, cwd);
 }
 
 export async function recoverBareTag({ cwd, head, repositoryUrl, draftRelease, gh, sealedVersion = '' }) {
@@ -206,8 +299,9 @@ export async function retryNotesPush({ cwd, url, ref, sleep, execFile }) {
         cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: process.env, timeout: 60_000,
       });
       return true;
-    } catch {
+    } catch (error) {
       // The remote rejection is the condition this retry exists for.
+      redactError(error, process.env);
     }
   }
   return false;
@@ -223,6 +317,7 @@ export async function recoverNotesFailure({
   if (sealedVersion && tag !== `v${sealedVersion}`) return { unhandled: true };
   const local = peelTag(cwd, tag);
   if (local !== head) return { refused: refusal(tag, local, head) };
+  repositoryName();
   const url = authenticatedPushUrl(repositoryUrl, process.env);
   const remoteBefore = remoteTagCommit(cwd, url, tag);
   if (remoteBefore !== head) return { refused: refusal(tag, remoteBefore, head) };
@@ -233,25 +328,29 @@ export async function recoverNotesFailure({
       return { refused: `Tag ${tag} changed while retrying notes; refusing to create a release or move the tag` };
     }
     if (!pushed) {
-      console.error(`Notes ref ${notesFailure.ref} was still rejected after ` +
-        `${NOTES_PUSH_BACKOFF_MS.length} retries. Creating the GitHub Release from ${tag} without moving the tag.`);
+      console.error(redactText(
+        `Notes ref ${notesFailure.ref} was still rejected after ` +
+        `${NOTES_PUSH_BACKOFF_MS.length} retries. Creating the GitHub Release from ${tag} without moving the tag.`,
+        process.env,
+      ));
     }
   }
-  if (viewRelease(tag, gh)) return { noop: true };
+  if (viewRelease(tag, gh, cwd)) return { noop: true };
   const notes = await notesForTag(cwd, tag, head, repositoryUrl);
-  return createRelease(tag, draftRelease, notes, gh);
+  return createRelease(tag, draftRelease, notes, gh, cwd);
 }
 
-export function defaultGh(args, { input } = {}) {
+export function defaultGh(args, { input, cwd } = {}) {
   const env = { ...process.env, GH_PROMPT_DISABLED: '1' };
   if (!env.GH_TOKEN && env.GITHUB_TOKEN) env.GH_TOKEN = env.GITHUB_TOKEN;
+  const workdir = cwd || env.GITHUB_WORKSPACE || process.cwd();
   try {
     return execFileSync('gh', args, {
-      encoding: 'utf8', input, env, stdio: ['pipe', 'pipe', 'pipe'], timeout: 60_000,
+      cwd: workdir, encoding: 'utf8', input, env, stdio: ['pipe', 'pipe', 'pipe'], timeout: 60_000,
     });
   } catch (error) {
     error.stderr = error.stderr?.toString?.() ?? '';
-    throw error;
+    throw redactError(error, env);
   }
 }
 
