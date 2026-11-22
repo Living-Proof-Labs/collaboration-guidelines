@@ -192,7 +192,7 @@ Priority order.
 | Verifier | Vera | Works items in **Verifying Pull Request** and **Verifying after Merge** (Owner Vera), and chooses her own verification depth. Records her verdict on the pull request. On a pass, the engineering lead merges that exact head, and after a post-merge pass she moves the item to **Done**. On a failure, she sets **In Progress** with Owner the developer, plus a comment saying what's needed. A Renovate pull request has no developer, so it goes to **Blocked** with Owner the engineering lead (see [Renovate updates](#renovate-updates)). **Ready To Merge** stays Aaron's and Keel's handoff. |
 | Design and experience | Art | Works design items (Owner Art). Hands off by commenting with the spec and setting the Owner of the next step. |
 | Independent contributor | Keel | Takes its own items through the full lifecycle, including its own merges. Never reviews its own pull requests. The lead steps in only on blockers. |
-| First-draft contributor | Gemini | Takes easy, bounded tasks when Owner is Gemini. Aaron hands these off himself. Its pull request is a first draft that gets reviewed against the same definition of done. |
+| First-draft contributor | Gemini | Takes easy, bounded tasks when Owner is Gemini. The engineering lead delegates and takes the pull request back for review, as described in [Gemini handoff](routine-check.md#gemini-handoff). Its pull request is a first draft that gets reviewed against the same definition of done. |
 
 Some agents have no schedule of their own. They work only when someone wakes
 them, and changing a board field doesn't wake anyone. The engineering lead

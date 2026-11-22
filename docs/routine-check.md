@@ -285,15 +285,30 @@ checkpoints; this pass links their findings without taking over those watches.
 
 ### Gemini handoff
 
-When a Gemini-owned issue has an unambiguous implementing pull request, confirm
-its explicit issue link and scope against the definition of done. Move both the
-issue and pull request to the board Owner for the coordinator, Status **In
-Review**, reusing existing cards. That Owner is **Rivet** (the engineering
-lead), or **Keel** when the item is in Keel's assigned lifecycle. Record the
-linkage and arrange independent review; when Vera begins, follow the board's
-**Verifying Pull Request** / Owner **Vera** handoff. Name similarity alone is
-insufficient: leave ownership intact and clarify ambiguous linkage on the issue.
-This does not authorize taking Gemini's unrelated backlog.
+Gemini is a fast, decent coder for new easy-to-medium issues. It adds coding
+capacity. It does not take work through the lifecycle, and it does not take
+feedback and keep going. The [engineering lead](delivery-board.md#roles-and-queues)
+delegates to Gemini and then takes the result back for review:
+
+1. **Delegate.** Set the issue Owner to **Gemini**. Gemini is told to pull
+   against the issues it owns. It opens a pull request and stops.
+2. **Take it back.** When a Gemini-owned issue has an unambiguous implementing
+   pull request, confirm its explicit issue link and scope against the
+   definition of done. Move both the issue and pull request to the engineering
+   lead as Owner, Status **In Review**, reusing existing cards. Record the
+   linkage.
+3. **Fix or repair.** If the fix is small, the lead makes it on the pull
+   request. If it is larger, the lead hands it to the developer (Cody) as
+   **In Progress** with a comment saying what is needed. Gemini is not asked
+   for further changes.
+4. **Finish the lifecycle.** Arrange independent review. When Vera begins,
+   follow the board's **Verifying Pull Request** / Owner **Vera** handoff.
+   After a pass, the lead merges that exact head, and Vera does the
+   [post-merge verification](delivery-board.md#verifying-after-merge).
+
+Name similarity alone is insufficient: leave ownership intact and clarify
+ambiguous linkage on the issue. This does not authorize taking Gemini's
+unrelated backlog.
 
 ### Common outcomes
 
