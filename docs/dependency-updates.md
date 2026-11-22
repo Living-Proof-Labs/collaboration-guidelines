@@ -15,8 +15,10 @@ A configuration file alone does not install the bot or prove hosted acceptance.
 - **Non-major updates:** automerge under GitHub's configured merge rules, using
   a merge queue where required. `automerge` and `platformAutomerge` are enabled
   in the shared preset.
-- **Major updates:** wait for human review. A package rule matching
-  `matchUpdateTypes: ["major"]` turns automerge off for those pull requests.
+- **Major updates:** automerge the same way. The package rule matching
+  `matchUpdateTypes: ["major"]` sets `automerge` and `platformAutomerge`. It
+  does not set `ignoreTests` and does not skip required status checks. It
+  sits ahead of the docs-brand rule, which keeps that dependency off automerge.
 
 This controls when updates are eligible, not how often Mend scans a repository.
 It does not promise immediate or hourly polling. Existing branches may be
@@ -122,13 +124,13 @@ proposes no update. Other npm dependencies stay pinned. This rule sits ahead
 of the requires-python rule and the internal schedule rule. The later rule
 does not set `rangeStrategy`, and this rule does not set `schedule`.
 
-Automerge is on in the shared preset for non-major updates (see
+Automerge is on in the shared preset for non-major and major updates (see
 [AGENTS.md](../AGENTS.md)). GitHub enforces the repository's configured merge
 rules, including required checks and a merge queue where required. The preset
-does not create a queue or make informational checks required. Major updates
-still wait for review. Repositories inherit this when
-they adopt a release that contains the change. A merge to `main` alone does
-not update repositories that pin an older release.
+does not create a queue, make informational checks required, or set
+`ignoreTests`. Repositories inherit this when they adopt a release that
+contains the change. A merge to `main` alone does not update repositories
+that pin an older release.
 
 ## Inventory and boundaries
 

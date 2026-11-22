@@ -42,17 +42,24 @@ async function update(content, file, config) {
 }
 
 describe('Shared preset policy', () => {
-test('rebases only when a branch conflicts and automerges non-major updates through the platform', () => {
+test('rebases only when a branch conflicts and automerges every update type through the platform', () => {
   assert.equal(preset.rebaseWhen, 'conflicted');
   assert.equal(preset.automerge, true);
   assert.equal(preset.platformAutomerge, true);
+  assert.equal(Object.prototype.hasOwnProperty.call(preset, 'ignoreTests'), false);
   const major = preset.packageRules.find(rule => (rule.matchUpdateTypes ?? []).includes('major'));
   assert.ok(major, 'expected a major-update package rule');
   assert.deepEqual(major.matchUpdateTypes, ['major']);
-  assert.equal(major.automerge, false);
-  assert.equal(major.platformAutomerge, false);
+  assert.equal(major.automerge, true);
+  assert.equal(major.platformAutomerge, true);
+  assert.equal(Object.prototype.hasOwnProperty.call(major, 'ignoreTests'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(major, 'excludeDepTypes'), false);
   assert.equal(major.schedule, undefined);
+  for (const rule of preset.packageRules) {
+    assert.equal(Object.prototype.hasOwnProperty.call(rule, 'ignoreTests'), false, rule.description);
+  }
   const brand = preset.packageRules.find(rule => (rule.matchDepTypes ?? []).includes('docs-brand'));
+  assert.ok(preset.packageRules.indexOf(major) < preset.packageRules.indexOf(brand));
   assert.equal(brand.automerge, false);
   assert.equal(brand.platformAutomerge, false);
   assert.equal(brand.enabled, false);
@@ -114,19 +121,21 @@ test('native workflow and custom documentation receive the same group and autome
   }
 });
 
-test('major updates do not automerge, including collaboration-guidelines', async () => {
+test('major updates automerge the same way as other updates and do not skip checks', async () => {
   const content = 'jobs:\n  release:\n    uses: Living-Proof-Labs/collaboration-guidelines/.github/workflows/semantic-release.yml@v4.1.0\n';
   const native = await actionsExtract(content, '.github/workflows/release.yml', {});
   const dep = { ...preset, ...native.deps[0], packageName: native.deps[0].packageName ?? native.deps[0].depName };
-  const major = await applyPackageRules({ ...dep, updateType: 'major' }, 'test');
-  assert.equal(major.groupName, 'collaboration guidelines');
-  assert.equal(major.automerge, false);
-  assert.equal(major.platformAutomerge, false);
-  for (const updateType of ['minor', 'pin', 'digest']) {
+  const local = JSON.parse(read('renovate.json'));
+  for (const updateType of ['major', 'minor', 'pin', 'digest']) {
     const allowed = await applyPackageRules({ ...dep, updateType }, 'test');
     assert.equal(allowed.automerge, true, updateType);
     assert.equal(allowed.platformAutomerge, true, updateType);
+    assert.notEqual(allowed.ignoreTests, true, updateType);
+    if (updateType === 'major') assert.equal(allowed.groupName, 'collaboration guidelines');
   }
+  const held = await applyPackageRules({ ...dep, updateType: 'major', packageRules: [...preset.packageRules, ...local.packageRules] }, 'test');
+  assert.equal(held.automerge, false);
+  assert.equal(held.platformAutomerge, false);
 });
 
 test('native configuration manager keeps the shared preset current through tag updates', async () => {
@@ -147,8 +156,9 @@ test('native configuration manager keeps the shared preset current through tag u
   assert.equal(rule.platformAutomerge, true);
   assert.equal(rule.prConcurrentLimit, 0);
   const major = await applyPackageRules({...preset, ...dep, packageName: dep.depName, manager: 'renovate-config', updateType: 'major'}, 'test');
-  assert.equal(major.automerge, false);
-  assert.equal(major.platformAutomerge, false);
+  assert.equal(major.automerge, true);
+  assert.equal(major.platformAutomerge, true);
+  assert.notEqual(major.ignoreTests, true);
   assert.deepEqual(major.schedule, ['at any time']);
   const output = await doAutoReplace({...rule, packageFile: 'renovate.json', depIndex: result.deps.indexOf(dep), newValue: 'v7.10.4', autoReplaceGlobalMatch: true}, input, false);
   assert.equal(output, input.replace('v7.8.2', 'v7.10.4'));
@@ -435,6 +445,11 @@ test('real brand extraction and replacement feeds verified atomic lock regenerat
   assert.equal(rule.enabled,false);
   assert.equal(rule.automerge,false);
   assert.equal(rule.platformAutomerge,false);
+  const majorHeld = await applyPackageRules({...preset,...dep,packageName:dep.depName,updateType:'major'},'test');
+  assert.equal(majorHeld.enabled,false);
+  assert.equal(majorHeld.automerge,false);
+  assert.equal(majorHeld.platformAutomerge,false);
+  assert.notEqual(majorHeld.ignoreTests,true);
   const output = await doAutoReplace({...manager,...dep,manager:'regex',packageFile:'docs-brand.lock.json',depIndex:0,newValue:'v1.1.0',autoReplaceGlobalMatch:true},input,false);
   assert.equal(output,input.replace('v1.0.0','v1.1.0'));
   assert.throws(()=>brandVerify(JSON.parse(output),brandGet), /provenance/);
@@ -446,6 +461,11 @@ test('real brand extraction and replacement feeds verified atomic lock regenerat
   const enabled = await applyPackageRules({...preset,...dep,packageName:dep.depName,packageRules:[...preset.packageRules,...optIn.packageRules]},'test');
   assert.equal(enabled.enabled,true);
   assert.equal(enabled.automerge,false);
+  const majorEnabled = await applyPackageRules({...preset,...dep,packageName:dep.depName,updateType:'major',packageRules:[...preset.packageRules,...optIn.packageRules]},'test');
+  assert.equal(majorEnabled.enabled,true);
+  assert.equal(majorEnabled.automerge,false);
+  assert.equal(majorEnabled.platformAutomerge,false);
+  assert.notEqual(majorEnabled.ignoreTests,true);
   assert.equal(enabled.postUpgradeTasks.executionMode,'branch');
   assert.deepEqual(enabled.postUpgradeTasks.fileFilters,['docs-brand.lock.json']);
   assert.deepEqual(enabled.postUpgradeTasks.commands,['node /opt/docs-brand/lock.mjs --update']);
