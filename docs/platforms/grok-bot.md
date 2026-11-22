@@ -51,6 +51,18 @@ the bot adds it to this table once set.
 | Vera | <https://app.notion.com/p/82d89b4c970643588db46051b25642fa> | Green | Owner's choice, record here once set | ✅ |
 | Art | <https://app.notion.com/p/d77b802278334a5a876bac97ae258fdb> | Violet | Owner's choice, record here once set | 🎨 |
 
+## GitHub Apps
+
+Each role has its own GitHub App. These identifiers are public, not secrets.
+The private key is the secret; see the next section.
+
+| Role | App slug | App ID | Client ID |
+| --- | --- | --- | --- |
+| Rivet | `rivet-agent-living-proof-labs` | 5723603 | `Iv23liSnZp6IPzMoiAou` |
+| Cody | `cody-agent-living-proof-labs` | 5754786 | `Iv23li9RBeg0uN451sRK` |
+| Vera | `vera-agent-living-proof-labs` | 5754857 | `Iv23liYBxxux5KQGYEc2` |
+| Art | `art-agent-living-proof-labs` | 5754862 | `Iv23liwA0BHXfMGWqk7M` |
+
 ## Credentials and connectors
 
 The account owner does these. An agent never asks for a secret in chat.
@@ -61,9 +73,10 @@ The account owner does these. An agent never asks for a secret in chat.
    store the key on one line, with line breaks turned into spaces. Tooling must
    rebuild the PEM line breaks before signing; otherwise the JSON web token
    fails with "A JSON web token could not be decoded".
-   The owner also gives the App ID or Client ID, or the bot looks it up. The
-   owner need not supply the installation ID: once the token works, the bot
-   finds it with `GET /app/installations`.
+   The App ID and Client ID are public and listed in the
+   [GitHub Apps table](#github-apps), so the owner need not supply them. Nor
+   does the owner need to supply the installation ID: once the token works, the
+   bot finds it with `GET /app/installations`.
 2. Connect the GitHub, Notion, and Slack connectors the role needs.
 3. Install the Slack app if Slack is used.
 
