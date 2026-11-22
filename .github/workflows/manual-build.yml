@@ -55,7 +55,7 @@ jobs:
           [[ "$MANUAL_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
           test "$REPLAY_TAG" = "v$MANUAL_VERSION"
           gh api "repos/$GITHUB_REPOSITORY/releases/tags/$REPLAY_TAG" |
-            python3 tools/manual/delivery.py published "$REPLAY_TAG"
+            node tools/manual/check-release.mjs "$REPLAY_TAG"
       - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e
         with:
           version: '3.54.0'

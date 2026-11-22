@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, copyFileSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, copyFileSync, rmSync, symlinkSync } from 'node:fs';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -107,22 +107,41 @@ test('production shell gate requires exact verified tag and existing tooling rel
     const bin = join(sandbox, 'bin');
     mkdirSync(bin);
     mkdirSync(join(sandbox, 'tools/manual'), { recursive: true });
-    copyFileSync(join(root, 'tools/manual/delivery.py'), join(sandbox, 'tools/manual/delivery.py'));
+    copyFileSync(join(root, 'tools/manual/check-release.mjs'), join(sandbox, 'tools/manual/check-release.mjs'));
+    // Match the native tooling image's relevant runtime; never let the host
+    // Python accidentally satisfy a production guard dependency.
+    for (const program of ['bash', 'git']) {
+      symlinkSync(command(sandbox, 'bash', ['-c', `command -v ${program}`]), join(bin, program));
+    }
+    symlinkSync(process.execPath, join(bin, 'node'));
+    const noPython = spawnSync('bash', ['-c', '! command -v python3'], { env: { PATH: bin } });
+    assert.equal(noPython.status, 0);
     writeFileSync(join(bin, 'gh'), '#!/bin/sh\n[ "$GH_TOKEN" = fixture ] || exit 2\n[ "$*" = "api repos/fixture/guidelines/releases/tags/v9.9.3" ] || exit 3\n[ -n "$FIXTURE_BODY" ] || exit 22\nprintf "%s\\n" "$FIXTURE_BODY"\n', { mode: 0o755 });
     const script = wf('deploy-manual').jobs.deploy.steps.find(step => step.name === 'Require exact published stable tag and same-run build').run;
     const env = {
-      PATH: `${bin}:${process.env.PATH}`, GH_TOKEN: 'fixture', GITHUB_REPOSITORY: 'fixture/guidelines',
+      PATH: bin, GH_TOKEN: 'fixture', GITHUB_REPOSITORY: 'fixture/guidelines',
       GITHUB_EVENT_NAME: 'push', VERSION: '9.9.3', RELEASE_TAG: 'v9.9.3', ARTIFACT_ID: '13',
       SOURCE: original, GITHUB_SHA: original, PLAN_RUN: '32', GITHUB_RUN_ID: '32',
       PLAN_ATTEMPT: '1', GITHUB_RUN_ATTEMPT: '1', REPLAY_TAG: '',
       FIXTURE_BODY: JSON.stringify(goodRelease),
     };
     const result = changes => spawnSync('bash', ['-c', script], { cwd: sandbox, env: { ...env, ...changes }, encoding: 'utf8' });
-    assert.equal(result({}).status, 0);
+    const first = result({});
+    assert.equal(first.status, 0, first.stderr);
     assert.equal(result({ GITHUB_RUN_ATTEMPT: '2' }).status, 0, 'normal delivery-only rerun');
     assert.equal(result({ GITHUB_EVENT_NAME: 'workflow_dispatch', REPLAY_TAG: 'v9.9.3' }).status, 0, 'exact replay');
-    for (const body of [{draft: true}, {prerelease: true}, {immutable: false}, {tag_name: 'v9.9.2'}, {assets: []}]) {
-      assert.notEqual(result({ FIXTURE_BODY: JSON.stringify({...goodRelease, ...body}) }).status, 0);
+    const prebuild = wf('manual-build').jobs.build.steps.find(step => step.name === 'Require the existing immutable stable release before rebuilding').run;
+    const rebuild = body => spawnSync('bash', ['-c', prebuild], { cwd: sandbox, env: {
+      ...env, MANUAL_VERSION: '9.9.3', REPLAY_TAG: 'v9.9.3', FIXTURE_BODY: JSON.stringify(body),
+    }, encoding: 'utf8' });
+    const allowed = rebuild(goodRelease);
+    assert.equal(allowed.status, 0, allowed.stderr);
+    for (const body of [{draft: true}, {prerelease: true}, {immutable: false}, {tag_name: 'v9.9.2'}, {assets: []},
+      {assets: [...goodRelease.assets, goodRelease.assets[0]]},
+      {assets: [goodRelease.assets[0], {...goodRelease.assets[1], state: 'new'}]}]) {
+      const invalid = { ...goodRelease, ...body };
+      assert.notEqual(result({ FIXTURE_BODY: JSON.stringify(invalid) }).status, 0);
+      assert.notEqual(rebuild(invalid).status, 0);
     }
     assert.notEqual(result({ FIXTURE_BODY: '' }).status, 0, 'no published release');
     assert.notEqual(result({ GITHUB_RUN_ID: '40' }).status, 0);

@@ -49,23 +49,6 @@ def require_archive(path, version, commit, run, attempt):
             require_manifest(json.load(handle), version, commit, run, attempt)
 
 
-def require_release(record, tag):
-    if not (
-        isinstance(record, dict)
-        and record.get("tag_name") == tag
-        and record.get("draft") is False
-        and record.get("prerelease") is False
-        and record.get("immutable") is True
-        and isinstance(record.get("published_at"), str)
-        and bool(record["published_at"])
-    ):
-        raise ValueError("Expected the exact immutable published stable guidelines release")
-    assets = [item.get("name") for item in record.get("assets", [])
-              if item.get("state") == "uploaded"]
-    if any(assets.count(name) != 1 for name in ("tooling-index.json", "tooling-image.json")):
-        raise ValueError("Expected both published tooling evidence assets")
-
-
 def main():
     mode, *args = sys.argv[1:]
     if mode == "seal":
@@ -73,11 +56,8 @@ def main():
         require_manifest(json.loads(Path(path).read_text()), *identity)
     elif mode == "archive":
         require_archive(*args)
-    elif mode == "published":
-        (tag,) = args
-        require_release(json.load(sys.stdin), tag)
     else:
-        raise ValueError("Expected seal, archive or published")
+        raise ValueError("Expected seal or archive")
 
 
 if __name__ == "__main__":
