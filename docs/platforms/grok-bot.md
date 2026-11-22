@@ -35,23 +35,25 @@ For each role, create a bot named `<Role> (<owner>)`, for example
 - a description that links the role's Notion profile and the
   [collaboration-guidelines](https://github.com/Living-Proof-Labs/collaboration-guidelines)
   repository;
-- a default mark (shape and colour) from the role table below.
+- a picture: the role's Twemoji emoji from the role table below, centred on a
+  rounded square in the role's colour, as a 512 by 512 pixel PNG with
+  transparent corners.
 
-Do not upload a custom picture. The assigned colour shows on the bot's name only
-with the default mark; setting a custom picture turns the name gray (tested on
-2026-11-23). A green dot on the bot's icon shows that it is working. A blue dot
-at the end of the bot's name shows that a message is waiting. Each role keeps
-the same colour on every account, so copies are recognizable. The emoji is for
-reference only: it matches the role's Notion page icon and GitHub App avatar.
-Where the shape says to record it here, the account owner chooses the shape and
-the bot adds it to this table once set.
+Get the emoji from Twemoji at
+`https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/<code>.svg`,
+using the code in the table. Vera's check mark is already a green square, so
+use it at full size. Each role keeps the same colour and emoji on every
+account, so copies are recognizable. The emoji matches the role's Notion page
+icon and GitHub App avatar. A green dot on the bot's icon shows that it is
+working, and a blue dot at the end of the bot's name shows that a message is
+waiting; both still show with a custom picture.
 
-| Role | Notion profile | Colour | Shape | Emoji |
-| --- | --- | --- | --- | --- |
-| Rivet | <https://app.notion.com/p/402e1aa44c29810f9255c0f8cead3aa7> | Orange | Hexagon | 🔩 |
-| Cody | <https://app.notion.com/p/daa01158038741c8ab8a19b5c6ac1f46> | Blue | Owner's choice, record here once set | 👨‍💻 |
-| Vera | <https://app.notion.com/p/82d89b4c970643588db46051b25642fa> | Green | Owner's choice, record here once set | ✅ |
-| Art | <https://app.notion.com/p/d77b802278334a5a876bac97ae258fdb> | Violet | Owner's choice, record here once set | 🎨 |
+| Role | Notion profile | Colour | Emoji (Twemoji code) |
+| --- | --- | --- | --- |
+| Rivet | <https://app.notion.com/p/402e1aa44c29810f9255c0f8cead3aa7> | Amber `#F59E0B` | 🔩 (`1f529`) |
+| Cody | <https://app.notion.com/p/daa01158038741c8ab8a19b5c6ac1f46> | Navy `#1F3A5F` | 👨‍💻 (`1f468-200d-1f4bb`) |
+| Vera | <https://app.notion.com/p/82d89b4c970643588db46051b25642fa> | Green `#77B255` | ✅ (`2705`) |
+| Art | <https://app.notion.com/p/d77b802278334a5a876bac97ae258fdb> | Violet `#7C3AED` | 🎨 (`1f3a8`) |
 
 ## GitHub Apps
 
