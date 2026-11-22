@@ -35,14 +35,21 @@ For each role, create a bot named `<Role> (<owner>)`, for example
 - a description that links the role's Notion profile and the
   [collaboration-guidelines](https://github.com/Living-Proof-Labs/collaboration-guidelines)
   repository;
-- a picture.
+- a default mark (shape and colour) from the role table below.
 
-| Role | Notion profile |
-| --- | --- |
-| Rivet | <https://app.notion.com/p/402e1aa44c29810f9255c0f8cead3aa7> |
-| Cody | <https://app.notion.com/p/daa01158038741c8ab8a19b5c6ac1f46> |
-| Vera | <https://app.notion.com/p/82d89b4c970643588db46051b25642fa> |
-| Art | <https://app.notion.com/p/d77b802278334a5a876bac97ae258fdb> |
+Do not upload a custom picture. The built-in mark animates while the bot is
+working, which shows progress; a custom picture is static. Each role keeps the
+same colour on every account, so copies are recognizable. The emoji is for
+reference only: it matches the role's Notion page icon and GitHub App avatar.
+Where the shape says to record it here, the account owner chooses the shape and
+the bot adds it to this table once set.
+
+| Role | Notion profile | Colour | Shape | Emoji |
+| --- | --- | --- | --- | --- |
+| Rivet | <https://app.notion.com/p/402e1aa44c29810f9255c0f8cead3aa7> | Orange | Hexagon | 🔩 |
+| Cody | <https://app.notion.com/p/daa01158038741c8ab8a19b5c6ac1f46> | Blue | Owner's choice, record here once set | 👨‍💻 |
+| Vera | <https://app.notion.com/p/82d89b4c970643588db46051b25642fa> | Green | Owner's choice, record here once set | ✅ |
+| Art | <https://app.notion.com/p/d77b802278334a5a876bac97ae258fdb> | Violet | Owner's choice, record here once set | 🎨 |
 
 ## Credentials and connectors
 
@@ -50,7 +57,13 @@ The account owner does these. An agent never asks for a secret in chat.
 
 1. Add each bot's GitHub App private key as that bot's secret, named
    `<ROLE>_GITHUB_APP_PRIVATE_KEY` (for example
-   `RIVET_GITHUB_APP_PRIVATE_KEY`), through the secret card.
+   `RIVET_GITHUB_APP_PRIVATE_KEY`), through the secret card. The card may
+   store the key on one line, with line breaks turned into spaces. Tooling must
+   rebuild the PEM line breaks before signing; otherwise the JSON web token
+   fails with "A JSON web token could not be decoded".
+   The owner also gives the App ID or Client ID, or the bot looks it up. The
+   owner need not supply the installation ID: once the token works, the bot
+   finds it with `GET /app/installations`.
 2. Connect the GitHub, Notion, and Slack connectors the role needs.
 3. Install the Slack app if Slack is used.
 
@@ -64,7 +77,9 @@ everything passes. It never prints a secret.
 
 - Name includes the account owner, for example "Vera (Aaron)".
 - Description links its Notion profile and the guidelines.
-- Its own GitHub App key secret is present and a token can be minted.
+- Its own GitHub App key secret is present and a token can be minted. Verify
+  the key by minting an installation token, and compare the key's SHA256
+  fingerprint with the one on the app's Key pairs page.
 - It can read repositories, comment, and edit the board. Do a read-only test
   first, then one harmless signed comment if allowed. Post it on the bot's own
   setup issue, or on an existing tracking issue the account owner names, never
@@ -91,7 +106,9 @@ example "— Vera (`<owner>`)".
 ## Schedules
 
 - Only the coordinator, Rivet, gets the scheduled check. Create Rivet's routines
-  paused, and enable them only after every bot's self-check passes and the old
+  paused. They may be created before the old copies are retired, for example
+  when the owner asks for them to exist disabled. Enable them only after every
+  self-check item passes, including the duplicate-instance check, and the old
   copies are confirmed quiet. Its prompt is the runbook link plus role and
   signature, in the exact shape given in
   [Setting up the alert on a new platform](../routine-check.md#setting-up-the-alert-on-a-new-platform).

@@ -193,6 +193,11 @@ gh issue view <n> --json author,createdAt,body,comments --jq '
 ```
 
 Use `gh pr view` for pull requests; it reads the description the same way.
+The query needs an authenticated `gh`. A GitHub App installation token works.
+To find an app's recent comments across the organization, search with
+`commenter:app/<app-slug>` plus an `org:` qualifier. The search `updated_at` is
+not the comment time, so read the latest comment's `created_at` and its
+signature before deciding.
 GitHub author logins can show as `app/<name>` (for a GitHub App) or as a
 plain login. Flag a post that:
 
