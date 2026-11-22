@@ -37,6 +37,11 @@ and personal details out of repository files and public comments.
 
 ## Hourly trigger and migration
 
+The team works 24/7. The scheduled check runs every hour of every day,
+including nights and weekends. Do not limit it to weekdays or business hours,
+even where a platform defaults to that. Event listeners also run around the
+clock.
+
 The repository routine is the single source of truth. Review and version changes
 through pull requests like other repository guidance. After this page is merged
 and accessible, an authorized runner can use this minimal hourly trigger:
@@ -154,10 +159,12 @@ automations, GitHub Actions, or cron. Describe each trigger by what it delivers
 and what the agent does, not by a platform's trigger names or limits.
 
 - **One scheduled check.** A recurring tick with no payload. The agent runs this
-  runbook's full sweep.
+  runbook's full sweep. It runs every hour of every day, not only on weekdays
+  or in business hours.
 - **Optional event listeners.** Each delivers one issue or pull request event
   with its URL. The agent runs [Event wakes](#event-wakes-issue-or-pull-request)
   for that item only. Skip these where a scheduled check is fast enough.
+  Listeners run around the clock.
 - **Keep prompts to a runbook link plus role and signature.** The logic lives
   in the runbook, not the prompt. An event listener's prompt is a one-liner:
   <!-- markdownlint-disable-next-line MD013 -->

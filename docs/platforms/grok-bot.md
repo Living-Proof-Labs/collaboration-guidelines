@@ -156,6 +156,12 @@ exchanges with the other bots that day.
 
 ## Schedules
 
+The team works 24/7. The scheduled check runs every hour of every day,
+including nights and weekends. Do not limit it to weekdays or business hours,
+even where a platform defaults to that (Grok Bot's routine defaults do). On
+Grok Bot, use a schedule such as `35 * * * *` (any fixed minute, every hour).
+Event listeners also run around the clock.
+
 - Only the coordinator, Rivet, gets the scheduled check. Create Rivet's routines
   paused. They may be created before the old copies are retired, for example
   when the owner asks for them to exist disabled. Enable them only after every
