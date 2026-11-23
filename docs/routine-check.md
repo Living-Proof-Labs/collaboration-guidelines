@@ -110,6 +110,18 @@ The scheduled check is the reliable path. Each run:
    the board as **Blocked** with that person as Owner, plus a comment saying
    exactly what they need to answer. Do not use a chat message or a report for
    decisions (priority wake messages between bots are still fine).
+4. Once per ISO week, if no drift-run item exists for this week, add a dated
+   one with Owner Vera covering the
+   [user-run paths](independent-review.md#verification-of-user-run-paths).
+   The run covers both the latest main and the latest release.
+   The hourly check is the weekly runner. There is no new scheduler, cron,
+   service credential, or automated issue writer. Paths that need Docker,
+   which the runner may lack, take their evidence from the latest green main
+   CI run that executes them in the pinned container; check that run's logs
+   and revisions. A user path with no CI coverage gets a `drift` issue, not a
+   pass. The drift-issue rule is in
+   <!-- markdownlint-disable-next-line MD013 -->
+   [independent-review.md](independent-review.md#verification-of-user-run-paths).
 
 ## Event wakes (issue or pull request)
 
