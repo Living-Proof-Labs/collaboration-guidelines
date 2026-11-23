@@ -110,6 +110,11 @@ The scheduled check is the reliable path. Each run:
    the board as **Blocked** with that person as Owner, plus a comment saying
    exactly what they need to answer. Do not use a chat message or a report for
    decisions (priority wake messages between bots are still fine).
+4. Once per ISO week, if no drift-run item exists for this week, add a dated
+   one with Owner Vera covering the
+   [user-run paths](independent-review.md#verification-of-user-run-paths).
+   The hourly check is the weekly runner. There is no new scheduler, cron,
+   service credential, or automated issue writer.
 
 ## Event wakes (issue or pull request)
 
