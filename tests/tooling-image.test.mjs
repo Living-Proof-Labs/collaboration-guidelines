@@ -35,6 +35,54 @@ test('tooling uses native architectures and tests exact archives before release 
   assert.match(read('Dockerfile'), /COPY tools\/tooling\/install-task.sh/);
 });
 
+function installTask(t, { withCA, curlStatus }) {
+  const step = read('Dockerfile').replaceAll('\\\n', ' ').split('\n')
+    .find(line => line.startsWith('RUN ') && line.includes('bash /tmp/install-task.sh'));
+  const mount = 'RUN --mount=type=secret,id=ca,required=false ';
+  assert.ok(step?.startsWith(mount), 'The Task installer must mount the optional CA secret');
+
+  const dir = mkdtempSync(join(tmpdir(), 'install-task-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const ca = join(dir, 'provider ca.pem');
+  if (withCA) writeFileSync(ca, 'fixture');
+  const log = join(dir, 'calls');
+  const installer = join(dir, 'install-task.sh');
+  copyFileSync(join(root, 'tools/tooling/install-task.sh'), installer);
+  writeFileSync(join(dir, 'dpkg'), '#!/bin/sh\necho amd64\n', { mode: 0o755 });
+  writeFileSync(join(dir, 'curl'), `#!/bin/bash
+printf '%s\\n' "\${CURL_CA_BUNDLE:-}" "$@" > "$CALL_LOG"
+if (( CURL_STATUS != 0 )); then exit "$CURL_STATUS"; fi
+printf 'corrupt archive' > "\${@: -1}"
+`, { mode: 0o755 });
+  writeFileSync(join(dir, 'tar'), '#!/bin/sh\necho tar >> "$CALL_LOG"\nexit 99\n', { mode: 0o755 });
+
+  // Run the Dockerfile step with the secret and copied installer in a temporary directory.
+  const command = step.slice(mount.length)
+    .replaceAll('/run/secrets/ca', '"$1"').replaceAll('/tmp/install-task.sh', '"$2"');
+  const result = spawnSync('/bin/sh', ['-c', command, 'install-task-test', ca, installer], {
+    encoding: 'utf8',
+    env: { PATH: `${dir}:${process.env.PATH}`, CALL_LOG: log, CURL_STATUS: String(curlStatus), TMPDIR: dir },
+  });
+  const [bundle, ...args] = readFileSync(log, 'utf8').trimEnd().split('\n');
+  return { result, bundle, args, ca };
+}
+
+test('Task download selects the mounted provider CA and propagates TLS failure before extraction', t => {
+  const { result, bundle, args, ca } = installTask(t, { withCA: true, curlStatus: 60 });
+  assert.equal(result.status, 60, result.stderr);
+  assert.equal(bundle, ca);
+  assert.deepEqual(args.slice(0, 3), ['--fail', '--show-error', '--location']);
+  assert.ok(!args.includes('tar'));
+});
+
+test('Task download uses default trust without a provider CA and rejects a corrupt archive', t => {
+  const { result, bundle, args } = installTask(t, { withCA: false, curlStatus: 0 });
+  assert.equal(result.status, 1, result.stderr);
+  assert.equal(bundle, '');
+  assert.match(result.stderr, /computed checksum did NOT match/);
+  assert.ok(!args.includes('tar'));
+});
+
 function publish(mode = 'ok') {
   const dir = mkdtempSync(join(tmpdir(), 'tooling-image-'));
   mkdirSync(join(dir, 'bin'));
