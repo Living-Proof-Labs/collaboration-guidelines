@@ -41,10 +41,15 @@ consuming repository.
 3. Use the changed features and nearby behavior they could affect: a realistic
    successful use, relevant invalid input or failure paths, and adjacent commands
    or flows. Use the feature scenarios as a starting point, then investigate what
-   happens. Continuous integration handles ordinary regression; reviewers do not
-   manually repeat the full suite on every PR. Broaden exploration when evidence
-   reveals a risk. For documentation-only changes, exercise the changed guidance,
-   examples, links, or generated artifact instead of inventing an application test.
+   happens. When a manual probe could be automated, Vera turns it into a test: she
+   adds it to the PR under review (or opens a small follow-up PR), or records a
+   blocking missing-test finding for the developer. Any probe that found a defect
+   must exist as a test before the verdict is Met. Scratch scripts are not
+   evidence for a later round or a later effort. Reviewers do not re-run the
+   existing suite by hand; continuous integration does. New manual checks become
+   tests per the rule above. Broaden exploration when evidence reveals a risk.
+   For documentation-only changes, exercise the changed guidance, examples,
+   links, or generated artifact instead of inventing an application test.
 4. Post one PR comment per meaningful experiment using the template below. Keep
    results independently readable, including failures and blocked attempts. The
    author fixes relevant findings; the reviewer reruns affected experiments on the
