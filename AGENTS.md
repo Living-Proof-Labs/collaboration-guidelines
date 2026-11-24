@@ -47,8 +47,9 @@ or higher-priority instructions.
 - For independent review, use the [review guide](docs/independent-review.md) to
   inspect code and exercise the installed change and adjacent behavior in a fresh
   environment. Reviewers do not re-run the existing regression suite by hand;
-  continuous integration does. A new manual check becomes a test, as that guide
-  requires. Keep findings proportionate.
+  continuous integration does. When a manual probe could be automated, it becomes
+  a test, and any probe that found a defect must exist as a test before Met, as
+  that guide requires. Keep findings proportionate.
 - The verifier chooses the verification depth from the change's risk.
   Requesters do not specify a depth. See
   [match verification depth to risk](docs/independent-review.md#match-verification-depth-to-risk).

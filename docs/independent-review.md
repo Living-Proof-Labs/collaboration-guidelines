@@ -46,10 +46,10 @@ consuming repository.
    blocking missing-test finding for the developer. Any probe that found a defect
    must exist as a test before the verdict is Met. Scratch scripts are not
    evidence for a later round or a later effort. Reviewers do not re-run the
-   existing suite by hand; continuous integration does. New manual checks become
-   tests per the rule above. Broaden exploration when evidence reveals a risk.
-   For documentation-only changes, exercise the changed guidance, examples,
-   links, or generated artifact instead of inventing an application test.
+   existing suite by hand; continuous integration does. Broaden exploration when
+   evidence reveals a risk. For documentation-only changes, exercise the
+   changed guidance, examples, links, or generated artifact instead of inventing
+   an application test.
 4. Post one PR comment per meaningful experiment using the template below. Keep
    results independently readable, including failures and blocked attempts. The
    author fixes relevant findings; the reviewer reruns affected experiments on the
