@@ -63,26 +63,30 @@ waits until the merged routine is accessible.
 
 ## Hourly preflight
 
-Before delivery work, verify all three checks:
+Before delivery work, verify both checks:
 
-1. **GitHub access.** Make an authenticated API call. Keel runs
-   `gh api user --jq .login`, checks for `keel-agent-lpl`, then reads a
-   Living Proof Labs repository with `gh api`. An anonymous response or a
-   connected app does not prove that Keel's CLI works.
-2. **Browser tabs.** Close tabs that are no longer needed. Preserve unsaved
-   work and pending handoffs. Verify what remains at the start and again
-   before ending the run.
-3. **Codex development machines.** On the machines used for delivery, follow
+1. **GitHub access.** Prefer the authenticated API. For Keel, verify the
+   expected account (`gh api user --jq .login` returns `keel-agent-lpl`)
+   and access to the Delivery board. If the API is unavailable or cannot
+   perform a required board operation, use the signed-in browser. Verify the
+   expected account and that the board loads; a tab title or public repo page
+   alone does not pass. Either working route is enough. If neither works,
+   the routine is **Blocked**.
+2. **Codex development machines.** On the machines used for delivery, follow
    the [shared host recipe](shared-host.md) to start the standard development
    environment and run its documented smoke check. A connected machine alone
-   does not pass. If disk space is the blocker,
-   follow the existing Docker cleanup procedure on idle machines: remove only
-   unused, rebuildable images and cache or finished output that can be
-   recreated. Preserve in-progress work and volumes. Retry the same check.
+   does not pass. If disk space is the blocker, follow the existing Docker
+   cleanup procedure on idle machines: remove only unused, rebuildable images
+   and cache or finished output that can be recreated. Preserve in-progress
+   work and volumes. Retry the same check.
 
-If a check fails or cannot be verified, the routine is **Blocked**. Record
-the failing check, who can resolve it, and the next check. Work on clearing
-the blocker, but do not continue delivery until all three checks pass.
+When the browser is available, close unneeded tabs at the start and verify
+what remains before ending the run. Preserve unsaved work and pending handoffs.
+A browser outage does not block an otherwise working API route.
+
+If either readiness check fails or cannot be verified, record the failing
+check, who can resolve it, and the next check. Work on clearing the blocker,
+but do not continue delivery until both readiness checks pass.
 
 ## Restart checklist
 
