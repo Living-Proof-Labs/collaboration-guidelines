@@ -44,7 +44,7 @@ nav:
   - Contribute: CONTRIBUTING.md
   - Version and source: version.md
   - License:
-      - License text: license.md
+      - License text: LICENSE.md
       - Licensing guide: docs/licensing.md
   - Maintainers:
       - Ownership decision: docs/documentation-ownership.md

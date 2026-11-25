@@ -67,7 +67,8 @@ def build():
     paths += ['templates/generated-docs/README.md']
     mapping = {p: p.replace('README.md', 'index.md') for p in paths}
     mapping['templates/generated-docs/README.md'] = 'examples/generated-docs.md'
-    mapping['LICENSE'] = 'license.md'
+    # Keep the published LICENSE.html URL and its #license-scope anchor.
+    mapping['LICENSE'] = 'LICENSE.md'
     for p in paths:
         if p.startswith('.'):
             mapping[p] = 'providers/' + p[1:]
@@ -103,7 +104,7 @@ def build():
         target = source / destination
         target.parent.mkdir(parents=True, exist_ok=True)
         version_path = posixpath.relpath('version.md', posixpath.dirname(destination) or '.')
-        license_path = posixpath.relpath('license.md', posixpath.dirname(destination) or '.')
+        license_path = posixpath.relpath('LICENSE.md', posixpath.dirname(destination) or '.')
         text += (f'\n\n---\n\n[Documentation home](https://docs.livingprooflabs.com/) · '
                  f'[{docs_label}]({source_link} "{commit}") · '
                  f'[Version and source]({version_path}) · [Help / report an issue]({REPO}/issues) · '
@@ -111,7 +112,8 @@ def build():
         target.write_text(text)
     license_text = (ROOT / 'LICENSE').read_text()
     record['sources']['LICENSE'] = hashlib.sha256(license_text.encode()).hexdigest()
-    (source / 'license.md').write_text(f'# License\n\n```text\n{license_text.rstrip()}\n```\n')
+    (source / 'LICENSE.md').write_text(
+        f'# License\n\n<a id="license-scope"></a>\n\n```text\n{license_text.rstrip()}\n```\n')
     task_data = json.loads(run('task', '--list', '--json'))
     tasks = ['# Contributor tasks', '', 'Generated from this repository’s real Taskfile.',
              'Host tasks require the prerequisites stated in their guide. Container tasks',

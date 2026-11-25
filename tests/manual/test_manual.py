@@ -82,6 +82,22 @@ def test_source_identity_and_actual_tasks():
         assert "This is not a release." in version_page
 
 
+def test_license_page_keeps_url_and_anchor():
+    # The single Apache-2.0 LICENSE (collaboration-guidelines#162) is published
+    # at the existing LICENSE.html URL with its #license-scope anchor.
+    page = (SITE / "LICENSE.html").read_text()
+    parser = Links()
+    parser.feed(page)
+    assert "license-scope" in parser.ids
+    assert "Apache License" in page and "Version 2.0, January 2004" in page
+    assert "limitations under the License." in page
+    # The theme's bundled icons carry their own CC BY notice; only the
+    # repository's own license page content must not mention it.
+    article = page[page.index('id="license-scope"') :]
+    assert "Creative Commons" not in article and "CC BY 4.0</" not in article
+    assert not (SITE / "LICENSES").exists()
+
+
 @pytest.fixture(scope="module")
 def base_url():
     class Handler(SimpleHTTPRequestHandler):
