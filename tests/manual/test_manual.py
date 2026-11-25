@@ -141,6 +141,28 @@ def test_browser_search_and_deep_link(browser, base_url):
     page.close()
 
 
+@pytest.mark.parametrize("required", [
+    "Either verified route is enough for read-only work.",
+    "API read access alone does not satisfy it.",
+    "block the write and dependent delivery work.",
+    "Restore that route and verify the expected identity and required access before proceeding.",
+    "Do not make a real board write solely as a smoke check;",
+    "Before ending the run, close newly unneeded tabs and verify the remaining tabs.",
+    "Preserve unsaved work, active tasks, and pending handoffs at both checks.",
+    "record that tab cleanup could not be verified; do not claim it passed.",
+])
+def test_hourly_preflight_decisions_are_visible(browser, base_url, required):
+    """Keep the reviewed read/write and shutdown obligations in the user entry point."""
+    page = browser.new_page()
+    try:
+        page.goto(base_url + "docs/routine-check.html#hourly-preflight")
+        assert page.locator("#hourly-preflight").is_visible()
+        text = " ".join(page.locator("main").inner_text().split())
+        assert required in text
+    finally:
+        page.close()
+
+
 def test_browser_mobile_navigation_and_theme(browser, base_url):
     page = browser.new_page(viewport={"width": 390, "height": 844})
     page.goto(base_url)
