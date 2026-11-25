@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 
 # Build and verify this manual
 
@@ -78,8 +78,8 @@ a result, deep-link reload, source/root navigation and mobile navigation. Offlin
 checks do not establish remote availability. Independent review must use the
 generated artifact and report the exact source and observed limits.
 
-Help and corrections use this repository's Issues. License scopes remain in the
-[license index](../LICENSE.md). No dedicated security-reporting destination has
+Help and corrections use this repository's Issues. This repository is licensed
+under [Apache-2.0](../LICENSE). No dedicated security-reporting destination has
 been established here; this manual does not invent one or direct sensitive reports
 to public issues.
 
