@@ -199,7 +199,9 @@ Before opting in:
    preset until those checks are proven to fail on an inconsistent lock.
 4. Ensure the existing lock passes `--check`, then adopt the opt-in preset.
    Review the first real Renovate PR and its complete rendered-manual results.
-   Neither preset enables automerge; consumer overrides still need review.
+   The docs-brand rule and the opt-in preset keep that dependency off
+   automerge. Other updates follow the shared preset. Consumer overrides
+   still need review.
 
 ## Exact behavior and failure handling
 

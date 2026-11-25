@@ -131,10 +131,9 @@ or higher-priority instructions.
   must require status checks that exercise real behaviour, not only lint, on its
   branch ruleset, and those checks must be strong enough that a green run shows
   the update is safe. The
-  [shared dependency policy](docs/dependency-updates.md) automerges non-major
-  updates under GitHub's configured merge rules, using a merge queue where
-  required.
-  Major updates wait for human review.
+  [shared dependency policy](docs/dependency-updates.md) automerges updates,
+  including majors, under GitHub's configured merge rules, using a merge queue
+  where required. Required status checks still gate the merge.
 - Shared hosts install Docker and Task; repository containers supply language
   runtimes and package managers. Task installs
   project tooling and dependencies using pinned versions and committed locks.

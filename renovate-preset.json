@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Shared dependency policy: internal releases on the next bot run; external updates weekly; non-major updates automerge under GitHub's configured merge rules, using a merge queue where required; major updates wait for review.",
+  "description": "Shared dependency policy: internal releases on the next bot run; external updates weekly; updates, including majors, automerge under GitHub's configured merge rules, using a merge queue where required. Required status checks still gate the merge.",
   "automerge": true,
   "platformAutomerge": true,
   "rebaseWhen": "conflicted",
@@ -23,6 +23,12 @@
       "separateMajorMinor": false
     },
     {
+      "description": "Major updates automerge the same way as other updates, under GitHub's configured merge rules. Required status checks still gate the merge. This rule sits ahead of the docs-brand rule so that later rule can keep docs-brand off automerge.",
+      "matchUpdateTypes": ["major"],
+      "automerge": true,
+      "platformAutomerge": true
+    },
+    {
       "description": "Opt in only after installing the trusted docs brand post-upgrade command and provenance CI check.",
       "matchDepTypes": [
         "docs-brand"
@@ -42,12 +48,6 @@
       "matchManagers": ["pep621"],
       "matchDepTypes": ["requires-python"],
       "rangeStrategy": "auto"
-    },
-    {
-      "description": "Major updates wait for human review.",
-      "matchUpdateTypes": ["major"],
-      "automerge": false,
-      "platformAutomerge": false
     },
     {
       "description": "Living Proof Labs releases open with no schedule and no pull request rate limit. This rule is last so an earlier rule cannot restore the Monday schedule.",

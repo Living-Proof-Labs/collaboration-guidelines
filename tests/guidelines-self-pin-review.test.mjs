@@ -50,17 +50,24 @@ test('the shared preset keeps docs-brand updates disabled and the brand lock sta
   assert.match(lock.sha256, /^[0-9a-f]{64}$/);
 });
 
-test('the working-tree preset automerges non-major updates and holds majors and docs-brand for review', () => {
+test('the working-tree preset automerges every update type, including majors, and holds docs-brand', () => {
   assert.equal(preset.automerge, true);
   assert.equal(preset.platformAutomerge, true);
+  assert.equal(Object.prototype.hasOwnProperty.call(preset, 'ignoreTests'), false);
   const major = preset.packageRules.filter(rule => (rule.matchUpdateTypes ?? []).includes('major'));
   assert.equal(major.length, 1);
   assert.deepEqual(major[0].matchUpdateTypes, ['major']);
-  assert.equal(major[0].automerge, false);
-  assert.equal(major[0].platformAutomerge, false);
+  assert.equal(major[0].automerge, true);
+  assert.equal(major[0].platformAutomerge, true);
+  assert.equal(Object.prototype.hasOwnProperty.call(major[0], 'ignoreTests'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(major[0], 'excludeDepTypes'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(major[0], 'schedule'), false);
+  for (const rule of preset.packageRules) {
+    assert.equal(Object.prototype.hasOwnProperty.call(rule, 'ignoreTests'), false, rule.description);
+  }
   const brand = preset.packageRules.filter(rule => (rule.matchDepTypes ?? []).includes('docs-brand'));
   assert.equal(brand.length, 1);
+  assert.ok(preset.packageRules.indexOf(major[0]) < preset.packageRules.indexOf(brand[0]));
   assert.equal(brand[0].enabled, false);
   assert.equal(brand[0].automerge, false);
   assert.equal(brand[0].platformAutomerge, false);
@@ -92,6 +99,8 @@ test('the pinned release is published and its preset matches the adopted automer
   if (automerge) {
     const major = pinned.packageRules.filter(rule => (rule.matchUpdateTypes ?? []).includes('major'));
     assert.equal(major.length, 1);
+    // The published pin still holds majors. The working tree automerges them;
+    // this assertion changes when renovate.json adopts that release.
     assert.equal(major[0].automerge, false);
     assert.equal(major[0].platformAutomerge, false);
     const brand = pinned.packageRules.filter(rule => (rule.matchDepTypes ?? []).includes('docs-brand'));
