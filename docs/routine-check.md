@@ -66,6 +66,42 @@ including outstanding actions and wakes. Keep private identifiers private.
 This documentation neither installs nor changes a live scheduler; migration
 waits until the merged routine is accessible.
 
+## Hourly preflight
+
+Before delivery work, verify both checks:
+
+1. **GitHub access.** Prefer the authenticated API. For Keel, verify the
+   expected account (`gh api user --jq .login` returns `keel-agent-lpl`)
+   and actual read access to the Delivery board. A signed-in browser is an
+   alternative for reads: verify the expected account and that the board loads;
+   a tab title or public repo page alone does not pass. Either verified route
+   is enough for read-only work. If neither works, the routine is **Blocked**.
+   For a pending authorized board write, verify that an authorized route can
+   perform that operation; API read access alone does not satisfy it. If the
+   write needs the signed-in browser and that browser is unavailable, block
+   the write and dependent delivery work. Restore that route and verify the
+   expected identity and required access before proceeding. Do not make a real
+   board write solely as a smoke check; perform only the pending authorized
+   operation and verify its result.
+2. **Codex development machines.** On the machines used for delivery, follow
+   the [shared host recipe](shared-host.md) to start the standard development
+   environment and run its documented smoke check. A connected machine alone
+   does not pass. If disk space is the blocker, follow the existing Docker
+   cleanup procedure on idle machines: remove only unused, rebuildable images
+   and cache or finished output that can be recreated. Preserve in-progress
+   work and volumes. Retry the same check.
+
+When the browser is available, close unneeded tabs at the start. Before ending
+the run, close newly unneeded tabs and verify the remaining tabs. Preserve
+unsaved work, active tasks, and pending handoffs at both checks. If the browser
+is unavailable, record that tab cleanup could not be verified; do not claim it
+passed. A browser outage does not block verified API read-only work, but it
+still blocks a pending write that requires that browser.
+
+If either readiness check fails or cannot be verified, record the failing
+check, who can resolve it, and the next check. Work on clearing the blocker,
+but do not continue delivery until both readiness checks pass.
+
 ## Restart checklist
 
 1. Read the repository's applicable `AGENTS.md`, the board guide, and the
