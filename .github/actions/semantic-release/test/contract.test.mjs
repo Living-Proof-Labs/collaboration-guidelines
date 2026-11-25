@@ -48,7 +48,7 @@ test('workflow and action preserve one source pin and output wiring', async () =
   assert.deepEqual(own.on.push.branches, ['main']);
 });
 test('relative documentation links and adoption pin examples resolve structurally', async () => {
-  for (const path of ['README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'LICENSE.md',
+  for (const path of ['README.md', 'AGENTS.md', 'CONTRIBUTING.md',
     'docs/tool-usability.md', 'templates/generated-docs/README.md', '.github/GENERATED-DOCS.md',
     'docs/documentation-recipe.md', 'docs/documentation-ownership.md', 'docs/manual.md',
     'docs/shared-host.md', '.codex/DEVELOPMENT.md', '.cursor/DEVELOPMENT.md',

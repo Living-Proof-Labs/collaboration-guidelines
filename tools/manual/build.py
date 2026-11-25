@@ -55,7 +55,7 @@ def build():
     source.mkdir(parents=True)
     (source / 'assets').mkdir()
     (source / 'assets/brand.css').write_bytes(brand.stylesheet())
-    paths = ['README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'LICENSE.md']
+    paths = ['README.md', 'AGENTS.md', 'CONTRIBUTING.md']
     paths += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'docs').rglob('*.md'))]
     # Bot GitHub Apps is organization-specific and is not copied. The manual
     # nav points at the pinned guide:
@@ -67,6 +67,7 @@ def build():
     paths += ['templates/generated-docs/README.md']
     mapping = {p: p.replace('README.md', 'index.md') for p in paths}
     mapping['templates/generated-docs/README.md'] = 'examples/generated-docs.md'
+    mapping['LICENSE'] = 'license.md'
     for p in paths:
         if p.startswith('.'):
             mapping[p] = 'providers/' + p[1:]
@@ -82,6 +83,8 @@ def build():
         (ROOT / 'docs-brand.lock.json').read_bytes()).hexdigest()
     source_link = REPO + '/tree/' + source_ref
     for path, destination in mapping.items():
+        if path == 'LICENSE':
+            continue
         text = (ROOT / path).read_text()
         record['sources'][path] = hashlib.sha256(text.encode()).hexdigest()
 
@@ -100,12 +103,15 @@ def build():
         target = source / destination
         target.parent.mkdir(parents=True, exist_ok=True)
         version_path = posixpath.relpath('version.md', posixpath.dirname(destination) or '.')
-        license_path = posixpath.relpath('LICENSE.md', posixpath.dirname(destination) or '.')
+        license_path = posixpath.relpath('license.md', posixpath.dirname(destination) or '.')
         text += (f'\n\n---\n\n[Documentation home](https://docs.livingprooflabs.com/) · '
                  f'[{docs_label}]({source_link} "{commit}") · '
                  f'[Version and source]({version_path}) · [Help / report an issue]({REPO}/issues) · '
                  f'[License]({license_path})\n')
         target.write_text(text)
+    license_text = (ROOT / 'LICENSE').read_text()
+    record['sources']['LICENSE'] = hashlib.sha256(license_text.encode()).hexdigest()
+    (source / 'license.md').write_text(f'# License\n\n```text\n{license_text.rstrip()}\n```\n')
     task_data = json.loads(run('task', '--list', '--json'))
     tasks = ['# Contributor tasks', '', 'Generated from this repository’s real Taskfile.',
              'Host tasks require the prerequisites stated in their guide. Container tasks',

@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 
 # Living Proof Labs collaboration guidelines
 
@@ -91,9 +91,9 @@ Integration between repositories runs when a pin moves to a released tag that
 already exists. See
 [Integration through released tags](docs/releases.md#integration-through-released-tags).
 
-The [license index](LICENSE.md) scopes Apache-2.0 tooling/examples and CC BY 4.0
-prose. The [licensing guide](docs/licensing.md) explains the pattern for future
-repositories without changing their licenses automatically.
+This repository is licensed under [Apache-2.0](LICENSE). The
+[licensing guide](docs/licensing.md) explains the Apache-2.0-only pattern for
+repositories.
 
 ## Repository providers
 

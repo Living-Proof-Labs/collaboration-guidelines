@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- markdownlint-configure-file { "MD013": { "tables": false } } -->
 
 # Living Proof Labs Delivery board
