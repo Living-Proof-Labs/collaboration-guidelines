@@ -15,6 +15,16 @@ const wf = name => parse(read(`.github/workflows/${name}.yml`));
 const expectedScopes = { contents: 'read', pages: 'write', 'id-token': 'write' };
 const workflows = ['manual', 'manual-build', 'deploy-manual', 'release'];
 
+test('release is the first job after verify and every other job needs it', () => {
+  const jobs = wf('release').jobs;
+  const needs = job => [jobs[job].needs ?? []].flat();
+  assert.deepEqual(needs('verify'), []);
+  assert.deepEqual(needs('release'), ['verify']);
+  for (const job of Object.keys(jobs).filter(j => !['verify', 'release'].includes(j))) {
+    assert.ok(needs(job).includes('release'), `${job} must need release`);
+  }
+});
+
 test('normal push releases first and builds and deploys the manual from release outputs', () => {
   const r = wf('release').jobs;
   assert.equal(r.version, undefined);
