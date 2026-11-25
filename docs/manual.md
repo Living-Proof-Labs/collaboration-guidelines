@@ -86,7 +86,7 @@ to public issues.
 ## Publication
 
 Pull requests produce read-only previews. The normal release workflow can
-publish the sealed manual only after its matching immutable release and tooling
+publish the versioned manual only after its matching immutable release and tooling
 evidence exist. See [manual delivery and retry](releases.md#deliver-this-repositorys-manual)
 for the two separate workflows. Inside the deployment lock, a read-only
 `gh api` check with `GH_TOKEN` confirms that the tag still points to current main.

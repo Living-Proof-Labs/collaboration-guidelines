@@ -15,19 +15,21 @@ const wf = name => parse(read(`.github/workflows/${name}.yml`));
 const expectedScopes = { contents: 'read', pages: 'write', 'id-token': 'write' };
 const workflows = ['manual', 'manual-build', 'deploy-manual', 'release'];
 
-test('normal push seals once before the writer and requires final tooling publication', () => {
+test('normal push releases first and builds and deploys the manual from release outputs', () => {
   const r = wf('release').jobs;
-  assert.deepEqual(r.release.needs, ['verify', 'version', 'manual']);
-  assert.equal(r.version.uses, './.github/workflows/semantic-release-candidate.yml');
-  assert.equal(r.manual.with.version, '${{ needs.version.outputs.semver-version }}');
-  assert.match(r.release.if, /needs\.manual\.outputs\.digest != ''/);
-  assert.equal(r.release.with['expected-version'], "${{ needs.version.outputs.version || '' }}");
-  assert.equal(r.release.with['expected-commit'], "${{ needs.version.outputs.commit || '' }}");
+  assert.equal(r.version, undefined);
+  assert.equal(r.release.needs, 'verify');
+  assert.equal(r.release.with['expected-version'], undefined);
+  assert.equal(r.release.with['expected-commit'], undefined);
   assert.match(r.release.if, /vars\.RELEASES_ENABLED != 'false'/);
-  assert.deepEqual(r['deploy-manual'].needs, ['release', 'publish-tooling', 'version', 'manual']);
+  assert.equal(r.manual.needs, 'release');
+  assert.match(r.manual.if, /needs\.release\.outputs\.draft-created == 'true'/);
+  assert.equal(r.manual.with.version, '${{ needs.release.outputs.version }}');
+  assert.equal(r.manual.with.commit, '${{ needs.release.outputs.commit }}');
+  assert.deepEqual(r['deploy-manual'].needs, ['release', 'publish-tooling', 'manual']);
   assert.match(r['deploy-manual'].if, /github.event_name == 'push'/);
   assert.match(r['deploy-manual'].if, /needs\.publish-tooling\.result == 'success'/);
-  assert.match(r['deploy-manual'].if, /needs\.release\.outputs\.commit == needs\.version\.outputs\.commit/);
+  assert.match(r['deploy-manual'].if, /needs\.manual\.outputs\.artifact-id != ''/);
   assert.equal(r['deploy-manual'].with.artifact_id, '${{ needs.manual.outputs.artifact-id }}');
   const build = wf('manual-build').jobs.build;
   assert.deepEqual(build.permissions, { contents: 'read' });
@@ -46,7 +48,7 @@ test('tooling recovery stays in release.yml and only the docs workflow exposes e
     './.github/workflows/manual-build.yml',
     './.github/workflows/deploy-manual.yml',
   ]);
-  assert.match(release.jobs.release.if, /github.event_name == 'workflow_dispatch'.*needs.version.result == 'skipped'.*needs.manual.result == 'skipped'/s);
+  assert.match(release.jobs.release.if, /needs\.verify\.result == 'success'/);
   assert.match(manual.jobs['deploy-manual'].if, /github.event_name == 'workflow_dispatch'/);
   assert.match(manual.jobs['deploy-manual'].if, /github.ref == 'refs\/heads\/main'/);
   assert.match(manual.jobs['deploy-manual'].if, /inputs.replay_tag == format\('v\{0\}', needs.version.outputs.semver-version\)/);
