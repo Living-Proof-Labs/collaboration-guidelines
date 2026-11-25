@@ -87,6 +87,12 @@ jobs:
     uses: Living-Proof-Labs/collaboration-guidelines/.github/workflows/semantic-release.yml@v1.0.0
 ```
 
+Release-first is the organization rule: verification gates `release`, `release`
+tags `main` first, and every job that builds, packages, or deploys a versioned
+artifact on `main` depends on `release` (`needs: release`) and receives its
+`version`, `git-tag`, and `commit` outputs. Do not build or seal a versioned
+release artifact on `main` from a pre-release forecast before the tag exists.
+
 The called job checks out the caller with full history, installs the bundled
 locked toolchain, and runs semantic-release in the caller's repository.
 It uses the existing caller `GITHUB_TOKEN`; no personal token or new secret is
@@ -143,21 +149,14 @@ no GitHub Release. `published`, `draft-created`, `version`, `git-tag`, and
 peels to any other commit is refused, and every existing tag is left
 untouched. A Release that already exists, whether draft or published, is
 not created again and is not edited; this invocation reports no new
-publication. `expected-version` and `expected-commit` still bind the
-writer: recovery publishes only that sealed version at that commit.
-Recovery does not fill in Releases for older tags that are not the
-evaluated commit.
+publication.
 
-If a build has already sealed an artifact for a planned release, pass both
-`expected-version` (the plain stable version) and `expected-commit` (the full
-source commit). The writer refuses a different plan or no release, and the
-release engine checks the same version, tag and commit again before tagging.
-Supplying only one input is an error. Calls without either input retain the
-existing behavior. A failure is not permission to publish or relabel an
-artifact; resolve the current plan and rebuild before attempting a different
-release. An already published matching release is left unchanged. The
-read-only delivery retry described below is what reuses it for a later
-artifact delivery without creating a tag or another Release.
+`expected-version` and `expected-commit` are deprecated legacy inputs from the
+retired pre-release sealed-artifact design. Do not use them in new or updated
+workflows; run `release` before any versioned build or deployment instead. When
+retained by an older pinned caller, supplying both binds the writer (and bare-tag
+recovery) to that exact version and commit, while supplying only one is an
+error.
 
 Only GitHub Releases are published. No npm package, generated changelog, or
 version-bump commit is produced. Existing `vX.Y.Z` tags are preserved and used as
@@ -166,32 +165,25 @@ the release history; migration must retain the consumer's existing tags.
 ## Resolve build versions without publishing
 
 Use the [read-only version workflow](../.github/workflows/semantic-release-candidate.yml)
-for pull requests to main and exact main pushes, independently of the
-release writer. Its `version` and `git-tag` are a forecast and are empty
-when no release is due. A build selects one standard-named output and
-needs only the read-only resolver. Do not choose a version based on the
-writer's result or the existence of a tag.
-
-For a main push with a planned release, all three formats carry the planned
-stable version whether or not the writer is enabled or succeeds. It is not
-a public version unless the separate publication gate verifies the writer,
-actual tag, exact commit and sealed artifact. With no release due, main
-uses a nonpublished preview such as `9.8.1-main.42.1` (Debian
-`9.8.1~main.42.1`, or the same Python development-version encoding).
-The fallback uses the next patch base, or `1.0.0` before the first release,
-never a previous stable version.
+for pull requests to `main` (and explicit `workflow_dispatch` `replay-tag`
+delivery retries). On normal `main` pushes, do not resolve a separate forecast
+before `release`: run `release` after verification and pass its `version`,
+`git-tag`, and `commit` outputs to downstream build and deployment jobs.
 
 ### Pull requests
 
-Use `semver-version` to build and label the actual pull request artifact.
+Use `semver-version` to build and label pull request artifacts.
 The format is `BASE-pr.PR_NUMBER.RUN_NUMBER.ATTEMPT`, such as
 `9.8.0-pr.131.42.1`.
-The base is the forecast. With no forecast, use the next patch above the
-latest stable release on the event base, or `1.0.0` before the first release.
+The base is the forecast (`version`), or when no release is due, the next patch
+above the latest stable release on the event base (or `1.0.0` before the first
+release).
 This fallback does not schedule a release or fill in the forecast outputs.
 No pull request creates a tag, release, or production deployment.
 
-Each new run of the same caller workflow gets a higher numeric run number.
+Each new run of the same caller workflow gets a higher numeric run number, and
+each rerun of the same GitHub Actions run gets a higher attempt number, so each
+pull request build receives a unique version.
 A newer pull request event can see a newly released main base and recalculate
 the forecast, even if its head has not yet incorporated that base. Older
 events use their own exact base, not moving main. For example,
@@ -199,9 +191,6 @@ events use their own exact base, not moving main. For example,
 `9.9.0-pr.131.44.1` if the forecast rises. This is not a guarantee that the
 version core cannot fall if release intent or policy changes.
 
-Rerunning the same GitHub Actions run keeps its run number but uses a higher
-attempt number. A tag can appear on that same event base between attempts,
-so the forecast may change too. Each attempt gets its own build version.
 Use one caller workflow for each artifact family. Record the exact commit,
 run identifier, and attempt in artifact provenance, and use the output
 appropriate to the artifact without rebuilding the version in the caller:
@@ -220,11 +209,11 @@ appropriate to the artifact without rebuilding the version in the caller:
 
 ### Replay and publication
 
-The resolver returns `commit`, `run-id`, and `run-attempt`. Before building,
-verify those against the current checkout and attempt. GitHub can retain
-successful jobs on a failed-job-only rerun; if their planner output is from
-an earlier attempt, rerun all jobs instead of rebuilding with that identity.
-A failed plan is not a fallback. Keep the writer's normal failure behavior.
+The resolver returns `commit`, `run-id`, and `run-attempt`. Before building on a
+pull request or retry, verify those against the current checkout and attempt.
+GitHub can retain successful jobs on a failed-job-only rerun; if a build job's
+version input is from an earlier attempt, rerun all jobs instead of reusing that
+identity. A failed release or plan is not a fallback.
 
 For an explicit main delivery retry, a publisher can pass `replay-tag`
 on a manual run. This read-only gate requires the tag's exact commit to
@@ -232,7 +221,7 @@ match current main and the checked-out source, plus an existing published
 stable release. It supplies the same three plain versions without invoking
 the writer. A bare tag (including one left by a failed writer), draft, or
 wrong commit does not qualify. Publication still independently verifies
-the tag and sealed artifact and only uses the artifact from that attempt.
+the tag and artifact and only uses the artifact from that attempt.
 Keep the build path and its chosen version output the same in all lanes.
 
 ## Policy
@@ -350,12 +339,14 @@ and explicit approval; it is not part of this distribution change.
 
 ## Deliver this repository’s manual
 
-A normal push to main runs verification, resolves a version without writing,
-and tests and seals the manual. The writer and tooling publication retain their
-draft, image, evidence and finalization sequence. Only then does Pages deploy
-the sealed manual for the exact immutable published release, after an
-authenticated current-main check. Pull requests to main have their own versioned
-manual artifacts and cannot deploy.
+A normal push to main runs verification, then runs the release writer to tag
+main and create a draft release. Downstream of `release`, the manual build uses
+the release outputs to build, test, and package the manual, while tooling
+publication completes its draft, image, evidence, and finalization sequence.
+Only then does Pages deploy the manual for that exact immutable published
+release, after an authenticated current-main check. Pull requests to main use
+`semantic-release-candidate.yml` for unique versioned manual artifacts and
+cannot deploy.
 
 The **Guidelines release** workflow retains its existing no-input manual recovery
 for the release and tooling. It does not deploy Pages. If a Pages artifact has
