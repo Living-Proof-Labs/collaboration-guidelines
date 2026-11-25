@@ -7,6 +7,28 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 const script = new URL('../../environments/host/check.sh', import.meta.url).pathname;
 const trust = new URL('../../environments/host/trust.sh', import.meta.url).pathname;
+for (const provided of [false, true]) {
+  for (const exitCode of [0, 60]) {
+    test(`tooling Task download preserves optional CA and failure status: CA=${provided}, exit=${exitCode}`, () => {
+      const dir = mkdtempSync(join(tmpdir(), 'tooling-task-ca-'));
+      try {
+        const ca = join(dir, 'ca');
+        const installer = join(dir, 'install-task.sh');
+        if (provided) writeFileSync(ca, 'test CA fixture');
+        writeFileSync(installer, `printf '%s' "\${CURL_CA_BUNDLE:-}"; exit ${exitCode}\n`);
+        const dockerfile = readFileSync(new URL('../../Dockerfile', import.meta.url), 'utf8');
+        const step = dockerfile.replace(/\\\n/g, '').split('\n')
+          .find(line => line.startsWith('RUN ') && line.includes('bash /tmp/install-task.sh'));
+        assert.match(step, /^RUN --mount=type=secret,id=ca,required=false /);
+        const command = step.replace(/^RUN --mount=\S+\s+/, '')
+          .replaceAll('/run/secrets/ca', ca).replaceAll('/tmp/install-task.sh', installer);
+        const result = spawnSync('/bin/sh', ['-c', command], { encoding: 'utf8', env: { PATH: '/usr/bin:/bin' } });
+        assert.equal(result.status, exitCode, result.stderr);
+        assert.equal(result.stdout, provided ? ca : '');
+      } finally { rmSync(dir, { recursive: true, force: true }); }
+    });
+  }
+}
 function trustResult(env) {
   return spawnSync('/bin/bash', ['-ec', 'source "$1"; printf "%s" "$HOST_BUILD_CA_FILE"', 'trust-test', trust], {encoding:'utf8', env});
 }
