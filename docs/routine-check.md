@@ -192,6 +192,9 @@ For each stalled item:
    moved an hour after asking, escalate one step: assist or take over, or bring
    it to Aaron.
 
+Takeover never covers independent verification. A stalled **Verifying Pull
+Request** item goes back to the verifier, or to Aaron.
+
 List every stalled item and the action taken in the run summary.
 
 ## Event wakes (issue or pull request)

@@ -25,6 +25,8 @@ test('routine check detects blockers on every in-progress item', () => {
   assert.match(rule, /Owner \*\*Aaron\*\*, assign `aroller`, and add an evidence comment/);
   assert.match(rule, /Do not re-ping the same stall/);
   assert.match(rule, /escalate one step/);
+  assert.match(rule, /Takeover never covers independent verification/);
+  assert.match(rule, /goes back to the verifier, or to Aaron/);
   assert.match(rule, /run summary/);
   assert.match(rule, /overrides any pacing guidance/);
   assert.match(section(doc, 'Scheduled check scope'), /\[Blocker detection\]\(#blocker-detection\)/);
