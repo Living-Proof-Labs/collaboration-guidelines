@@ -262,7 +262,10 @@ don't set how often it runs.
    changed.
 
 Keep the check lean. Read the board and the comments on items that are
-moving, rather than sweeping every repository.
+moving, rather than sweeping every repository. The exception is
+[Blocker detection](routine-check.md#blocker-detection): every item in
+**In Progress** or **Verifying Pull Request** is checked for failing checks
+and stalls, including items that are not moving.
 
 For the restart checklist and dispatch, collect, and checkpoint loop, use
 the [portable routine-check runbook](routine-check.md). It applies these roles
