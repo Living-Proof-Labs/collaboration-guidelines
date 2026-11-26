@@ -158,6 +158,41 @@ The scheduled check is the reliable path. Each run:
    pass. The drift-issue rule is in
    <!-- markdownlint-disable-next-line MD013 -->
    [independent-review.md](independent-review.md#verification-of-user-run-paths).
+5. Runs [Blocker detection](#blocker-detection) over every item in
+   **In Progress** or **Verifying Pull Request**.
+
+## Blocker detection
+
+The coordinator's job is to detect blockers and help clear them, by assisting
+or by escalating to Aaron. This covers every item in progress, not only items
+Aaron asked about (Aaron, 26 Nov 2026). It overrides any pacing guidance that
+says to check on running work only when it reports back.
+
+Each scheduled run checks every board item in **In Progress** or
+**Verifying Pull Request**, along with its open linked pull requests. An item
+is stalled when either of these holds:
+
+- One of its pull requests has a failing required check.
+- Neither the item nor its pull requests has had a commit, comment, or status
+  change for about an hour or more.
+
+For each stalled item:
+
+1. **Find the cause.** Read the failing run logs and the latest comments.
+2. **Teammate owner.** If a teammate owns it, send them one priority message
+   with the cause and a suggested fix, or ask what is blocking them.
+3. **Within the coordinator's authority.** If the coordinator can clear it
+   within its own authority, it fixes the problem or takes the item over,
+   following the existing takeover rules, such as the
+   [Gemini handoff](#gemini-handoff).
+4. **Needs Aaron.** If it truly needs Aaron, follow
+   [Decisions for Aaron](delivery-board.md#decisions-for-aaron): **Blocked**,
+   Owner **Aaron**, assign `aroller`, and add an evidence comment.
+5. **Escalate, do not repeat.** Do not re-ping the same stall. If nothing has
+   moved an hour after asking, escalate one step: assist or take over, or bring
+   it to Aaron.
+
+List every stalled item and the action taken in the run summary.
 
 ## Event wakes (issue or pull request)
 
@@ -221,8 +256,9 @@ and what the agent does, not by a platform's trigger names or limits.
   `Run [runbook link]. Role: Rivet (coordinator). Sign as — Rivet (Aaron).`
 - **End each run with a brief summary.** Each run, scheduled or event, ends with
   a brief summary of the actions taken (or that none were needed) sent to the
-  runner's report destination. Decisions still go on the board, not in the
-  summary.
+  runner's report destination. A scheduled run's summary lists every stalled
+  item found by [Blocker detection](#blocker-detection) and the action taken.
+  Decisions still go on the board, not in the summary.
 - **Split by platform limits when needed.** If a platform caps what one trigger
   can cover, use several triggers with the same pointer; the runbook stays the
   single source.
@@ -319,6 +355,8 @@ checkpoints; this pass links their findings without taking over those watches.
    prove work is running. Do not start a duplicate when a worker is already
    active or when delivery is uncertain; inspect delivery and worker state
    first. Retry only after confirming the previous dispatch did not execute.
+   Waiting for the collection time does not pause
+   [Blocker detection](#blocker-detection) on that item.
 4. **Collect and act.** At the next wake, inspect results and issue/PR activity.
    Check the returned revision against the current head. Record substantive
    results on the issue/PR and act: send specific fixes back, arrange independent
@@ -375,7 +413,7 @@ unrelated backlog.
 | Observed state | Action and next wake |
 | --- | --- |
 | Idle worker with authorized work | Resume that worker with the issue/PR instructions; confirm dispatch and record a concrete collection time. |
-| Already-running worker | Reuse its reference; collect at the recorded time or completion event. Do not launch another worker. |
+| Already-running worker | Reuse its reference; collect at the recorded time or completion event. Do not launch another worker. A failing check or about an hour with no movement still triggers [Blocker detection](#blocker-detection). |
 | Returned result | Check the revision and evidence; dispatch fixes or independent review and checkpoint the next collection. |
 | Approval or decision blocked | Follow [Decisions for Aaron](delivery-board.md#decisions-for-aaron): **Blocked**, Owner **Aaron**, exact options on the issue/PR. Read replies at the next stated check; do not repeatedly ask the same question. |
 | Queue exhausted | Leave idle workers alone. Checkpoint that no authorized item is ready, plus the next routine check time or explicit ready-item event and its responsible observer. |
