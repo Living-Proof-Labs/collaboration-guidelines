@@ -83,6 +83,13 @@ asks for a secret in chat.
    [GitHub Apps table](#github-apps), so the owner need not supply them. Nor
    does the owner need to supply the installation ID: once the token works, the
    bot finds it with `GET /app/installations`.
+   Bot secrets can vanish without a restart. On 27 Nov 2026 Rivet's, Cody's,
+   and Art's disappeared at once. So on first token mint, each bot also saves
+   its rebuilt PEM to `~/.config/lpl/<role>-app.pem` (for example
+   `~/.config/lpl/rivet-app.pem`), mode `0600` in a `0700` directory. Its token
+   helper reads the env secret first and falls back to that file when the
+   secret is missing. The helper writes the file only when the secret is
+   present and the file does not exist yet. Never commit or print the key.
 2. Connect the GitHub, Notion, and Slack connectors the role needs.
 3. Install the Slack app if Slack is used.
 
@@ -100,6 +107,10 @@ everything passes. It never prints a secret.
 - Its own GitHub App key secret is present and a token can be minted. Verify
   the key by minting an installation token, and compare the key's SHA256
   fingerprint with the one on the app's Key pairs page.
+- The key file fallback works: `~/.config/lpl/<role>-app.pem` exists with
+  mode `0600`, and the token helper still mints a token with the env secret
+  unset, for example
+  `env -u <ROLE>_GITHUB_APP_PRIVATE_KEY python3 <helper> >/dev/null`.
 - It can read repositories, comment, and edit the board. Do a read-only test
   first, then one harmless signed comment if allowed. Post it on the bot's own
   setup issue, or on an existing tracking issue the account owner names to
@@ -117,6 +128,14 @@ everything passes. It never prints a secret.
 - No duplicate instance is posting.
 - Messaging works: the bot sends a short message to each other role bot and
   gets a reply from each. Report which roles answered.
+
+## When a key secret vanishes
+
+If the env secret disappears, the key file keeps the role working, so nothing
+stops. Ask the owner to re-enter the secret when convenient. If neither the
+secret nor the file is there, the role stops GitHub work and asks for a secret
+card (Cody, Vera, and Art ask Rivet). Rivet's scheduled check pauses itself
+after two hourly runs fail to sign in, and resumes once a token mints again.
 
 ## Verify before activating
 
