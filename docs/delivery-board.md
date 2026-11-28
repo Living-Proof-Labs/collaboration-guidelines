@@ -15,7 +15,10 @@ board as of 20 November 2026.
 Every piece of work has an issue, or a draft item when no repository issue
 exists yet, on this board. Open a pull request only for work that already has a
 board item, and link the pull request to that issue so the board's linked pull
-requests field stays complete.
+requests field stays complete. A pull request that only partly finishes an
+issue uses `Refs #N` in its description, not `Closes #N`. The merge queue
+uses merge commits, so a `Closes` keyword can auto-close an issue that is
+not finished. If that happens, reopen the issue.
 
 A dependency bump is the exception. The Renovate pull request itself is the
 board item. That exception applies only to dependency bumps. When a bump
@@ -191,8 +194,8 @@ Priority order.
 | Developer | Cody | Works items in **Ready for Work** (Owner Cody). Opens a pull request with evidence, then hands off by setting **Verifying Pull Request** with Owner Vera. |
 | Verifier | Vera | Works items in **Verifying Pull Request** and **Verifying after Merge** (Owner Vera), and chooses her own verification depth. Turns automatable manual probes into tests (in the PR, a follow-up PR, or a blocking missing-test finding); a probe that found a defect must be a test before Met. Records her verdict on the pull request. On a pass, the engineering lead merges that exact head, and after a post-merge pass she moves the item to **Done**. On a failure, she sets **In Progress** with Owner the developer, plus a comment saying what's needed. A Renovate pull request has no developer, so it goes to **Blocked** with Owner the engineering lead (see [Renovate updates](#renovate-updates)). **Ready To Merge** stays Aaron's and Keel's handoff. |
 | Design and experience | Art | Works design items (Owner Art). Hands off by commenting with the spec and setting the Owner of the next step. |
-| Independent contributor | Keel | Takes its own items through the full lifecycle, including its own merges. Never reviews its own pull requests. The lead steps in only on blockers. |
-| First-draft contributor | Gemini | Takes easy, bounded tasks when Owner is Gemini. The engineering lead delegates and takes the pull request back for review, as described in [Gemini handoff](routine-check.md#gemini-handoff). Its pull request is a first draft that gets reviewed against the same definition of done. |
+| Independent contributor | Keel | Takes its own items through the full lifecycle, including its own merges. Health is Keel's area; see [Health](#health). Never reviews its own pull requests. The lead steps in only on blockers. |
+| First-draft contributor | Gemini | Takes easy, bounded tasks when Owner is Gemini. The engineering lead delegates and takes the item back by setting **In Progress** with Owner the lead right away, as described in [Gemini handoff](routine-check.md#gemini-handoff). Its pull request is a first draft that gets reviewed against the same definition of done. |
 
 Vera owns the weekly drift run and files a `drift` issue per failure in the
 affected repository.
@@ -201,16 +204,33 @@ Some agents have no schedule of their own. They work only when someone wakes
 them, and changing a board field doesn't wake anyone. The engineering lead
 keeps those agents working:
 
-- **On every handoff,** tell the agent that the item is done, and ask it to
-  continue with the next item in its queue until the queue is empty.
+- **On a handoff round,** send the agent one message that covers the items
+  just handed off and asks it to continue with the next items in its queue
+  until the queue is empty. Do not send a separate message for each item,
+  and do not send a message that needs no action. See
+  [Keep coordination cheap](routine-check.md#keep-coordination-cheap).
 - **On each status check,** fill any empty queue with the next ready
   item (for example, the next evaluator issue that has a definition of done).
   Then wake every agent whose queue isn't empty and whose top item has no
-  recent activity. List the queue in order, with links.
+  recent activity. List the queue in order, with links. Batch those wakes
+  the same way: one message per agent.
 - **An agent with an empty queue** is left alone.
 
 An agent that finishes an item doesn't stop. It updates the board for the
 handoff and starts the next item in its queue.
+
+## Health
+
+Health is Keel's area. Keel merges Health pull requests himself, with
+Codex. A review from Keel's Codex counts as
+[independent review](independent-review.md). The rest of the team stays
+out of the Health repositories
+([livingproof-health][health-repo] and
+[livingproof-evaluator-health][evaluator-health-repo])
+and Health web views. The
+[verification-reports-action][reports-action-repo]
+repository only bumps its Health reference; it does not change Health
+itself.
 
 ## Decisions for Aaron
 
@@ -272,3 +292,6 @@ the [portable routine-check runbook](routine-check.md). It applies these roles
 and statuses without changing their authority.
 
 [pr139]: https://github.com/Living-Proof-Labs/collaboration-guidelines/pull/139
+[health-repo]: https://github.com/Living-Proof-Labs/livingproof-health
+[evaluator-health-repo]: https://github.com/Living-Proof-Labs/livingproof-evaluator-health
+[reports-action-repo]: https://github.com/Living-Proof-Labs/verification-reports-action

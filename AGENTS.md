@@ -86,6 +86,13 @@ or higher-priority instructions.
   [Check for duplicates](docs/routine-check.md#check-for-duplicate-instances).
 - Work is assigned by the Delivery board Owner field, never by the GitHub
   assignee. See [Owner and Priority](docs/delivery-board.md#owner-and-priority).
+- Health is Keel's area. The rest of the team stays out of the Health
+  repositories and Health web views. See
+  [Health](docs/delivery-board.md#health).
+- A pull request that only partly finishes an issue uses `Refs #N` in
+  its description, not `Closes #N`. The merge queue uses merge commits,
+  so a `Closes` keyword can auto-close an issue that is not finished.
+  If that happens, reopen the issue.
 
 ## Write plainly
 
@@ -151,7 +158,11 @@ or higher-priority instructions.
   and preserve strict validation and failure exits.
 - Keep README, tool help, and generated reference pages consistent. Generate
   command reference from executable definitions; keep concepts hand-authored.
-  Follow [tool usability and generated documentation](docs/tool-usability.md).
+  Excerpts and links in a README point at real files; public reports never
+  show fixture or mock runs. Follow
+  [tool usability and generated documentation](docs/tool-usability.md)
+  and the
+  [documentation recipe](docs/documentation-recipe.md#consistent-navigation).
 - Each repository owns a generated, publicly browsable manual with a prominent
   start-here link near the top of its README and links to related repositories'
   manuals. Use [GitHub Pages](.github/GENERATED-DOCS.md#repository-pages-manual)

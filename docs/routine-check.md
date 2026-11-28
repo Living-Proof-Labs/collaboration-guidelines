@@ -335,6 +335,26 @@ successful coverage separately so an outage does not force repeated full sweeps.
 Avoid repeating unchanged outage notices. Separate fleet dependency remediation,
 security-audit, Health, and project-specific watches retain their own scopes and
 checkpoints; this pass links their findings without taking over those watches.
+Health is Keel's area; see [Health](delivery-board.md#health).
+
+## Keep coordination cheap
+
+Aaron decided these cost rules on 2026-11-25. Trading some velocity for
+lower cost is fine.
+
+- The verifier chooses
+  [verification depth](independent-review.md#match-verification-depth-to-risk)
+  from the change's risk. Do not name a depth when asking for a check.
+- Batch handoffs. Send one message per agent per round, covering every
+  item that agent should take next, and ask it to continue until its
+  queue is empty. Do not send a separate message for each item in the
+  same round.
+- Do not send messages between agents that only share information and
+  need no action.
+- The usual pace is to check running work when it reports back.
+  [Blocker detection](#blocker-detection) is the exception: every item
+  in **In Progress** or **Verifying Pull Request** is still checked
+  each scheduled run for failing checks and stalls.
 
 ## Dispatch, collect, and checkpoint
 
@@ -393,11 +413,11 @@ delegates to Gemini and then takes the result back for review:
 
 1. **Delegate.** Set the issue Owner to **Gemini**. Gemini is told to pull
    against the issues it owns. It opens a pull request and stops.
-2. **Take it back.** When a Gemini-owned issue has an unambiguous implementing
+2. **Take it back.** When the engineering lead takes a Gemini item, set it
+   to **In Progress** with Owner the engineering lead right away. Do not
+   leave Owner as Gemini. When the item has an unambiguous implementing
    pull request, confirm its explicit issue link and scope against the
-   definition of done. Move both the issue and pull request to the engineering
-   lead as Owner, Status **In Review**, reusing existing cards. Record the
-   linkage.
+   definition of done, reuse existing cards, and record the linkage.
 3. **Fix or repair.** If the fix is small, the lead makes it on the pull
    request. If it is larger, the lead hands it to the developer (Cody) as
    **In Progress** with a comment saying what is needed. Gemini is not asked
