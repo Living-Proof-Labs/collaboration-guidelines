@@ -21,7 +21,8 @@ Scale the
 work to the change's behavior and risk, not a fixed number of experiments or
 approvals. This guide describes how to perform independent review within the
 project's existing workflow; it does not require a new approval stage for every
-consuming repository.
+consuming repository. A review from Keel's Codex counts as independent
+review.
 
 ## A small review loop
 
@@ -102,10 +103,10 @@ The verifier chooses the depth from the change's risk. Requesters do not
 specify a depth. The guide below describes what each depth means.
 
 - **Light** is the default for documentation, copy, styling, dependency
-  or pin bumps, small fixes, and chores. Confirm CI is green at the
-  exact head SHA, read the diff, and spot-check one or two meaningful
-  things. Do not run probe suites or compatibility harnesses. Keep the
-  report short.
+  or pin bumps, small fixes, chores, and post-merge checks. Confirm CI
+  is green at the exact head SHA, read the diff, and spot-check one or
+  two meaningful things. Do not run probe suites or compatibility
+  harnesses. Keep the report short.
 - **Standard** is for feature work. Confirm the stated acceptance
   criteria and that CI is green at the exact SHA. Exercise the main path
   plus one or two edge cases. Include screenshots only when the visual

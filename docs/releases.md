@@ -56,7 +56,8 @@ that already exists.
 For example, a verifier release reaches the robot reports when a pull request
 in livingproof-verification moves the verifier pin to that released tag. The
 pull request run stores the report as a GitHub Actions artifact. After the pull
-request merges, the report is published on GitHub Pages.
+request merges, the report is published on GitHub Pages. Public reports never
+show fixture or mock runs.
 
 Those component repositories cut releases with the shared
 [semantic-release workflow](../.github/workflows/semantic-release.yml)

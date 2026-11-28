@@ -111,6 +111,9 @@ Put **Start here: documentation** near the top of each README, linking to its
 verified live manual. The root directory's primary destinations are rendered
 manuals; Source and Release links are secondary. Until a manual is verified,
 label the source/preview and its availability honestly rather than guessing a URL.
+Excerpts and links in a README point at real files in the repository. Do not
+quote a path or show a snippet for a file that is not there. Public reports
+never show fixture or mock runs.
 
 Use these labels in a predictable order, omitting inapplicable offerings:
 
