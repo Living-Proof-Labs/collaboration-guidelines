@@ -17,8 +17,9 @@ exists yet, on this board. Open a pull request only for work that already has a
 board item, and link the pull request to that issue so the board's linked pull
 requests field stays complete. A pull request that only partly finishes an
 issue uses `Refs #N` in its description, not `Closes #N`. The merge queue
-uses merge commits, so a `Closes` keyword can auto-close an issue that is
-not finished. If that happens, reopen the issue.
+uses merge commits, so a `Closes` keyword in the description or in a
+commit message can auto-close an issue that is not finished. If that
+happens, reopen the issue.
 
 A dependency bump is the exception. The Renovate pull request itself is the
 board item. That exception applies only to dependency bumps. When a bump

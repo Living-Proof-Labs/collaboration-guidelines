@@ -22,8 +22,9 @@ Track that work on the organization
 board: give it an issue or draft item, link the pull request, and keep Status
 and Owner current. A pull request that only partly finishes an issue uses
 `Refs #N` in its description, not `Closes #N`. The merge queue uses merge
-commits, so a `Closes` keyword can auto-close an issue that is not finished.
-If that happens, reopen the issue. Work is assigned by the Owner field, not
+commits, so a `Closes` keyword in the description or in a commit message can
+auto-close an issue that is not finished. If that happens, reopen the issue.
+Work is assigned by the Owner field, not
 the GitHub assignee. Aaron or Keel move a ready pull request to Ready To Merge;
 the engineering lead then merges it under the rule above. After merge, the
 item moves to Verifying after Merge until Vera verifies it on the integrated

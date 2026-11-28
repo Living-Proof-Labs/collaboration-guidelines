@@ -70,8 +70,9 @@ test('a partial pull request uses Refs, not Closes', () => {
   ]) {
     assert.match(body, /uses\s+`Refs #N`/, file);
     assert.match(body, /not `Closes #N`/, file);
-    assert.match(body, /reopen the issue/, file);
+    assert.match(body, /reopen the\s+issue/, file);
     assert.match(body, /merge queue\s+uses merge\s+commits/, file);
+    assert.match(body, /description or in a\s+commit message/, file);
   }
 });
 

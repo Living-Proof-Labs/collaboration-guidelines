@@ -30,11 +30,18 @@ test('relative markdown links and anchors resolve', () => {
 
 test('the verifier, not the requester, chooses the verification depth', () => {
   const stale = /(name the (verification )?depth (\(.*\) )?in each|names the depth in each|If none is named|Light by default|Light is the default\. A changed|coordinator.{0,40}(sets|names|chooses) (the )?(depth|tier))/i;
+  // The lead, Rivet, a coordinator or a requester must not be written as
+  // picking Vera's depth or tier. Prohibitions such as "do not name a depth"
+  // stay allowed.
+  const actorPicks = /(?:the |an |a )?(?:engineering lead|lead|Rivet|coordinator|requester|requesters|review requester)s?.{0,80}(?:picks?|picked|sets?|set|names?|named|chooses?|chose|specif(?:y|ies|ied)|selects?|selected|assigns?|assigned).{0,50}(?:Vera's |the verifier's |your |her |his )?(?:verification )?(?:depth|tier)(?: or (?:depth|tier))?/i;
+  const prohibition = /\b(?:do not|does not|don't|never|not)\b/i;
   const hits = [];
   for (const f of [...files, '.codex', '.cursor', '.gemini', '.github', '.gitlab']) {
     const p = join(root, f);
     if (!f.endsWith('.md')) continue;
-    readFileSync(p, 'utf8').split('\n').forEach((l, i) => { if (stale.test(l)) hits.push(`${f}:${i + 1}: ${l.trim()}`); });
+    readFileSync(p, 'utf8').split('\n').forEach((l, i) => {
+      if (stale.test(l) || (actorPicks.test(l) && !prohibition.test(l))) hits.push(`${f}:${i + 1}: ${l.trim()}`);
+    });
   }
   assert.deepEqual(hits, []);
 });

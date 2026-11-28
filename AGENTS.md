@@ -91,8 +91,9 @@ or higher-priority instructions.
   [Health](docs/delivery-board.md#health).
 - A pull request that only partly finishes an issue uses `Refs #N` in
   its description, not `Closes #N`. The merge queue uses merge commits,
-  so a `Closes` keyword can auto-close an issue that is not finished.
-  If that happens, reopen the issue.
+  so a `Closes` keyword in the description or in a commit message can
+  auto-close an issue that is not finished. If that happens, reopen the
+  issue.
 
 ## Write plainly
 
