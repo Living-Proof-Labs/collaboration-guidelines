@@ -16,12 +16,15 @@ const section = (text, heading) => {
 test('Health is Keel\'s area and the team stays out', () => {
   const health = section(read('docs/delivery-board.md'), 'Health');
   assert.match(health, /Health is Keel's area/);
-  assert.match(health, /Keel merges Health pull requests himself, with\s+Codex/);
-  assert.match(health, /rest of the team stays\s+out/);
+  assert.match(health, /Keel owns the Health repositories/);
+  assert.match(health, /merges Health pull requests himself,\s+with Codex/);
+  assert.match(health, /rest of the team stays\s+out of those Health repositories and Health web views/);
   assert.match(health, /livingproof-health/);
   assert.match(health, /livingproof-evaluator-health/);
   assert.match(health, /verification-reports-action/);
-  assert.match(health, /only bumps its Health reference/);
+  assert.match(health, /only bumps its Health evaluator reference/);
+  assert.match(health, /team still owns everything else on a\s+published report/);
+  assert.match(health, /does not make that report Keel-only/);
   assert.match(read('AGENTS.md'), /Health is Keel's area/);
   assert.match(section(read('docs/routine-check.md'), 'Lean repository coverage'),
     /Health is Keel's area; see \[Health\]\(delivery-board\.md#health\)/);
@@ -36,15 +39,20 @@ test('a review from Keel\'s Codex counts as independent review', () => {
 
 test('cost rules batch handoffs and leave verification depth to the verifier', () => {
   const cost = section(read('docs/routine-check.md'), 'Keep coordination cheap');
-  assert.match(cost, /Aaron decided these cost rules on 2026-11-25/);
-  assert.match(cost, /Trading some velocity for\s+lower cost is fine/);
+  assert.match(cost, /Aaron decided these cost rules on 2026-11-25 and 2026-11-28/);
+  assert.match(cost, /Trading\s+some velocity for lower cost is fine/);
   assert.match(cost, /Do not name a depth when asking for a check/);
   assert.match(cost, /one message per agent per round/);
   assert.match(cost, /need no action/);
   assert.match(cost, /check running work when it reports back/);
   assert.match(cost, /\[Blocker detection\]\(#blocker-detection\) is the exception/);
+  assert.match(cost, /GitHub is where agents talk/);
+  assert.match(cost, /not in agent-to-agent messages/);
+  assert.match(cost, /Message\s+the engineering lead only when the lead must act/);
+  assert.match(cost, /keep working their board queue without being prompted/);
   const light = section(read('docs/independent-review.md'), 'Match verification depth to risk');
   assert.match(light, /chores, and post-merge checks/);
+  assert.doesNotMatch(light, /explicitly marked Deep/);
   assert.match(section(read('docs/delivery-board.md'), 'Roles and queues'),
     /On a handoff round/);
 });

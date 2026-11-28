@@ -339,8 +339,8 @@ Health is Keel's area; see [Health](delivery-board.md#health).
 
 ## Keep coordination cheap
 
-Aaron decided these cost rules on 2026-11-25. Trading some velocity for
-lower cost is fine.
+Aaron decided these cost rules on 2026-11-25 and 2026-11-28. Trading
+some velocity for lower cost is fine.
 
 - The verifier chooses
   [verification depth](independent-review.md#match-verification-depth-to-risk)
@@ -355,6 +355,12 @@ lower cost is fine.
   [Blocker detection](#blocker-detection) is the exception: every item
   in **In Progress** or **Verifying Pull Request** is still checked
   each scheduled run for failing checks and stalls.
+- GitHub is where agents talk. Post findings, questions, and verdicts
+  on the issue or pull request, not in agent-to-agent messages. Message
+  the engineering lead only when the lead must act.
+- Agents keep working their board queue without being prompted. A wake
+  from the lead is only needed when an agent has no schedule of its
+  own, or its top item has stalled.
 
 ## Dispatch, collect, and checkpoint
 

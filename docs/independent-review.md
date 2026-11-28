@@ -112,9 +112,8 @@ specify a depth. The guide below describes what each depth means.
   plus one or two edge cases. Include screenshots only when the visual
   design is the point.
 - **Deep** is for contracts and schemas, security or safety boundaries,
-  releases that users will see, and anything explicitly marked Deep.
-  Run full adversarial probing and compatibility harnesses, and keep
-  exhaustive evidence.
+  and releases that users will see. Run full adversarial probing and
+  compatibility harnesses, and keep exhaustive evidence.
 
 The verifier chooses the depth for post-merge checks too, usually Light.
 Confirm the merge commit's
