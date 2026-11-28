@@ -17,8 +17,9 @@ exists yet, on this board. Open a pull request only for work that already has a
 board item, and link the pull request to that issue so the board's linked pull
 requests field stays complete. A pull request that only partly finishes an
 issue uses `Refs #N` in its description, not `Closes #N`. The merge queue
-uses merge commits, so a `Closes` keyword can auto-close an issue that is
-not finished. If that happens, reopen the issue.
+uses merge commits, so a `Closes` keyword in the description or in a
+commit message can auto-close an issue that is not finished. If that
+happens, reopen the issue.
 
 A dependency bump is the exception. The Renovate pull request itself is the
 board item. That exception applies only to dependency bumps. When a bump
@@ -221,16 +222,21 @@ handoff and starts the next item in its queue.
 
 ## Health
 
-Health is Keel's area. Keel merges Health pull requests himself, with
-Codex. A review from Keel's Codex counts as
-[independent review](independent-review.md). The rest of the team stays
-out of the Health repositories
+Health is Keel's area. Keel owns the Health repositories
 ([livingproof-health][health-repo] and
 [livingproof-evaluator-health][evaluator-health-repo])
-and Health web views. The
+and the Health web views, and merges Health pull requests himself,
+with Codex. A review from Keel's Codex counts as
+[independent review](independent-review.md). The rest of the team stays
+out of those Health repositories and Health web views.
+
+The
 [verification-reports-action][reports-action-repo]
-repository only bumps its Health reference; it does not change Health
-itself.
+repository only bumps its Health evaluator reference; it does not
+change Health itself. The team still owns everything else on a
+published report: the Action, the report pages, and the other
+evaluators. A Health card on a published report, for example a G1
+report, does not make that report Keel-only.
 
 ## Decisions for Aaron
 

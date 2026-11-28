@@ -86,13 +86,15 @@ or higher-priority instructions.
   [Check for duplicates](docs/routine-check.md#check-for-duplicate-instances).
 - Work is assigned by the Delivery board Owner field, never by the GitHub
   assignee. See [Owner and Priority](docs/delivery-board.md#owner-and-priority).
-- Health is Keel's area. The rest of the team stays out of the Health
-  repositories and Health web views. See
+- Health is Keel's area. Keel owns the Health repositories and Health
+  web views; the rest of the team stays out of those. The team still
+  owns the rest of a published report. See
   [Health](docs/delivery-board.md#health).
 - A pull request that only partly finishes an issue uses `Refs #N` in
   its description, not `Closes #N`. The merge queue uses merge commits,
-  so a `Closes` keyword can auto-close an issue that is not finished.
-  If that happens, reopen the issue.
+  so a `Closes` keyword in the description or in a commit message can
+  auto-close an issue that is not finished. If that happens, reopen the
+  issue.
 
 ## Write plainly
 

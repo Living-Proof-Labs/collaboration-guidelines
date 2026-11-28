@@ -339,22 +339,38 @@ Health is Keel's area; see [Health](delivery-board.md#health).
 
 ## Keep coordination cheap
 
-Aaron decided these cost rules on 2026-11-25. Trading some velocity for
-lower cost is fine.
+Aaron decided these cost rules on 2026-11-25 and 2026-11-28. Trading
+some velocity for lower cost is fine.
 
 - The verifier chooses
   [verification depth](independent-review.md#match-verification-depth-to-risk)
   from the change's risk. Do not name a depth when asking for a check.
-- Batch handoffs. Send one message per agent per round, covering every
-  item that agent should take next, and ask it to continue until its
-  queue is empty. Do not send a separate message for each item in the
-  same round.
-- Do not send messages between agents that only share information and
-  need no action.
+- Batch handoffs. Send one message per agent per round. A wake is a
+  pointer, not a brief: link the board items or pull requests in queue
+  order and say to continue until your queue is empty. The instructions
+  live on the issue or pull request; do not restate them in the
+  message. Do not send a separate message for each item in the same
+  round.
+- GitHub is where agents talk. Post findings, questions, and verdicts
+  on the issue or pull request, not in agent-to-agent messages. Do not
+  send messages that only share information and need no action, and do
+  not send acknowledgements, thanks, or "on it" replies; a board move
+  or a GitHub comment is the acknowledgement. Report back to the
+  engineering lead once, when the lead must act, for example when work
+  is ready to merge, is blocked, or needs a decision. Progress goes on
+  the pull request.
 - The usual pace is to check running work when it reports back.
   [Blocker detection](#blocker-detection) is the exception: every item
   in **In Progress** or **Verifying Pull Request** is still checked
   each scheduled run for failing checks and stalls.
+- Agents keep working their board queue without being prompted. A wake
+  from the lead is only needed when an agent has no schedule of its
+  own, or its top item has stalled. Do not wake an agent whose top
+  item already shows recent activity, and do not wake one to re-check
+  something already recorded on GitHub; read the verdict there instead
+  of asking for it again. Before messaging, check whether a board
+  field change plus a GitHub comment already does the job; the agent's
+  own routine or next wake will pick it up.
 
 ## Dispatch, collect, and checkpoint
 
